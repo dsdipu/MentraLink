@@ -3,12 +3,22 @@ import ProtectedRoute from "./ProtectedRoute";
 
 import Login from "../pages/auth/Login";
 
+// Student
 import StudentDashboard from "../pages/student/Dashboard";
 import StudentLayout from "../layouts/StudentLayout";
+import Profile from "../pages/student/Profile";
+import Sessions from "../pages/student/Sessions";
+import Attendance from "../pages/student/Attendance";
+import Feedback from "../pages/student/Feedback";
+import Evaluation from "../pages/student/Evaluation";
+import Blogs from "../pages/student/Blogs";
+import BlogDetails from "../pages/student/BlogDetails";
 
+// Mentor
 import MentorDashboard from "../pages/mentor/Dashboard";
 import MentorLayout from "../layouts/MentorLayout";
 
+// Admin
 import AdminDashboard from "../pages/admin/Dashboard";
 import AdminLayout from "../layouts/AdminLayout";
 
@@ -22,7 +32,13 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
         <Route element={<StudentLayout />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
-          {/* add /student/profile, /student/sessions, etc. here */}
+          <Route path="/student/profile" element={<Profile />} />
+          <Route path="/student/sessions" element={<Sessions />} />
+          <Route path="/student/attendance" element={<Attendance />} />
+          <Route path="/student/feedback" element={<Feedback />} />
+          <Route path="/student/evaluation" element={<Evaluation />} />
+          <Route path="/student/blogs" element={<Blogs />} />
+          <Route path="/student/blogs/:id" element={<BlogDetails />} />
         </Route>
       </Route>
 
@@ -30,6 +46,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["mentor"]} />}>
         <Route element={<MentorLayout />}>
           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+          {/* add /mentor/students, /mentor/sessions, etc. here once built */}
         </Route>
       </Route>
 
@@ -37,6 +54,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* add /admin/students, /admin/mentors, etc. here once built */}
         </Route>
       </Route>
 
