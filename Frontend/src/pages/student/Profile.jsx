@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+//import { getMyProfile, updateMyProfile } from "../../services/studentService";
 import { getMyProfile, updateMyProfile } from "../../services/studentService";
+
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);

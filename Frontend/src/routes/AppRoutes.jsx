@@ -4,23 +4,26 @@ import ProtectedRoute from "./ProtectedRoute";
 import Login from "../pages/auth/Login";
 
 // Student
-import StudentDashboard from "../pages/student/Dashboard";
 import StudentLayout from "../layouts/StudentLayout";
-import Profile from "../pages/student/Profile";
-import Sessions from "../pages/student/Sessions";
-import Attendance from "../pages/student/Attendance";
-import Feedback from "../pages/student/Feedback";
-import Evaluation from "../pages/student/Evaluation";
-import Blogs from "../pages/student/Blogs";
-import BlogDetails from "../pages/student/BlogDetails";
+import StudentDashboard from "../pages/student/Dashboard";
+import StudentProfile from "../pages/student/Profile";
+import StudentSessions from "../pages/student/Sessions";
+import StudentAttendance from "../pages/student/Attendance";
+import StudentFeedback from "../pages/student/Feedback";
+import StudentEvaluation from "../pages/student/Evaluation";
+import StudentBlogs from "../pages/student/Blogs";
+import StudentBlogDetails from "../pages/student/BlogDetails";
 
 // Mentor
-import MentorDashboard from "../pages/mentor/Dashboard";
 import MentorLayout from "../layouts/MentorLayout";
-
-// Admin
-import AdminDashboard from "../pages/admin/Dashboard";
-import AdminLayout from "../layouts/AdminLayout";
+import MentorDashboard from "../pages/mentor/Dashboard";
+import MentorProfile from "../pages/mentor/Profile";
+import MentorStudents from "../pages/mentor/Students";
+import MentorSessions from "../pages/mentor/Sessions";
+import MentorAttendance from "../pages/mentor/Attendance";
+import MentorFeedback from "../pages/mentor/Feedback";
+import MentorEvaluation from "../pages/mentor/Evaluation";
+import MentorBlogs from "../pages/mentor/Blogs";
 
 const AppRoutes = () => {
   return (
@@ -32,13 +35,13 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
         <Route element={<StudentLayout />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/profile" element={<Profile />} />
-          <Route path="/student/sessions" element={<Sessions />} />
-          <Route path="/student/attendance" element={<Attendance />} />
-          <Route path="/student/feedback" element={<Feedback />} />
-          <Route path="/student/evaluation" element={<Evaluation />} />
-          <Route path="/student/blogs" element={<Blogs />} />
-          <Route path="/student/blogs/:id" element={<BlogDetails />} />
+          <Route path="/student/profile" element={<StudentProfile />} />
+          <Route path="/student/sessions" element={<StudentSessions />} />
+          <Route path="/student/attendance" element={<StudentAttendance />} />
+          <Route path="/student/feedback" element={<StudentFeedback />} />
+          <Route path="/student/evaluation" element={<StudentEvaluation />} />
+          <Route path="/student/blogs" element={<StudentBlogs />} />
+          <Route path="/student/blogs/:id" element={<StudentBlogDetails />} />
         </Route>
       </Route>
 
@@ -46,17 +49,18 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["mentor"]} />}>
         <Route element={<MentorLayout />}>
           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
-          {/* add /mentor/students, /mentor/sessions, etc. here once built */}
+          <Route path="/mentor/profile" element={<MentorProfile />} />
+          <Route path="/mentor/students" element={<MentorStudents />} />
+          <Route path="/mentor/sessions" element={<MentorSessions />} />
+          <Route path="/mentor/attendance" element={<MentorAttendance />} />
+          <Route path="/mentor/feedback" element={<MentorFeedback />} />
+          <Route path="/mentor/evaluation" element={<MentorEvaluation />} />
+          <Route path="/mentor/blogs" element={<MentorBlogs />} />
         </Route>
       </Route>
 
-      {/* Admin */}
-      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-        <Route element={<AdminLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          {/* add /admin/students, /admin/mentors, etc. here once built */}
-        </Route>
-      </Route>
+      {/* Admin routes intentionally omitted until built — adding them now
+          would break the build again the same way Mentor did. */}
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<div>404 Not Found</div>} />
