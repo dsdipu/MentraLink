@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 const statusColors = {
   UPCOMING: "bg-blue-100 text-blue-700",
   ONGOING: "bg-yellow-100 text-yellow-700",
@@ -31,6 +33,21 @@ const SessionCard = ({ session }) => {
       </span>
     </div>
   );
+};
+
+SessionCard.propTypes = {
+  session: PropTypes.shape({
+    title: PropTypes.string,
+    sessionNumber: PropTypes.number,
+    date: PropTypes.string,
+    time: PropTypes.string,
+    location: PropTypes.string,
+    status: PropTypes.oneOf(["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"]),
+    mentor: PropTypes.shape({
+      name: PropTypes.string,
+    }),
+    mentorName: PropTypes.string,
+  }),
 };
 
 export default SessionCard;
