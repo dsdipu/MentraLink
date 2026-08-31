@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
+const mentorRoutes = require("./routes/mentor.routes");
+app.use("/api/mentors", mentorRoutes);
 
 const app = express();
 
