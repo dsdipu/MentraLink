@@ -1,0 +1,27 @@
+info:
+  name: create mentor
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/mentors
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Tanha Mentor",
+        "email": "mentor1@example.com",
+        "password": "mentor1234",
+        "mentorStudentId": "SWE-M001",
+        "department": "SWE"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE2NjA5NCwiZXhwIjoxNzg4NzcwODk0fQ.d6hfxYssB_qse3sxyabRdxwb7vTcJcEHosnLT_bWpXE
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

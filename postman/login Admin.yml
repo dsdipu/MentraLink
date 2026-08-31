@@ -1,5 +1,5 @@
 info:
-  name: login
+  name: login Admin
   type: http
   seq: 1
 
@@ -8,9 +8,7 @@ http:
   url: http://localhost:5000/api/auth/login
   body:
     type: json
-    data: |-
-      { "email": "dipu@gmail.com", 
-       "password": "dipu37" }
+    data: '{ "email": "admin@example.com", "password": "admin1234" }'
   auth: inherit
 
 settings:
