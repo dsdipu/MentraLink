@@ -1,0 +1,17 @@
+info:
+  name: group view student
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:5000/api/groups/me/assigned
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhOTU2ZWFjYWIzZGMxNjBjYjY3NGI1OSIsInJvbGUiOiJTVFVERU5UIiwiaWF0IjoxNzg4MTc4MTQzLCJleHAiOjE3ODg3ODI5NDN9.U4UdzaC-_Gy__k8CF7qVmpWPlr9m0yzGdfXx9QxYnV0
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

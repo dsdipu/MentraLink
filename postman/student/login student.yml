@@ -5,13 +5,13 @@ info:
 
 http:
   method: POST
-  url: http://localhost:5000/api/auth/register
+  url: http://localhost:5000/api/auth/login
   body:
     type: json
     data: |-
       {
-        "email": "dipu.37@gmail.com",
-        "password":"dipu37"
+        "email": "dipu.swe@gmail.com",
+        "password":"dipu456"
       }
   auth: inherit
 
