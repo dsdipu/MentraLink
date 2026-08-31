@@ -1,0 +1,27 @@
+info:
+  name: create semester
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/semesters
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Fall 2026",
+        "academicYear": "2025-2026",
+        "startDate": "2026-01-15",
+        "endDate": "2026-05-30",
+        "status": "UPCOMING"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE2ODY5NiwiZXhwIjoxNzg4NzczNDk2fQ.ysrOjLRnDjRDT0SgzXqasIhZgQJ8u--UzAigHWwrj_A
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
