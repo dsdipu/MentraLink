@@ -5,7 +5,9 @@ useEffect(() => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const currentUserId = localStorage.getItem("userId"); // login somoy save kora thakle
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const currentUserId = storedUser?._id;
+
       const myGroup = response.data.groups.find(
         (g) => g.mentor?.user?._id === currentUserId
       );
