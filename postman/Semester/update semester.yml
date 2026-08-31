@@ -1,0 +1,20 @@
+info:
+  name: update semester
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/semesters/<id>
+  body:
+    type: json
+    data: '{ "status": "ACTIVE" }'
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE2ODE3MiwiZXhwIjoxNzg4NzcyOTcyfQ.xYteP0lN0fcYWiuU3u4Dj_ucQCsf3swKEGe1yXIwwpM
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
