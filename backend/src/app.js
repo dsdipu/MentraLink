@@ -7,6 +7,7 @@ const mentorRoutes = require("./routes/mentor.routes");
 const semesterRoutes = require("./routes/semester.routes");
 const groupRoutes = require("./routes/group.routes");
 const sessionRoutes = require("./routes/session.routes");
+const attendanceRoutes = require("./routes/attendance.routes");
 
 const app = express();
 
@@ -25,5 +26,6 @@ app.use("/api/mentors", mentorRoutes);
 app.use("/api/semesters", semesterRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 module.exports = app;
