@@ -4,8 +4,11 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
 const mentorRoutes = require("./routes/mentor.routes");
+const semesterRoutes = require("./routes/semester.routes");
 
 const app = express();
+
+app.use("/api/semesters", semesterRoutes);
 
 app.use(cors());
 
