@@ -1,0 +1,28 @@
+info:
+  name: create student
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/students
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Test Student",
+        "email": "student1@example.com",
+        "password": "test1234",
+        "studentId": "SWE001",
+        "department": "SWE",
+        "batch": "2023"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNzc0YjBlNjE0ZWY1ZWNlNDQ0M2NjOSIsImlhdCI6MTc4NzI0MTMwNSwiZXhwIjoxNzg3ODQ2MTA1fQ.qARZlV0ibbv457tIlb7R5hE64C2A3MX66AXKSRd68DA
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
