@@ -66,17 +66,32 @@ const assignMentor = async (req, res) => {
 };
 
 // Admin: assign student(s) to group
+// Admin: assign student(s) to group — prevents duplicate active assignment in same semester
 const assignStudents = async (req, res) => {
   try {
-    const { studentIds } = req.body; // array of student IDs
+    const { studentIds } = req.body;
     const group = await MentorshipGroup.findById(req.params.id);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    studentIds.forEach((id) => {
-      if (!group.students.includes(id)) {
-        group.students.push(id);
+    for (const studentId of studentIds) {
+      // check if this student is already in another ACTIVE group for the same semester
+      const existingAssignment = await MentorshipGroup.findOne({
+        semester: group.semester,
+        students: studentId,
+        status: "ACTIVE",
+        _id: { $ne: group._id },
+      });
+
+      if (existingAssignment) {
+        return res.status(400).json({
+          message: `Student already assigned to another active group (${existingAssignment.name}) this semester`,
+        });
       }
-    });
+
+      if (!group.students.includes(studentId)) {
+        group.students.push(studentId);
+      }
+    }
 
     await group.save();
     res.json({ group });
