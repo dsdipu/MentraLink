@@ -1,1 +1,0 @@
-how origin/feature/session-management:backend/src/models/Session.js
