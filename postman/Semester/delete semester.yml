@@ -1,0 +1,17 @@
+info:
+  name: delete semester
+  type: http
+  seq: 1
+
+http:
+  method: DELETE
+  url: http://localhost:5000/api/semesters/6a954bab5cc9eaaedf3e1c03
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE2ODY5NiwiZXhwIjoxNzg4NzczNDk2fQ.ysrOjLRnDjRDT0SgzXqasIhZgQJ8u--UzAigHWwrj_A
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

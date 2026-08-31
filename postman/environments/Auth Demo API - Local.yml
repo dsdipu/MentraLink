@@ -1,0 +1,14 @@
+name: Auth Demo API - Local
+variables:
+  - name: baseUrl
+    value: http://localhost:3000
+  - name: testEmail
+    value: alice@example.com
+  - name: testPassword
+    value: Passw0rd!
+  - name: jwtAccessToken
+    value: ""
+  - name: jwtRefreshToken
+    value: ""
+  - name: studentId
+    value: ""

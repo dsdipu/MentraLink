@@ -1,0 +1,28 @@
+info:
+  name: create student
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/students
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Dipankar Sarkar",
+        "email": "dipu.swe@gmail.com",
+        "password": "dipu456",
+        "studentId": "SWE007",
+        "department": "SWE",
+        "batch": "2024"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE3NjkzOCwiZXhwIjoxNzg4NzgxNzM4fQ.kDUUu-umnV-T8FLY0Th0jeKeXya8Pt91K9zyO60Y22g
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

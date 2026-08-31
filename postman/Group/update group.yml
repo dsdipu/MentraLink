@@ -1,0 +1,18 @@
+info:
+  name: update group
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/groups/<group_id>
+  body:
+    type: json
+    data: 'Body: { "status": "INACTIVE" }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
