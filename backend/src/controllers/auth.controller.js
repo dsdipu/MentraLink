@@ -1,6 +1,45 @@
 const User = require("../models/User");
 const { comparePassword } = require("../utils/hashPassword");
 const generateToken = require("../utils/generateToken");
+const { hashPassword } = require("../utils/hashPassword");
+
+const register = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    // Mentor/Student need admin approval; set isActive false by default for them
+    const isActive = role === "ADMIN" ? true : false;
+
+    const user = await User.create({ name, email, password: hashedPassword, role, isActive });
+
+    res.status(201).json({
+      message: isActive
+        ? "Account created"
+        : "Registration submitted. Waiting for admin approval.",
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, isActive: user.isActive },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Admin: approve pending mentor/student registration
+const approveUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { isActive: true }, { new: true });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User approved", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 
 const login = async (req, res) => {
   try {
@@ -20,4 +59,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login };
+module.exports = { login, register, approveUser };
