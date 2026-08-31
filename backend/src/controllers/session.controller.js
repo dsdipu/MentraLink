@@ -67,4 +67,29 @@ const deleteSession = async (req, res) => {
   }
 };
 
-module.exports = { createSession, getSessions, getSessionById, updateSession, deleteSession };
+//update session
+const updateSessionStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const session = await Session.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!session) return res.status(404).json({ message: "Session not found" });
+    res.json({ session });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
+
+module.exports = {
+  createSession,
+  getSessions,
+  getSessionById,
+  updateSession,
+  updateSessionStatus, 
+  deleteSession,
+};
