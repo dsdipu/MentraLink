@@ -11,6 +11,7 @@ const SessionCard = ({ session }) => {
       <div className="mt-3 text-sm text-gray-600 space-y-1">
         <p>📅 Date: {session?.date || "N/A"}</p>
         <p>⏰ Time: {session?.time || "N/A"}</p>
+        <p>👤 Mentor: {session?.mentor?.name || session?.mentorName || "N/A"}</p>
         <p>📍 Location: {session?.location || "N/A"}</p>
       </div>
     </div>
