@@ -25,6 +25,13 @@ import MentorFeedback from "../pages/mentor/Feedback";
 import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
 
+// Temp Admin Dashboard
+const AdminDashboard = () => (
+  <div className="p-8 text-center text-2xl font-bold">
+    Welcome Admin! (Admin Panel Under Construction)
+  </div>
+);
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -32,7 +39,7 @@ const AppRoutes = () => {
       <Route path="/unauthorized" element={<div>Not authorized</div>} />
 
       {/* Student */}
-      <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["STUDENT", "student"]} />}>
         <Route element={<StudentLayout />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/profile" element={<StudentProfile />} />
@@ -46,7 +53,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Mentor */}
-      <Route element={<ProtectedRoute allowedRoles={["mentor"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["MENTOR", "mentor"]} />}>
         <Route element={<MentorLayout />}>
           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
           <Route path="/mentor/profile" element={<MentorProfile />} />
@@ -59,8 +66,10 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* Admin routes intentionally omitted until built — adding them now
-          would break the build again the same way Mentor did. */}
+      {/* Admin */}
+      <Route element={<ProtectedRoute allowedRoles={["ADMIN", "admin"]} />}>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      </Route>
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<div>404 Not Found</div>} />

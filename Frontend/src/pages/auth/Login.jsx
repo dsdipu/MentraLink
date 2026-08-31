@@ -16,7 +16,15 @@ const Login = () => {
     setSubmitting(true);
     try {
       const user = await login(email, password);
-      navigate(`/${user.role}/dashboard`);
+      const role = user?.role?.toLowerCase();
+
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (role === "mentor") {
+        navigate("/mentor/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
