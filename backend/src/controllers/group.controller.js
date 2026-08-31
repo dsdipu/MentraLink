@@ -100,6 +100,26 @@ const assignStudents = async (req, res) => {
   }
 };
 
+// Student: view own assigned group & mentor
+const getMyGroup = async (req, res) => {
+  try {
+    // req.user.id is the User's id (from JWT); need to find matching Student first
+    const Student = require("../models/Student");
+    const student = await Student.findOne({ user: req.user.id });
+    if (!student) return res.status(404).json({ message: "Student profile not found" });
+
+    const group = await MentorshipGroup.findOne({ students: student._id, status: "ACTIVE" })
+      .populate("semester", "name academicYear status")
+      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
+
+    if (!group) return res.status(404).json({ message: "No active group assigned" });
+
+    res.json({ group });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // Admin: delete group
 const deleteGroup = async (req, res) => {
   try {
@@ -119,4 +139,5 @@ module.exports = {
   assignMentor,
   assignStudents,
   deleteGroup,
+  getMyGroup,
 };

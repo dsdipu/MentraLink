@@ -11,10 +11,12 @@ const {
   assignStudents,
   deleteGroup,
 } = require("../controllers/group.controller");
+const { getMyGroup } = require("../controllers/group.controller"); // already imported above, just add to destructure
 
 router.use(protect);
 
 router.post("/", authorize("ADMIN"), createGroup);
+router.get("/me/assigned", authorize("STUDENT"), getMyGroup);
 router.get("/", authorize("ADMIN", "MENTOR", "STUDENT"), getGroups);
 router.get("/:id", authorize("ADMIN", "MENTOR", "STUDENT"), getGroupById);
 router.put("/:id", authorize("ADMIN"), updateGroup);
