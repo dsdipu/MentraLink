@@ -1,3 +1,10 @@
+const statusColors = {
+  UPCOMING: "bg-blue-100 text-blue-700",
+  ONGOING: "bg-yellow-100 text-yellow-700",
+  COMPLETED: "bg-green-100 text-green-700",
+  CANCELLED: "bg-red-100 text-red-700",
+};
+
 const SessionCard = ({ session }) => {
   return (
     <div className="bg-white p-5 rounded-lg shadow">
@@ -14,6 +21,14 @@ const SessionCard = ({ session }) => {
         <p>👤 Mentor: {session?.mentor?.name || session?.mentorName || "N/A"}</p>
         <p>📍 Location: {session?.location || "N/A"}</p>
       </div>
+
+      <span
+        className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-medium ${
+          statusColors[session?.status] || "bg-gray-100 text-gray-700"
+        }`}
+      >
+        {session?.status || "UNKNOWN"}
+      </span>
     </div>
   );
 };
