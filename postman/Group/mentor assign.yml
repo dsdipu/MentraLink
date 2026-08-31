@@ -1,22 +1,14 @@
 info:
-  name: create student
+  name: mentor assign
   type: http
   seq: 1
 
 http:
-  method: POST
-  url: http://localhost:5000/api/students
+  method: PATCH
+  url: http://localhost:5000/api/groups/6a9554bd0a901b5bd0b68e13/assign-mentor
   body:
     type: json
-    data: |-
-      {
-        "name": "Test Student",
-        "email": "student1@example.com",
-        "password": "test1234",
-        "studentId": "SWE001",
-        "department": "SWE",
-        "batch": "2023"
-      }
+    data: 'Body: { "mentorId": "6a953fe2796f38b8693752ac" }'
   auth:
     type: bearer
     token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhODcxZTkwMTI2MTUxNmI1NDI5YzViNSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE3MTE1MywiZXhwIjoxNzg4Nzc1OTUzfQ.Nm1YnTWV0Bm1BDQtpg7fGDJXUIUD67LBgzZdaUJNtI4

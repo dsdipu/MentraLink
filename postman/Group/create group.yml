@@ -1,21 +1,20 @@
 info:
-  name: create student
+  name: create group
   type: http
   seq: 1
 
 http:
   method: POST
-  url: http://localhost:5000/api/students
+  url: http://localhost:5000/api/groups
   body:
     type: json
     data: |-
       {
-        "name": "Test Student",
-        "email": "student1@example.com",
-        "password": "test1234",
-        "studentId": "SWE001",
-        "department": "SWE",
-        "batch": "2023"
+        "name": "SWE-M01",
+        "semester": "6a954bab5cc9eaaedf3e1c03",
+        "mentor": "6a953fe2796f38b8693752ac",
+        "students": ["6a95543b0a901b5bd0b68e12"],
+        "status": "ACTIVE"
       }
   auth:
     type: bearer

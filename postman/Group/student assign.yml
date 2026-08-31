@@ -1,0 +1,18 @@
+info:
+  name: student assign
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:5000/api/groups/<group_id>/assign-students
+  body:
+    type: json
+    data: 'Body: { "studentIds": ["<another_student_id>"] }'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
