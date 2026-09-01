@@ -9,3 +9,8 @@ export const getCurrentUser = () => {
   const user = localStorage.getItem("user");
   return user ? JSON.parse(user) : null;
 };
+
+export const registerUser = async (payload) => {
+  const { data } = await api.post("/auth/register", payload);
+  return data; // { message, user }
+};
