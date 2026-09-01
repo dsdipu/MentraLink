@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const feedbackRoutes = require("./routes/Feedback.routes");
 
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
@@ -16,6 +17,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/feedback", feedbackRoutes);
 
 
 app.get("/api/health", (req, res) => {
