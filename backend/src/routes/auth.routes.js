@@ -6,11 +6,6 @@ const { login, register, approveUser, getPendingUsers, rejectUser } = require(".
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 
-const {
-  register,
-  login,
-  getPendingUsers,
-} = require("../controllers/auth.controller");
 
 router.post("/register", register);
 router.post("/login", login);
