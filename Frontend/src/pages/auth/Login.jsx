@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 
 const Login = () => {
@@ -69,6 +69,12 @@ const Login = () => {
         >
           {submitting ? "Signing in..." : "Login"}
         </button>
+        <p className="text-sm text-center mt-4 text-gray-500">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-blue-600 hover:underline">
+            Register
+          </Link>
+        </p>
       </form>
     </div>
   );
