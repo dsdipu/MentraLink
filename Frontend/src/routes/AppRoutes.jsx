@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
 
 // Student
 import StudentLayout from "../layouts/StudentLayout";
@@ -36,6 +37,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<div>Not authorized</div>} />
 
       {/* Student */}
