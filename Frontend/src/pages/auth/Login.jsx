@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import logo from "../../assets/mentraLink.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -33,39 +34,45 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-brand-gradient-vertical px-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm"
+        className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm"
       >
-        <h1 className="text-2xl font-semibold mb-6 text-center">Sign In</h1>
+        <div className="flex justify-center mb-6">
+          <img src={logo} alt="MentraLink" className="h-20 object-contain" />
+        </div>
+
+        <h1 className="text-xl font-semibold mb-6 text-center text-brand-navy">
+          Sign In to your account
+        </h1>
 
         {error && (
           <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
         )}
 
-        <label className="block text-sm mb-1">Email</label>
+        <label className="block text-sm mb-1 text-brand-navy font-medium">Email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full border rounded-md px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-brand-blue"
         />
 
-        <label className="block text-sm mb-1">Password</label>
+        <label className="block text-sm mb-1 text-brand-navy font-medium">Password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full border rounded-md px-3 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-brand-purple"
         />
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-brand-gradient text-white font-semibold py-2 rounded-md hover:opacity-90 transition disabled:opacity-50"
         >
           {submitting ? "Signing in..." : "Login"}
         </button>

@@ -2,18 +2,9 @@ import { Outlet, NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 
-const navItems = [
-  { to: "/mentor/dashboard", label: "Dashboard" },
-  { to: "/mentor/profile", label: "Profile" },
-  { to: "/mentor/students", label: "Students" },
-  { to: "/mentor/sessions", label: "Sessions" },
-  { to: "/mentor/attendance", label: "Attendance" },
-  { to: "/mentor/feedback", label: "Feedback" },
-  { to: "/mentor/evaluation", label: "Evaluation" },
-  { to: "/mentor/blogs", label: "Blogs" },
-];
+const navItems = [{ to: "/admin/dashboard", label: "Dashboard" }];
 
-const MentorLayout = () => {
+const AdminLayout = () => {
   const { user, logout } = useAuth();
   return (
     <div className="flex min-h-screen">
@@ -55,4 +46,4 @@ const MentorLayout = () => {
   );
 };
 
-export default MentorLayout;
+export default AdminLayout;

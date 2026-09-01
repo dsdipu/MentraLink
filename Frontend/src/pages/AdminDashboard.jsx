@@ -1,4 +1,3 @@
-// Frontend/src/pages/AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -16,7 +15,6 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // TODO: backend-e admin dashboard summary API confirm hole eta bodlao
         const response = await axios.get("http://localhost:5000/api/admin/dashboard", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -41,16 +39,25 @@ function AdminDashboard() {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Admin Dashboard</h1>
-      {error && <p className="text-orange-500 mb-4">{error}</p>}
+      <h1 className="text-2xl font-bold mb-6 text-brand-navy">Admin Dashboard</h1>
+      {error && (
+        <p className="text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-3 py-2 mb-4 text-sm">
+          {error}
+        </p>
+      )}
       {loading ? (
         <p className="text-gray-500">Loading stats...</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {cards.map((c) => (
-            <div key={c.label} className="bg-white rounded-lg shadow p-4 text-center">
-              <p className="text-2xl font-bold">{c.value}</p>
-              <p className="text-sm text-gray-500">{c.label}</p>
+            <div
+              key={c.label}
+              className="bg-white rounded-xl shadow p-5 text-center border-t-4 border-brand-purple"
+            >
+              <p className="text-3xl font-bold bg-brand-gradient bg-clip-text text-transparent">
+                {c.value}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">{c.label}</p>
             </div>
           ))}
         </div>
