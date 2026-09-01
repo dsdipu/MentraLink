@@ -16,6 +16,7 @@ router.get(
   authorize("ADMIN"),
   getPendingUsers
 );
+router.patch("/approve/:id", protect, authorize("ADMIN"), approveUser);
 router.delete("/reject/:id", protect, authorize("ADMIN"), rejectUser);
 
 
