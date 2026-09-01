@@ -26,12 +26,8 @@ import MentorFeedback from "../pages/mentor/Feedback";
 import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
 
-// Temp Admin Dashboard
-const AdminDashboard = () => (
-  <div className="p-8 text-center text-2xl font-bold">
-    Welcome Admin! (Admin Panel Under Construction)
-  </div>
-);
+// Admin
+import AdminDashboard from "../pages/AdminDashboard";
 
 const AppRoutes = () => {
   return (
