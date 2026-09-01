@@ -15,10 +15,10 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/admin/dashboard", {
+        const response = await axios.get("http://localhost:5000/api/dashboard/admin", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setStats(response.data?.stats ?? stats);
+        setStats(response.data ?? stats);
       } catch (err) {
         setError("Could not load dashboard stats (API not confirmed yet)");
         console.error(err);
@@ -33,7 +33,7 @@ function AdminDashboard() {
   const cards = [
     { label: "Total Students", value: stats.totalStudents },
     { label: "Total Mentors", value: stats.totalMentors },
-    { label: "Total Groups", value: stats.totalGroups },
+    { label: "Total Groups", value: stats.activeGroups },  // ← activeGroups, totalGroups na
     { label: "Total Sessions", value: stats.totalSessions },
   ];
 
