@@ -6,7 +6,7 @@ const {
   submitFeedback,
   getMyFeedbackHistory,
   getSessionFeedback,
-} = require("../controllers/Feedback.controller");
+} = require("../controllers/feedback.controller");
 
 router.use(protect);
 
