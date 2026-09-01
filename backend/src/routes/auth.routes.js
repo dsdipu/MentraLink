@@ -1,6 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
+const { login, register, approveUser, getPendingUsers, rejectUser } = require("../controllers/auth.controller");
 
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
@@ -20,5 +21,7 @@ router.get(
   authorize("ADMIN"),
   getPendingUsers
 );
+router.delete("/reject/:id", protect, authorize("ADMIN"), rejectUser);
+
 
 module.exports = router;

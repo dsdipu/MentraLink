@@ -51,6 +51,23 @@ const getPendingUsers = async (req, res) => {
   }
 };
 
+// Admin: reject a pending registration (delete the user)
+const rejectUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isActive) {
+      return res.status(400).json({ message: "Cannot reject an already active user" });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: "Registration rejected and removed" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -69,5 +86,4 @@ const login = async (req, res) => {
   }
 };
 
-
-module.exports = { login, register, approveUser, getPendingUsers };
+module.exports = { login, register, approveUser, getPendingUsers, rejectUser };
