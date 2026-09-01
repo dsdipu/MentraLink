@@ -11,7 +11,7 @@ function BlogListingPage() {
     const fetchBlogs = async () => {
       try {
         // TODO: backend Blog CRUD API confirm hole URL bodlao
-        const res = await axios.get("http://localhost:5000/api/blogs");
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/blogs`);
         setBlogs(res.data.blogs || []);
       } catch (err) {
         setError("Could not load blogs (API not confirmed yet)");
