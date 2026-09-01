@@ -41,6 +41,16 @@ const approveUser = async (req, res) => {
   }
 };
 
+// Admin: get all pending (unapproved) users
+const getPendingUsers = async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ isActive: false }).select("-password");
+    res.json({ pendingUsers });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -59,4 +69,5 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login, register, approveUser };
+
+module.exports = { login, register, approveUser, getPendingUsers };

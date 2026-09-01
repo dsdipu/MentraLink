@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
 
 // Student
 import StudentLayout from "../layouts/StudentLayout";
@@ -32,7 +33,9 @@ import AdminDashboard from "../pages/AdminDashboard";
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<div>Not authorized</div>} />
 
       {/* Student */}
@@ -70,6 +73,7 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
+      {/* Default Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>

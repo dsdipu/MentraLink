@@ -1,21 +1,11 @@
 info:
-  name: create mentor
+  name: admin dashboard
   type: http
   seq: 1
 
 http:
-  method: POST
-  url: http://localhost:5000/api/mentors
-  body:
-    type: json
-    data: |-
-      {
-        "name": "Tanha Mentor",
-        "email": "mentor5@example.com",
-        "password": "mentor1234",
-        "mentorStudentId": "SWE-M009",
-        "department": "SWE"
-      }
+  method: GET
+  url: http://localhost:5000/api/dashboard/admin
   auth:
     type: bearer
     token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhOTVhODU0NDFlYjkwZGEwYmU5N2NhNyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4ODE5NjA4NSwiZXhwIjoxNzg4ODAwODg1fQ.ILvh56H3tLnVWQybKCC1sdwbKEgx-ij5ruo1A3WTmhc
