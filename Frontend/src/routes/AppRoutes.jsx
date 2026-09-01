@@ -27,7 +27,7 @@ import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
 
 // Admin
-import PendingRequests from "../pages/admin/PendingRequests";
+import PendingRequests from "../pages/PendingRequests";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
 
