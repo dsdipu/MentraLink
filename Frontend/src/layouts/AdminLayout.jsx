@@ -2,7 +2,10 @@ import { Outlet, NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 
-const navItems = [{ to: "/admin/dashboard", label: "Dashboard" }];
+const navItems = [
+  { to: "/admin/dashboard", label: "Dashboard" },
+  { to: "/admin/pending-requests", label: "Pending Requests" },
+];
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
