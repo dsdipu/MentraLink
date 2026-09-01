@@ -1,10 +1,11 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { LayoutDashboard, LogOut, Bell } from "lucide-react";
+import { LayoutDashboard, UserCheck, LogOut, Bell } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
 ];
 
 const AdminLayout = () => {
