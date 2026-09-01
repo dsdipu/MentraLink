@@ -11,6 +11,6 @@ export const getCurrentUser = () => {
 };
 
 export const registerUser = async (payload) => {
-  const { data } = await api.post("/auth/register", payload);
+  const { data } = await api.post(`${import.meta.env.VITE_API_URL}/auth/register`, payload);
   return data; // { message, user }
 };
