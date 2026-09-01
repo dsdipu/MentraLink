@@ -27,6 +27,7 @@ import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
 
 // Admin
+import PendingRequests from "../pages/admin/PendingRequests";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
 
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={["ADMIN", "admin"]} />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/pending-requests" element={<PendingRequests />} />
         </Route>
       </Route>
 
