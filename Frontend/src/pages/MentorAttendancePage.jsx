@@ -1,7 +1,7 @@
 useEffect(() => {
   const fetchMyGroupStudents = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/group", {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/group`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

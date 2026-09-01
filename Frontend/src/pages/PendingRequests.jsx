@@ -11,7 +11,7 @@ function PendingRequests() {
   const fetchPending = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/auth/pending", {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/pending`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPendingUsers(res.data.pendingUsers ?? []);
@@ -33,7 +33,7 @@ function PendingRequests() {
     setActionLoading(userId);
     try {
       await axios.patch(
-        `http://localhost:5000/api/auth/approve/${userId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/auth/approve/${userId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -51,7 +51,7 @@ function PendingRequests() {
     if (!window.confirm("Are you sure you want to reject this registration?")) return;
     setActionLoading(userId);
     try {
-      await axios.delete(`http://localhost:5000/api/auth/reject/${userId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/auth/reject/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPendingUsers((prev) => prev.filter((u) => u._id !== userId));

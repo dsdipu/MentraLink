@@ -15,7 +15,7 @@ function EvaluationPage() {
     setSuccess("");
     try {
       // TODO: backend endpoint confirm hole URL/field bodlao
-      await axios.post("http://localhost:5000/api/evaluations", data, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/evaluations`, data, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccess("Evaluation submitted!");

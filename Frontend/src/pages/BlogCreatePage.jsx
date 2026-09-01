@@ -17,7 +17,7 @@ function BlogCreatePage() {
     try {
       // TODO: backend Blog CRUD API confirm hole URL/field bodlao
       await axios.post(
-        "http://localhost:5000/api/blogs",
+        `${import.meta.env.VITE_API_BASE_URL}/api/blogs`,
         { title, category, content },
         { headers: { Authorization: `Bearer ${token}` } }
       );
