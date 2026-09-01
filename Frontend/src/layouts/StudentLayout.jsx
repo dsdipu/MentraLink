@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import logo from "../assets/mentraLink.png";
 
 const navItems = [
   { to: "/student/dashboard", label: "Dashboard" },
@@ -16,18 +17,20 @@ const StudentLayout = () => {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
-        <div className="p-4 text-lg font-bold border-b border-gray-700">
-          Student Panel
+      <aside className="w-64 bg-brand-gradient-vertical text-white flex flex-col">
+        <div className="p-4 border-b border-white/20 flex items-center justify-center">
+          <img src={logo} alt="MentraLink" className="h-12 object-contain" />
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `block px-3 py-2 rounded-md text-sm ${
-                  isActive ? "bg-blue-600" : "hover:bg-gray-800"
+                `block px-3 py-2 rounded-md text-sm transition ${
+                  isActive
+                    ? "bg-white/20 font-semibold"
+                    : "hover:bg-white/10 text-white/90"
                 }`
               }
             >
@@ -35,11 +38,11 @@ const StudentLayout = () => {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-700">
-          <p className="text-sm mb-2">{user?.name}</p>
+        <div className="p-4 border-t border-white/20">
+          <p className="text-sm mb-2 text-white/90">{user?.name}</p>
           <button
             onClick={logout}
-            className="text-sm text-red-400 hover:text-red-300"
+            className="text-sm text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md w-full transition"
           >
             Logout
           </button>

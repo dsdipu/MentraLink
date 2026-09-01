@@ -1,3 +1,4 @@
+```jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -27,11 +28,13 @@ import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
 
 // Admin
+import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
 
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<div>Not authorized</div>} />
@@ -46,7 +49,10 @@ const AppRoutes = () => {
           <Route path="/student/feedback" element={<StudentFeedback />} />
           <Route path="/student/evaluation" element={<StudentEvaluation />} />
           <Route path="/student/blogs" element={<StudentBlogs />} />
-          <Route path="/student/blogs/:id" element={<StudentBlogDetails />} />
+          <Route
+            path="/student/blogs/:id"
+            element={<StudentBlogDetails />}
+          />
         </Route>
       </Route>
 
@@ -66,9 +72,12 @@ const AppRoutes = () => {
 
       {/* Admin */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN", "admin"]} />}>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        </Route>
       </Route>
 
+      {/* Default Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
@@ -76,3 +85,4 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+```
