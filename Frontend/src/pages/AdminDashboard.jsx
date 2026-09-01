@@ -16,12 +16,21 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/admin/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await axios.get(
+          "http://localhost:5000/api/dashboard/admin",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = response.data;
+        setStats({
+          totalStudents: data.totalStudents ?? 0,
+          totalMentors: data.totalMentors ?? 0,
+          totalGroups: data.activeGroups ?? 0,
+          totalSessions: data.totalSessions ?? 0,
         });
-        setStats(response.data?.stats ?? stats);
       } catch (err) {
-        setError("Could not load dashboard stats (API not confirmed yet)");
+        setError("Could not load dashboard stats");
         console.error(err);
       } finally {
         setLoading(false);
@@ -47,7 +56,7 @@ function AdminDashboard() {
       iconColor: "text-[#31A24C]",
     },
     {
-      label: "Total Groups",
+      label: "Active Groups",
       value: stats.totalGroups,
       icon: UsersRound,
       iconBg: "bg-[#FFF1E6]",
