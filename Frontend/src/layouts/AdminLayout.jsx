@@ -1,12 +1,15 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { LayoutDashboard, UserCheck, LogOut, Bell } from "lucide-react";
+import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2 } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
+  { to: "/admin/semesters", label: "Semesters", icon: CalendarRange },
+  { to: "/admin/mentors", label: "Mentors", icon: Users2 },
 ];
+
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();

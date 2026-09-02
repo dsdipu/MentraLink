@@ -30,6 +30,7 @@ import MentorBlogs from "../pages/mentor/Blogs";
 import PendingRequests from "../pages/PendingRequests";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
+import Semesters from "../pages/Semesters";
 
 const AppRoutes = () => {
   return (
@@ -75,6 +76,7 @@ const AppRoutes = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/pending-requests" element={<PendingRequests />} />
+          <Route path="/admin/semesters" element={<Semesters />} />
         </Route>
       </Route>
 
