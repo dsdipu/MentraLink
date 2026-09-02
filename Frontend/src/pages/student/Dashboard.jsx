@@ -9,7 +9,7 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await api.get("/student/dashboard");
+        const res = await api.get("/dashboard/student");
         setData(res.data);
       } catch {
         setError("Failed to load dashboard");

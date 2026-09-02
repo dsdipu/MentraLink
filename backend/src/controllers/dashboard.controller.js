@@ -4,6 +4,7 @@ const MentorshipGroup = require("../models/MentorshipGroup");
 const Session = require("../models/Session");
 const Attendance = require("../models/Attendance");
 const MentorEvaluation = require("../models/MentorEvaluation");
+const Feedback = require("../models/Feedback");
 
 const getAdminDashboard = async (req, res) => {
   try {
@@ -61,4 +62,43 @@ const getAdminDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getAdminDashboard };
+// Student: own dashboard summary
+const getStudentDashboard = async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user.id });
+    if (!student) return res.status(404).json({ message: "Student profile not found" });
+
+    const group = await MentorshipGroup.findOne({ students: student._id, status: "ACTIVE" });
+
+    const nextSession = group
+      ? await Session.findOne({
+          group: group._id,
+          status: "UPCOMING",
+          date: { $gte: new Date() },
+        }).sort({ date: 1 })
+      : null;
+
+    const totalAttendance = await Attendance.countDocuments({ student: student._id });
+    const presentCount = await Attendance.countDocuments({ student: student._id, status: "PRESENT" });
+    const attendancePercent =
+      totalAttendance > 0 ? +((presentCount / totalAttendance) * 100).toFixed(2) : 0;
+
+    const completedSessions = group
+      ? await Session.countDocuments({ group: group._id, status: "COMPLETED" })
+      : 0;
+    const submittedFeedbackCount = (
+      await Feedback.find({ student: student._id }).distinct("session")
+    ).length;
+    const pendingFeedback = Math.max(completedSessions - submittedFeedbackCount, 0);
+
+    res.json({
+      nextSession: nextSession?.title || null,
+      attendancePercent,
+      pendingFeedback,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { getAdminDashboard, getStudentDashboard };
