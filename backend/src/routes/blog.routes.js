@@ -8,7 +8,7 @@ const {
   getBlogById,
   updateBlog,
   deleteBlog,
-} = require("../controllers/blog.controller");
+} = require("../controllers/blog.controllers");
 
 router.use(protect);
 
