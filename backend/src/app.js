@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const feedbackRoutes = require("./routes/feedback.routes");
+const feedbackRoutes = require("./routes/Feedback.routes");
 
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
@@ -38,3 +38,5 @@ app.use("/api/evaluations", evaluationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 module.exports = app;
+const blogRoutes = require("./routes/blog.routes");
+app.use("/api/blogs", blogRoutes);
