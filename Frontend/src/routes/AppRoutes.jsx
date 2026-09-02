@@ -25,6 +25,7 @@ import MentorAttendance from "../pages/mentor/Attendance";
 import MentorFeedback from "../pages/mentor/Feedback";
 import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
+import Mentors from "../pages/Mentor";
 
 // Admin
 import PendingRequests from "../pages/PendingRequests";
@@ -77,6 +78,7 @@ const AppRoutes = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/pending-requests" element={<PendingRequests />} />
           <Route path="/admin/semesters" element={<Semesters />} />
+          <Route path="/admin/mentors" element={<Mentors />} />
         </Route>
       </Route>
 
