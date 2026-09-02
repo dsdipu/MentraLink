@@ -71,8 +71,11 @@ const toggleMentorStatus = async (req, res) => {
 // Mentor: get own profile
 const getMyProfile = async (req, res) => {
   try {
-    const mentor = await Mentor.findOne({ user: req.user.id }).populate("user", "name email");
-    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+    const mentor = await Mentor.findOneAndUpdate(
+      { user: req.user.id },
+      { $setOnInsert: { user: req.user.id, department: "" } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).populate("user", "name email");
 
     res.json({
       name: mentor.user.name,

@@ -11,10 +11,18 @@ const createGroup = async (req, res) => {
   }
 };
 
-// Get all groups (with populated references)
+// Get all groups (with populated references) — mentors see only their own groups
 const getGroups = async (req, res) => {
   try {
-    const groups = await MentorshipGroup.find()
+    const filter = {};
+
+    if (req.user.role === "MENTOR") {
+      const Mentor = require("../models/Mentor");
+      const mentor = await Mentor.findOne({ user: req.user.id });
+      if (mentor) filter.mentor = mentor._id;
+    }
+
+    const groups = await MentorshipGroup.find(filter)
       .populate("semester", "name academicYear status")
       .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
       .populate({ path: "students", populate: { path: "user", select: "name email" } });

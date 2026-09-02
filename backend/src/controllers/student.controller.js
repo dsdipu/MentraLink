@@ -142,8 +142,18 @@ const toggleStudentStatus = async (req, res) => {
 // Student: get own profile
 const getMyProfile = async (req, res) => {
   try {
-    const student = await Student.findOne({ user: req.user.id }).populate("user", "name email");
-    if (!student) return res.status(404).json({ message: "Student profile not found" });
+    const student = await Student.findOneAndUpdate(
+      { user: req.user.id },
+      {
+        $setOnInsert: {
+          user: req.user.id,
+          studentId: `PENDING-${req.user.id}`,
+          department: "",
+          batch: "",
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).populate("user", "name email");
 
     res.json({
       name: student.user.name,

@@ -36,7 +36,14 @@ const Blogs = () => {
         <form onSubmit={handleCreate} className="bg-white p-4 rounded-lg shadow mb-4 space-y-3">
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border rounded-md px-3 py-2" />
-          <input required placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border rounded-md px-3 py-2" />
+          <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border rounded-md px-3 py-2">
+            <option value="">Select category</option>
+            <option value="EXPERIENCE">Experience</option>
+            <option value="TECH">Tech</option>
+            <option value="CAREER_TIPS">Career Tips</option>
+            <option value="SESSION_RECAP">Session Recap</option>
+            <option value="OTHER">Other</option>
+          </select>
           <textarea required placeholder="Content" rows={4} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full border rounded-md px-3 py-2" />
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md">Publish</button>
         </form>
