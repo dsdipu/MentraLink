@@ -26,3 +26,10 @@ dist-ssr
 
 .evn
 node_modules
+
+node_modules/
+.vite/
+dist/
+.env
+.env.*
+!.env.example
