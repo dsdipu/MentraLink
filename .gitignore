@@ -1,0 +1,23 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Vite
+.vite/
+**/.vite/
+
+# Build output
+dist/
+**/dist/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
