@@ -1,6 +1,8 @@
 const Mentor = require("../models/Mentor");
 const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
+const MentorshipGroup = require("../models/MentorshipGroup");
+const Attendance = require("../models/Attendance");
 
 // Admin: create mentor (creates User + Mentor together)
 const createMentor = async (req, res) => {
@@ -114,6 +116,40 @@ const updateMyProfile = async (req, res) => {
   }
 };
 
+// Mentor: get all students across their active groups, with attendance %
+const getMyStudents = async (req, res) => {
+  try {
+    const mentor = await Mentor.findOne({ user: req.user.id });
+    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+
+    const groups = await MentorshipGroup.find({ mentor: mentor._id, status: "ACTIVE" })
+      .populate("semester", "name")
+      .populate({ path: "students", populate: { path: "user", select: "name email" } });
+
+    const students = [];
+    for (const group of groups) {
+      for (const student of group.students) {
+        const totalAttendance = await Attendance.countDocuments({ student: student._id });
+        const presentCount = await Attendance.countDocuments({ student: student._id, status: "PRESENT" });
+        const attendancePercent =
+          totalAttendance > 0 ? +((presentCount / totalAttendance) * 100).toFixed(2) : null;
+
+        students.push({
+          _id: student._id,
+          name: student.user?.name,
+          email: student.user?.email,
+          semester: group.semester?.name,
+          attendancePercent,
+        });
+      }
+    }
+
+    res.json({ students });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 module.exports = {
   createMentor,
   getMentors,
@@ -122,4 +158,5 @@ module.exports = {
   toggleMentorStatus,
   getMyProfile,
   updateMyProfile,
+  getMyStudents,
 };

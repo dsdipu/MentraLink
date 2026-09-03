@@ -101,4 +101,43 @@ const getStudentDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getAdminDashboard, getStudentDashboard };
+// Mentor: own dashboard summary
+const getMentorDashboard = async (req, res) => {
+  try {
+    const mentor = await Mentor.findOne({ user: req.user.id });
+    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+
+    const groups = await MentorshipGroup.find({ mentor: mentor._id, status: "ACTIVE" });
+    const groupIds = groups.map((g) => g._id);
+
+    const studentCount = groups.reduce((sum, g) => sum + (g.students?.length || 0), 0);
+
+    const upcomingSessions = await Session.countDocuments({
+      group: { $in: groupIds },
+      status: "UPCOMING",
+      date: { $gte: new Date() },
+    });
+
+    const evaluations = await MentorEvaluation.find({ mentor: mentor._id });
+    let averageRating = 0;
+    if (evaluations.length > 0) {
+      const totalOverall = evaluations.reduce((sum, ev) => {
+        const avg =
+          (ev.ratings.communication +
+            ev.ratings.guidance +
+            ev.ratings.availability +
+            ev.ratings.knowledgeSharing +
+            ev.ratings.overallExperience) /
+          5;
+        return sum + avg;
+      }, 0);
+      averageRating = +(totalOverall / evaluations.length).toFixed(2);
+    }
+
+    res.json({ studentCount, upcomingSessions, averageRating });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { getAdminDashboard, getStudentDashboard, getMentorDashboard };
