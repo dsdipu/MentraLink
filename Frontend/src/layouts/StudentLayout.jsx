@@ -48,7 +48,7 @@ const StudentLayout = () => {
           </button>
         </div>
       </aside>
-      <main className="flex-1 bg-gray-50 p-6">
+      <main className="flex-1 bg-blue-50 p-6">
         <Outlet />
       </main>
     </div>

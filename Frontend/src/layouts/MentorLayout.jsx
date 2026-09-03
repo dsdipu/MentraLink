@@ -18,7 +18,7 @@ const MentorLayout = () => {
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 bg-brand-gradient-vertical text-white flex flex-col">
-        <div className="py-4 bg-white border-b border-gray-200 flex items-center justify-center">
+        <div className="py-4 bg-white border-b border-white/20 flex items-center justify-center">
           <img src={logo} alt="MentraLink" className="h-16 object-contain" />
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -48,7 +48,7 @@ const MentorLayout = () => {
           </button>
         </div>
       </aside>
-      <main className="flex-1 bg-gray-50 p-6">
+      <main className="flex-1 bg-emerald-50 p-6">
         <Outlet />
       </main>
     </div>

@@ -19,9 +19,10 @@ export default {
         },
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(90deg, #2F6FED 0%, #9333EA 100%)",
-        "brand-gradient-vertical": "linear-gradient(180deg, #0F1B3D 0%, #2F6FED 55%, #9333EA 100%)",
-      },
+      "brand-gradient": "linear-gradient(90deg, #2F6FED 0%, #9333EA 100%)",
+      "brand-gradient-vertical": "linear-gradient(180deg, #0F1B3D 0%, #2F6FED 55%, #9333EA 100%)",
+      "mentor-gradient-vertical": "linear-gradient(180deg, #0F1B3D 0%, #0D9488 55%, #10B981 100%)",
+    },
     },
   },
   plugins: [],
