@@ -37,7 +37,10 @@ const getSessionById = async (req, res) => {
     const session = await Session.findById(req.params.id)
       .populate("semester", "name")
       .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
-      .populate("group", "name");
+            .populate({
+        path: "group",
+        populate: { path: "students", populate: { path: "user", select: "name email" } },
+      });
     if (!session) return res.status(404).json({ message: "Session not found" });
     res.json({ session });
   } catch (err) {
