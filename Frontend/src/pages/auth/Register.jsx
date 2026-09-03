@@ -4,11 +4,15 @@ import { registerUser } from "../../services/authService";
 
 const Register = () => {
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "STUDENT",
-  });
+  name: "",
+  email: "",
+  password: "",
+  role: "STUDENT",
+  department: "",
+  studentId: "",
+  batch: "",
+  mentorStudentId: "",
+});
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
