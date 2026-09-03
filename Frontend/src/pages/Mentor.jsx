@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   getGroups,
   createGroup,
+  updateGroup,
   assignMentor,
   assignStudents,
   deleteGroup,
@@ -25,6 +26,8 @@ const Mentors = () => {
   // per-group assignment UI state
   const [mentorPick, setMentorPick] = useState({});   // { [groupId]: mentorId }
   const [studentPick, setStudentPick] = useState({}); // { [groupId]: studentId }
+  const [semesterPick, setSemesterPick] = useState({}); // { [groupId]: semesterId }
+
 
   const loadAll = () => {
     setLoading(true);
@@ -64,6 +67,17 @@ const Mentors = () => {
       setError(err.response?.data?.message || "Failed to assign mentor");
     }
   };
+
+  const handleUpdateSemester = async (groupId) => {
+  const semesterId = semesterPick[groupId];
+  if (!semesterId) return;
+  try {
+    await updateGroup(groupId, { semester: semesterId });
+    loadAll();
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to update semester");
+  }
+};
 
   const handleAddStudent = async (groupId) => {
     const studentId = studentPick[groupId];
@@ -136,6 +150,27 @@ const Mentors = () => {
                 <p className="text-sm text-gray-500">
                   {g.semester?.name} ({g.semester?.academicYear}) · {g.status}
                 </p>
+                {!g.semester && (
+                  <div className="mt-2 flex gap-2 items-center bg-red-50 border border-red-200 rounded-md p-2">
+                    <span className="text-xs text-red-600">⚠ No valid semester linked to this group.</span>
+                    <select
+                      value={semesterPick[g._id] || ""}
+                      onChange={(e) => setSemesterPick({ ...semesterPick, [g._id]: e.target.value })}
+                      className="text-xs border rounded-md px-2 py-1"
+                    >
+                      <option value="">Select semester</option>
+                      {semesters.map((s) => (
+                        <option key={s._id} value={s._id}>{s.name} ({s.academicYear})</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleUpdateSemester(g._id)}
+                      className="text-xs bg-gray-800 text-white px-2 py-1 rounded-md"
+                    >
+                      Fix
+                    </button>
+                  </div>
+                )}
                 <p className="text-sm mt-1">
                   Mentor: {g.mentor?.user?.name
                     ? <span className="font-medium">{g.mentor.user.name}</span>
