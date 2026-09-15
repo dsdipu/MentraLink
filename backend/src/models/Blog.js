@@ -9,9 +9,16 @@ const blogSchema = new mongoose.Schema(
       enum: ["EXPERIENCE", "TECH", "CAREER_TIPS", "SESSION_RECAP", "OTHER"],
       default: "OTHER",
     },
-    session: { type: mongoose.Schema.Types.ObjectId, ref: "Session" }, // optional — kon session niye lekha
+    session: { type: mongoose.Schema.Types.ObjectId, ref: "Session" },
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     coverImage: { type: String },
+    images: [{ type: String }], // array of image URLs
+    links: [
+      {
+        label: { type: String, default: "" },
+        url: { type: String, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );

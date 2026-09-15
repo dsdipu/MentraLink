@@ -12,9 +12,10 @@ const Feedback = () => {
   const [loading, setLoading] = useState(true);
 
   const loadData = () => {
+    setLoading(true);
     Promise.all([getMySessions(), getMyFeedbackHistory()])
       .then(([sessions, feedbackHistory]) => {
-        setCompletedSessions(sessions.filter((s) => s.status === "completed"));
+        setCompletedSessions(sessions.filter((s) => s.status === "COMPLETED"));
         setHistory(feedbackHistory);
       })
       .finally(() => setLoading(false));
@@ -25,7 +26,7 @@ const Feedback = () => {
   }, []);
 
   const alreadyGivenFeedback = (sessionId) =>
-    history.some((f) => f.sessionId === sessionId);
+    history.some((f) => f.session?._id === sessionId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +35,7 @@ const Feedback = () => {
       await submitFeedback(selectedSession, { rating, comment });
       setMessage("Feedback submitted");
       setComment("");
+      setRating(5);
       setSelectedSession("");
       loadData();
     } catch (err) {
@@ -62,10 +64,12 @@ const Feedback = () => {
             required
             className="w-full border rounded-md px-3 py-2"
           >
-            <option value="">Select a completed session</option>
+            <option value="">
+              {availableSessions.length === 0 ? "No completed sessions available" : "Select a completed session"}
+            </option>
             {availableSessions.map((s) => (
               <option key={s._id} value={s._id}>
-                {new Date(s.date).toLocaleDateString()} — {s.topic}
+                {new Date(s.date).toLocaleDateString()} — {s.title}
               </option>
             ))}
           </select>
@@ -106,10 +110,11 @@ const Feedback = () => {
       <div className="space-y-2">
         {history.map((f) => (
           <div key={f._id} className="bg-white p-3 rounded-lg shadow text-sm">
-            <p className="font-medium">Rating: {f.rating}/5</p>
+            <p className="font-medium">{f.session?.title} — {f.rating}/5</p>
             <p className="text-gray-600">{f.comment}</p>
           </div>
         ))}
+        {history.length === 0 && <p className="text-gray-500 text-sm">No feedback submitted yet.</p>}
       </div>
     </div>
   );

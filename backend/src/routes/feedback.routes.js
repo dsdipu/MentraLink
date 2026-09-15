@@ -6,7 +6,7 @@ const {
   submitFeedback,
   getMyFeedbackHistory,
   getSessionFeedback,
-} = require("../controllers/Feedback.controller");
+} = require("../controllers/feedback.controller"); // lowercase "f" — matches the actual filename on disk
 
 router.use(protect);
 

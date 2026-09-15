@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSessions } from "../../services/sessionService";
+import { getMyMentorSessions } from "../../services/sessionService";
 import { getSessionFeedback } from "../../services/feedbackService";
 
 const Feedback = () => {
@@ -9,9 +9,7 @@ const Feedback = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getSessions().then((data) =>
-      setSessions((data.sessions || data).filter((s) => s.status === "COMPLETED"))
-    );
+    getMyMentorSessions({ status: "COMPLETED" }).then(setSessions);
   }, []);
 
   useEffect(() => {
@@ -51,9 +49,7 @@ const Feedback = () => {
             {feedback.feedbacks?.map((f) => (
               <div key={f._id} className="py-3 text-sm">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium">
-                    {f.student?.user?.name || "Anonymous"}
-                  </span>
+                  <span className="font-medium">{f.student?.user?.name || "Anonymous"}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
                     {f.rating}/5
                   </span>

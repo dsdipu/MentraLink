@@ -6,7 +6,7 @@ export const submitFeedback = (sessionId, payload) =>
 
 // Student: their own feedback submission history (for duplicate-prevention check)
 export const getMyFeedbackHistory = () =>
-  api.get("/feedback/me").then((r) => r.data);
+  api.get("/feedback/me").then((r) => r.data.feedbacks);
 
 // Mentor: feedback summary for a specific session
 export const getSessionFeedback = (sessionId) =>

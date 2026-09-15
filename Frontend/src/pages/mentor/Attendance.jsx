@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSessions, getSessionById } from "../../services/sessionService";
+import { getMyMentorSessions, getSessionById } from "../../services/sessionService";
 import { getSessionAttendance, markAttendance } from "../../services/attendanceService";
 import AttendanceMarking from "../../components/AttendanceMarking";
 
@@ -12,7 +12,7 @@ const Attendance = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    getSessions().then(setSessions);
+    getMyMentorSessions({ status: "COMPLETED" }).then(setSessions);
   }, []);
 
   useEffect(() => {
@@ -30,7 +30,6 @@ const Attendance = () => {
   }, [selectedId]);
 
   const handleSubmit = async (payload) => {
-    // payload: [{ session, student, status }, ...] from AttendanceMarking
     setMessage("");
     try {
       await markAttendance(
@@ -51,7 +50,7 @@ const Attendance = () => {
         onChange={(e) => setSelectedId(e.target.value)}
         className="border rounded-md px-3 py-2 mb-4"
       >
-        <option value="">Select a session</option>
+        <option value="">Select a completed session</option>
         {sessions.map((s) => (
           <option key={s._id} value={s._id}>
             #{s.sessionNumber} {s.title} — {new Date(s.date).toLocaleDateString()}

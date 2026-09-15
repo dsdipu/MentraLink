@@ -69,15 +69,15 @@ const Mentors = () => {
   };
 
   const handleUpdateSemester = async (groupId) => {
-  const semesterId = semesterPick[groupId];
-  if (!semesterId) return;
-  try {
-    await updateGroup(groupId, { semester: semesterId });
-    loadAll();
-  } catch (err) {
-    setError(err.response?.data?.message || "Failed to update semester");
-  }
-};
+    const semesterId = semesterPick[groupId];
+    if (!semesterId) return;
+    try {
+      await updateGroup(groupId, { semester: semesterId });
+      loadAll();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update semester");
+    }
+  };
 
   const handleAddStudent = async (groupId) => {
     const studentId = studentPick[groupId];
@@ -97,6 +97,23 @@ const Mentors = () => {
   };
 
   if (loading) return <p>Loading...</p>;
+
+  // ---- NEW: figure out which students are already active in a group ----
+  // this builds, per semester, a list of student IDs who are already
+  // assigned to an ACTIVE group in that same semester.
+  const assignedStudentIdsBySemester = {};
+  groups.forEach((g) => {
+    if (g.status === "ACTIVE" && g.semester?._id) {
+      const semId = g.semester._id;
+      if (!assignedStudentIdsBySemester[semId]) {
+        assignedStudentIdsBySemester[semId] = new Set();
+      }
+      (g.students || []).forEach((s) => {
+        assignedStudentIdsBySemester[semId].add(s._id);
+      });
+    }
+  });
+  // ------------------------------------------------------------------
 
   return (
     <div>
@@ -142,101 +159,111 @@ const Mentors = () => {
       )}
 
       <div className="space-y-4">
-        {groups.map((g) => (
-          <div key={g._id} className="bg-white rounded-lg shadow p-4">
-            <div className="flex justify-between items-start mb-3">
+        {groups.map((g) => {
+          // NEW: which student IDs are already taken for THIS group's semester
+          const assignedIds = assignedStudentIdsBySemester[g.semester?._id] || new Set();
+          // NEW: only students NOT already taken show up in this group's dropdown
+          const availableStudents = students.filter((s) => !assignedIds.has(s._id));
+
+          return (
+            <div key={g._id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="font-semibold text-lg">{g.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {g.semester?.name} ({g.semester?.academicYear}) · {g.status}
+                  </p>
+                  {!g.semester && (
+                    <div className="mt-2 flex gap-2 items-center bg-red-50 border border-red-200 rounded-md p-2">
+                      <span className="text-xs text-red-600">⚠ No valid semester linked to this group.</span>
+                      <select
+                        value={semesterPick[g._id] || ""}
+                        onChange={(e) => setSemesterPick({ ...semesterPick, [g._id]: e.target.value })}
+                        className="text-xs border rounded-md px-2 py-1"
+                      >
+                        <option value="">Select semester</option>
+                        {semesters.map((s) => (
+                          <option key={s._id} value={s._id}>{s.name} ({s.academicYear})</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleUpdateSemester(g._id)}
+                        className="text-xs bg-gray-800 text-white px-2 py-1 rounded-md"
+                      >
+                        Fix
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-sm mt-1">
+                    Mentor: {g.mentor?.user?.name
+                      ? <span className="font-medium">{g.mentor.user.name}</span>
+                      : <span className="text-orange-600">Not assigned</span>}
+                  </p>
+                </div>
+                <button onClick={() => handleDeleteGroup(g._id)} className="text-sm text-red-600 hover:underline">
+                  Delete
+                </button>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                <div className="flex gap-2">
+                  <select
+                    value={mentorPick[g._id] || ""}
+                    onChange={(e) => setMentorPick({ ...mentorPick, [g._id]: e.target.value })}
+                    className="flex-1 border rounded-md px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Assign mentor...</option>
+                    {mentors.map((m) => (
+                      <option key={m._id} value={m._id}>{m.user?.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => handleAssignMentor(g._id)}
+                    className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-md"
+                  >
+                    Set
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <select
+                    value={studentPick[g._id] || ""}
+                    onChange={(e) => setStudentPick({ ...studentPick, [g._id]: e.target.value })}
+                    className="flex-1 border rounded-md px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Add student...</option>
+                    {availableStudents.map((s) => (
+                      <option key={s._id} value={s._id}>{s.user?.name} ({s.studentId})</option>
+                    ))}
+                    {availableStudents.length === 0 && (
+                      <option value="" disabled>No unassigned students available</option>
+                    )}
+                  </select>
+                  <button
+                    onClick={() => handleAddStudent(g._id)}
+                    className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-md"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
               <div>
-                <p className="font-semibold text-lg">{g.name}</p>
-                <p className="text-sm text-gray-500">
-                  {g.semester?.name} ({g.semester?.academicYear}) · {g.status}
-                </p>
-                {!g.semester && (
-                  <div className="mt-2 flex gap-2 items-center bg-red-50 border border-red-200 rounded-md p-2">
-                    <span className="text-xs text-red-600">⚠ No valid semester linked to this group.</span>
-                    <select
-                      value={semesterPick[g._id] || ""}
-                      onChange={(e) => setSemesterPick({ ...semesterPick, [g._id]: e.target.value })}
-                      className="text-xs border rounded-md px-2 py-1"
-                    >
-                      <option value="">Select semester</option>
-                      {semesters.map((s) => (
-                        <option key={s._id} value={s._id}>{s.name} ({s.academicYear})</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleUpdateSemester(g._id)}
-                      className="text-xs bg-gray-800 text-white px-2 py-1 rounded-md"
-                    >
-                      Fix
-                    </button>
-                  </div>
-                )}
-                <p className="text-sm mt-1">
-                  Mentor: {g.mentor?.user?.name
-                    ? <span className="font-medium">{g.mentor.user.name}</span>
-                    : <span className="text-orange-600">Not assigned</span>}
-                </p>
-              </div>
-              <button onClick={() => handleDeleteGroup(g._id)} className="text-sm text-red-600 hover:underline">
-                Delete
-              </button>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3 mb-3">
-              <div className="flex gap-2">
-                <select
-                  value={mentorPick[g._id] || ""}
-                  onChange={(e) => setMentorPick({ ...mentorPick, [g._id]: e.target.value })}
-                  className="flex-1 border rounded-md px-2 py-1.5 text-sm"
-                >
-                  <option value="">Assign mentor...</option>
-                  {mentors.map((m) => (
-                    <option key={m._id} value={m._id}>{m.user?.name}</option>
+                <p className="text-xs text-gray-500 mb-1">Students ({g.students?.length || 0})</p>
+                <div className="flex flex-wrap gap-2">
+                  {g.students?.map((s) => (
+                    <span key={s._id} className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                      {s.user?.name}
+                    </span>
                   ))}
-                </select>
-                <button
-                  onClick={() => handleAssignMentor(g._id)}
-                  className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-md"
-                >
-                  Set
-                </button>
-              </div>
-
-              <div className="flex gap-2">
-                <select
-                  value={studentPick[g._id] || ""}
-                  onChange={(e) => setStudentPick({ ...studentPick, [g._id]: e.target.value })}
-                  className="flex-1 border rounded-md px-2 py-1.5 text-sm"
-                >
-                  <option value="">Add student...</option>
-                  {students.map((s) => (
-                    <option key={s._id} value={s._id}>{s.user?.name} ({s.studentId})</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => handleAddStudent(g._id)}
-                  className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-md"
-                >
-                  Add
-                </button>
+                  {(!g.students || g.students.length === 0) && (
+                    <span className="text-xs text-gray-400">No students yet</span>
+                  )}
+                </div>
               </div>
             </div>
-
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Students ({g.students?.length || 0})</p>
-              <div className="flex flex-wrap gap-2">
-                {g.students?.map((s) => (
-                  <span key={s._id} className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-                    {s.user?.name}
-                  </span>
-                ))}
-                {(!g.students || g.students.length === 0) && (
-                  <span className="text-xs text-gray-400">No students yet</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {groups.length === 0 && <p className="text-gray-500">No groups yet. Create one to get started.</p>}
       </div>
     </div>

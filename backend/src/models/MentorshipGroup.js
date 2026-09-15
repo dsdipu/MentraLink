@@ -4,7 +4,7 @@ const mentorshipGroupSchema = new mongoose.Schema(
   {
     name: { type: String, required: true }, // e.g. "SWE-M01"
     semester: { type: mongoose.Schema.Types.ObjectId, ref: "Semester", required: true },
-    mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", required: true },
+    mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", default: null }, // optional — assigned later
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
     status: {
       type: String,

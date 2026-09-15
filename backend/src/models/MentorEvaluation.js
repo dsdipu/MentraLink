@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const mentorEvaluationSchema = new mongoose.Schema(
   {
+    session: { type: mongoose.Schema.Types.ObjectId, ref: "Session", required: true },
     student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
     mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", required: true },
     semester: { type: mongoose.Schema.Types.ObjectId, ref: "Semester", required: true },
@@ -17,7 +18,7 @@ const mentorEvaluationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// one evaluation per student-mentor-semester combination
-mentorEvaluationSchema.index({ student: 1, mentor: 1, semester: 1 }, { unique: true });
+// one evaluation per student per session
+mentorEvaluationSchema.index({ student: 1, session: 1 }, { unique: true });
 
 module.exports = mongoose.model("MentorEvaluation", mentorEvaluationSchema);

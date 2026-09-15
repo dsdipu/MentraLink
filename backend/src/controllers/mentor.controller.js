@@ -92,10 +92,16 @@ const getMyProfile = async (req, res) => {
   }
 };
 
-// Mentor: update own profile (phone, department, expertise only)
+// Mentor: update own profile (name, phone, department, expertise)
 const updateMyProfile = async (req, res) => {
   try {
-    const { phone, department, expertise } = req.body;
+    const { name, phone, department, expertise } = req.body;
+
+    // name lives on User, not Mentor — update it separately
+    if (name !== undefined) {
+      await User.findByIdAndUpdate(req.user.id, { name });
+    }
+
     const mentor = await Mentor.findOneAndUpdate(
       { user: req.user.id },
       { phone, department, expertise },

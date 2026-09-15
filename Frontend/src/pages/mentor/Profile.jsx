@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { getMyProfile, updateMyProfile } from "../../services/mentorService";
+import useAuth from "../../hooks/useAuth";
 
 const Profile = () => {
+  const { updateUser } = useAuth();
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,7 +19,9 @@ const Profile = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await updateMyProfile(form);
+      const updated = await updateMyProfile(form);
+      setForm(updated);
+      updateUser({ name: updated.name }); // <-- navbar updates instantly
       setMessage("Profile updated successfully");
     } catch {
       setMessage("Update failed");
@@ -25,6 +29,8 @@ const Profile = () => {
       setSaving(false);
     }
   };
+
+
 
   if (loading) return <p>Loading profile...</p>;
   if (!form) return <p className="text-red-500">Failed to load profile</p>;

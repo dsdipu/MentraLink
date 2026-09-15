@@ -48,21 +48,18 @@ const Attendance = () => {
           <tbody>
             {records.map((r) => (
               <tr key={r._id} className="border-t">
-                <td className="p-3">{new Date(r.date).toLocaleDateString()}</td>
-                <td className="p-3">{r.sessionTopic}</td>
+                <td className="p-3">{r.session?.date ? new Date(r.session.date).toLocaleDateString() : "-"}</td>
+                <td className="p-3">{r.session?.title || "-"}</td>
                 <td className="p-3">
-                  <span
-                    className={
-                      r.status === "present"
-                        ? "text-green-600 font-medium"
-                        : "text-red-600 font-medium"
-                    }
-                  >
+                  <span className={r.status === "PRESENT" ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
                     {r.status}
                   </span>
                 </td>
               </tr>
             ))}
+            {records.length === 0 && (
+              <tr><td colSpan={3} className="p-3 text-gray-400 text-center">No attendance records yet.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

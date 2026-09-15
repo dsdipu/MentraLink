@@ -1,7 +1,7 @@
 const Feedback = require("../models/Feedback");
 const Student = require("../models/Student");
 
-// Student: session feedback submit
+// Student: submit feedback for a session
 const submitFeedback = async (req, res) => {
   try {
     const { sessionId, rating, comment } = req.body;
@@ -25,7 +25,7 @@ const submitFeedback = async (req, res) => {
   }
 };
 
-// Student: nijer shob feedback history
+// Student: their own feedback history
 const getMyFeedbackHistory = async (req, res) => {
   try {
     const student = await Student.findOne({ user: req.user.id });
@@ -38,7 +38,7 @@ const getMyFeedbackHistory = async (req, res) => {
   }
 };
 
-// Mentor: ekta session er shob feedback + average rating
+// Mentor: a session's full feedback + average rating
 const getSessionFeedback = async (req, res) => {
   try {
     const { sessionId } = req.params;

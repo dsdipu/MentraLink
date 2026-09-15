@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSessions, createSession, updateSession, updateSessionStatus } from "../../services/sessionService";
+import { getMyMentorSessions, createSession, updateSession, updateSessionStatus } from "../../services/sessionService";
 import { getGroups } from "../../services/groupService";
 
 const emptyForm = {
@@ -24,7 +24,7 @@ const Sessions = () => {
 
   const load = () => {
     setLoading(true);
-    return Promise.all([getSessions(), getGroups()])
+    return Promise.all([getMyMentorSessions(), getGroups()])
       .then(([s, g]) => {
         setSessions(s);
         setGroups(g);

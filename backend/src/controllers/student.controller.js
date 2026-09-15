@@ -1,125 +1,105 @@
-// const Student = require("../models/Student");
-// const User = require("../models/User");
-
-// // Admin: create student (creates User + Student together)
-// const createStudent = async (req, res) => {
-//   try {
-//     const { name, email, password, studentId, department, batch } = req.body;
-
-//     const { hashPassword } = require("../utils/hashPassword");
-//     const hashedPassword = await hashPassword(password);
-
-//     const user = await User.create({ name, email, password: hashedPassword, role: "STUDENT" });
-//     const student = await Student.create({ user: user._id, studentId, department, batch });
-
-//     res.status(201).json({ student });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
-// // Admin: get all students
-// const getStudents = async (req, res) => {
-//   try {
-//     const students = await Student.find().populate("user", "name email isActive");
-//     res.json({ students });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
-// // Get single student
-// const getStudentById = async (req, res) => {
-//   try {
-//     const student = await Student.findById(req.params.id).populate("user", "name email isActive");
-//     if (!student) return res.status(404).json({ message: "Student not found" });
-//     res.json({ student });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
-// // Admin: update student
-// const updateStudent = async (req, res) => {
-//   try {
-//     const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });
-//     if (!student) return res.status(404).json({ message: "Student not found" });
-//     res.json({ student });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
-// // Admin: activate/deactivate student
-// const toggleStudentStatus = async (req, res) => {
-//   try {
-//     const student = await Student.findById(req.params.id);
-//     if (!student) return res.status(404).json({ message: "Student not found" });
-
-//     const user = await User.findById(student.user);
-//     user.isActive = !user.isActive;
-//     await user.save();
-
-//     res.json({ message: `Student ${user.isActive ? "activated" : "deactivated"}` });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
-// module.exports = { createStudent, getStudents, getStudentById, updateStudent, toggleStudentStatus };
-
-
-
-
 const Student = require("../models/Student");
 const User = require("../models/User");
 
-// Admin: create student (creates User + Student together)
+// Admin: create student
 const createStudent = async (req, res) => {
   try {
-    const { name, email, password, studentId, department, batch } = req.body;
+    const {
+      name,
+      email,
+      password,
+      studentId,
+      department,
+      batch,
+    } = req.body;
 
     const { hashPassword } = require("../utils/hashPassword");
     const hashedPassword = await hashPassword(password);
 
-    const user = await User.create({ name, email, password: hashedPassword, role: "STUDENT" });
-    const student = await Student.create({ user: user._id, studentId, department, batch });
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "STUDENT",
+    });
+
+    const student = await Student.create({
+      user: user._id,
+      studentId,
+      department,
+      batch,
+    });
 
     res.status(201).json({ student });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
 // Admin: get all students
 const getStudents = async (req, res) => {
   try {
-    const students = await Student.find().populate("user", "name email isActive");
+    const students = await Student.find().populate(
+      "user",
+      "name email isActive"
+    );
+
     res.json({ students });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
 // Get single student
 const getStudentById = async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id).populate("user", "name email isActive");
-    if (!student) return res.status(404).json({ message: "Student not found" });
+    const student = await Student.findById(req.params.id).populate(
+      "user",
+      "name email isActive"
+    );
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student not found",
+      });
+    }
+
     res.json({ student });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
 // Admin: update student
 const updateStudent = async (req, res) => {
   try {
-    const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!student) return res.status(404).json({ message: "Student not found" });
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student not found",
+      });
+    }
+
     res.json({ student });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
@@ -127,15 +107,34 @@ const updateStudent = async (req, res) => {
 const toggleStudentStatus = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student not found",
+      });
+    }
 
     const user = await User.findById(student.user);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
     user.isActive = !user.isActive;
     await user.save();
 
-    res.json({ message: `Student ${user.isActive ? "activated" : "deactivated"}` });
+    res.json({
+      message: `Student ${
+        user.isActive ? "activated" : "deactivated"
+      }`,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
@@ -152,7 +151,11 @@ const getMyProfile = async (req, res) => {
           batch: "",
         },
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
     ).populate("user", "name email");
 
     res.json({
@@ -164,20 +167,43 @@ const getMyProfile = async (req, res) => {
       batch: student.batch,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
-// Student: update own profile (phone, department only — studentId/batch are admin-managed)
+// Student: update own profile
 const updateMyProfile = async (req, res) => {
   try {
-    const { phone, department } = req.body;
+    const {
+      name,
+      phone,
+      department,
+    } = req.body;
+
+    if (name !== undefined) {
+      await User.findByIdAndUpdate(
+        req.user.id,
+        { name }
+      );
+    }
+
     const student = await Student.findOneAndUpdate(
       { user: req.user.id },
-      { phone, department },
+      {
+        phone,
+        department,
+      },
       { new: true }
     ).populate("user", "name email");
-    if (!student) return res.status(404).json({ message: "Student profile not found" });
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student profile not found",
+      });
+    }
 
     res.json({
       name: student.user.name,
@@ -188,7 +214,10 @@ const updateMyProfile = async (req, res) => {
       batch: student.batch,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
@@ -201,3 +230,4 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
 };
+

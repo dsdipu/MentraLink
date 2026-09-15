@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-//import { getMyProfile, updateMyProfile } from "../../services/studentService";
 import { getMyProfile, updateMyProfile } from "../../services/studentService";
-
+import useAuth from "../../hooks/useAuth";
 
 const Profile = () => {
+  const { updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "", department: "" });
   const [loading, setLoading] = useState(true);
@@ -23,15 +23,21 @@ const Profile = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMessage("");
     try {
-      await updateMyProfile(form);
+      const updated = await updateMyProfile(form);
+      setProfile(updated);
+      setForm({
+        name: updated.name || "",
+        phone: updated.phone || "",
+        department: updated.department || "",
+      });
+      updateUser({ name: updated.name });
       setMessage("Profile updated successfully");
     } catch {
       setMessage("Failed to update profile");
@@ -50,15 +56,6 @@ const Profile = () => {
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
         <div>
-          <label className="block text-sm mb-1">Email</label>
-          <input
-            value={profile?.email || ""}
-            disabled
-            className="w-full border rounded-md px-3 py-2 bg-gray-100 text-gray-500"
-          />
-        </div>
-
-        <div>
           <label className="block text-sm mb-1">Name</label>
           <input
             name="name"
@@ -66,6 +63,16 @@ const Profile = () => {
             onChange={handleChange}
             className="w-full border rounded-md px-3 py-2"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">Email</label>
+          <input value={profile?.email || ""} disabled className="w-full border rounded-md px-3 py-2 bg-gray-100" />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">Student ID</label>
+          <input value={profile?.studentId || ""} disabled className="w-full border rounded-md px-3 py-2 bg-gray-100" />
         </div>
 
         <div>
