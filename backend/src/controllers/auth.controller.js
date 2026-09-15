@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Student = require("../models/Student");
+const Mentor = require("../models/Mentor");
 const { comparePassword } = require("../utils/hashPassword");
 const generateToken = require("../utils/generateToken");
 const { hashPassword } = require("../utils/hashPassword");
@@ -35,6 +37,28 @@ const approveUser = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { isActive: true }, { new: true });
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Create the matching profile document NOW, so admin lists/dashboards
+    // reflect the new mentor/student immediately — don't wait for them to
+    // visit their own Profile page.
+    if (user.role === "STUDENT") {
+      const existing = await Student.findOne({ user: user._id });
+      if (!existing) {
+        const count = await Student.countDocuments();
+        await Student.create({
+          user: user._id,
+          studentId: `SWE${String(count + 1).padStart(3, "0")}`, // SWE001, SWE002, ...
+          department: "",
+          batch: "",
+        });
+      }
+    } else if (user.role === "MENTOR") {
+      const existing = await Mentor.findOne({ user: user._id });
+      if (!existing) {
+        await Mentor.create({ user: user._id, department: "" });
+      }
+    }
+
     res.json({ message: "User approved", user });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
