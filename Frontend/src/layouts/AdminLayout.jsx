@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2 } from "lucide-react";
+import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 
@@ -8,6 +8,8 @@ const navItems = [
   { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
   { to: "/admin/semesters", label: "Semesters", icon: CalendarRange },
   { to: "/admin/mentors", label: "Mentors", icon: Users2 },
+  { to: "/admin/sessions", label: "Sessions", icon: CalendarClock },
+  { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
 ];
 
 

@@ -95,7 +95,7 @@ const getNextSession = async (req, res) => {
   try {
     const filter = {
       status: "UPCOMING",
-      date: { $gte: new Date() },
+      date: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }, // was: new Date()
     };
 
     if (req.query.group) filter.group = req.query.group;

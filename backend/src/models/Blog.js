@@ -12,7 +12,7 @@ const blogSchema = new mongoose.Schema(
     session: { type: mongoose.Schema.Types.ObjectId, ref: "Session" },
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     coverImage: { type: String },
-    images: [{ type: String }], // array of image URLs
+    images: [{ type: String }], // gallery images (URLs — uploaded or pasted)
     links: [
       {
         label: { type: String, default: "" },

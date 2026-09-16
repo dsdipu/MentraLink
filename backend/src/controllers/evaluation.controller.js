@@ -28,6 +28,69 @@ const getMyRating = async (req, res) => {
   }
 };
 
+// Mentor: their own evaluations, with student name + comment, newest first
+const getMyMentorEvaluations = async (req, res) => {
+  try {
+    const mentor = await Mentor.findOne({ user: req.user.id });
+    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+
+    const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+      .populate({ path: "student", populate: { path: "user", select: "name" } })
+      .populate("session", "title date")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      evaluations: evaluations.map((e) => ({
+        _id: e._id,
+        studentName: e.student?.user?.name || "Anonymous",
+        sessionTitle: e.session?.title,
+        sessionDate: e.session?.date,
+        ratings: e.ratings,
+        comment: e.comment,
+        createdAt: e.createdAt,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Admin: every mentor's aggregated rating + full evaluation list (with comments)
+const getAllMentorRatings = async (req, res) => {
+  try {
+    const mentors = await Mentor.find().populate("user", "name email");
+
+    const results = [];
+    for (const mentor of mentors) {
+      const rating = await calculateMentorRating(mentor._id);
+      const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+        .populate({ path: "student", populate: { path: "user", select: "name" } })
+        .populate("session", "title date")
+        .sort({ createdAt: -1 });
+
+      results.push({
+        mentorId: mentor._id,
+        name: mentor.user?.name,
+        email: mentor.user?.email,
+        ...rating,
+        evaluations: evaluations.map((e) => ({
+          _id: e._id,
+          studentName: e.student?.user?.name || "Anonymous",
+          sessionTitle: e.session?.title,
+          sessionDate: e.session?.date,
+          ratings: e.ratings,
+          comment: e.comment,
+          createdAt: e.createdAt,
+        })),
+      });
+    }
+
+    res.json({ mentors: results });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // Student: submit an evaluation for a specific session
 const submitEvaluation = async (req, res) => {
   try {
@@ -84,4 +147,12 @@ const getEvaluationStatus = async (req, res) => {
   }
 };
 
-module.exports = { getMentorRating, getMyRating, submitEvaluation, getMyEvaluations, getEvaluationStatus };
+module.exports = {
+  getMentorRating,
+  getMyRating,
+  getMyMentorEvaluations,
+  getAllMentorRatings,
+  submitEvaluation,
+  getMyEvaluations,
+  getEvaluationStatus,
+};

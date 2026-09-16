@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
-import { getBlogs, createBlog, updateBlog, deleteBlog } from "../../services/blogService";
+import { useEffect, useRef, useState } from "react";
+import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../../services/blogService";
+import { previewText } from "../../utils/blogPreview";
 import useAuth from "../../hooks/useAuth";
 
-const emptyForm = { title: "", category: "", content: "", images: [""], links: [{ label: "", url: "" }] };
+const emptyForm = { title: "", category: "", content: "", coverImage: "", images: [""], links: [{ label: "", url: "" }] };
 
 const Blogs = () => {
   const { user } = useAuth();
   const [blogs, setBlogs] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null); // null = creating, else id being edited
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const contentRef = useRef(null);
 
   const load = () => getBlogs().then(setBlogs);
   useEffect(() => { load(); }, []);
@@ -27,6 +30,7 @@ const Blogs = () => {
       title: blog.title || "",
       category: blog.category || "",
       content: blog.content || "",
+      coverImage: blog.coverImage || "",
       images: blog.images?.length ? blog.images : [""],
       links: blog.links?.length ? blog.links : [{ label: "", url: "" }],
     });
@@ -65,25 +69,77 @@ const Blogs = () => {
     }
   };
 
-  // --- dynamic images ---
+  // Insert an uploaded image right at the cursor position inside the content textarea
+  const handleInsertImageAtCursor = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadBlogImage(file);
+      const textarea = contentRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const insertText = `\n![image](${url})\n`;
+      const newContent = form.content.slice(0, start) + insertText + form.content.slice(end);
+      setForm((f) => ({ ...f, content: newContent }));
+      requestAnimationFrame(() => {
+        textarea.focus();
+        const pos = start + insertText.length;
+        textarea.setSelectionRange(pos, pos);
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleUploadToGallerySlot = async (idx, file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadBlogImage(file);
+      setImageAt(idx, url);
+    } catch (err) {
+      alert(err.response?.data?.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadCoverImage = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadBlogImage(file);
+      setForm((f) => ({ ...f, coverImage: url }));
+    } catch (err) {
+      alert(err.response?.data?.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const setImageAt = (idx, value) => {
-    const next = [...form.images];
-    next[idx] = value;
-    setForm({ ...form, images: next });
+    setForm((f) => {
+      const next = [...f.images];
+      next[idx] = value;
+      return { ...f, images: next };
+    });
   };
   const addImageField = () => setForm({ ...form, images: [...form.images, ""] });
-  const removeImageField = (idx) =>
-    setForm({ ...form, images: form.images.filter((_, i) => i !== idx) });
+  const removeImageField = (idx) => setForm({ ...form, images: form.images.filter((_, i) => i !== idx) });
 
-  // --- dynamic links ---
   const setLinkAt = (idx, key, value) => {
-    const next = [...form.links];
-    next[idx] = { ...next[idx], [key]: value };
-    setForm({ ...form, links: next });
+    setForm((f) => {
+      const next = [...f.links];
+      next[idx] = { ...next[idx], [key]: value };
+      return { ...f, links: next };
+    });
   };
   const addLinkField = () => setForm({ ...form, links: [...form.links, { label: "", url: "" }] });
-  const removeLinkField = (idx) =>
-    setForm({ ...form, links: form.links.filter((_, i) => i !== idx) });
+  const removeLinkField = (idx) => setForm({ ...form, links: form.links.filter((_, i) => i !== idx) });
 
   return (
     <div>
@@ -100,6 +156,7 @@ const Blogs = () => {
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow mb-4 space-y-3">
           {error && <p className="text-red-500 text-sm">{error}</p>}
+          {uploading && <p className="text-blue-500 text-sm">Uploading image...</p>}
 
           <input
             required
@@ -123,36 +180,60 @@ const Blogs = () => {
             <option value="OTHER">Other</option>
           </select>
 
-          <textarea
-            required
-            placeholder="Content"
-            rows={4}
-            value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-
-          {/* Images */}
+          {/* Cover image */}
           <div>
-            <label className="block text-sm font-medium mb-1">Images (URL)</label>
+            <label className="block text-sm font-medium mb-1">Cover image</label>
+            <div className="flex items-center gap-3">
+              {form.coverImage && <img src={form.coverImage} alt="cover" className="h-16 w-16 object-cover rounded-md" />}
+              <input type="file" accept="image/*" onChange={(e) => handleUploadCoverImage(e.target.files[0])} className="text-sm" />
+            </div>
+          </div>
+
+          {/* Content + inline image insertion */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium">Content</label>
+              <label className="text-xs text-blue-600 cursor-pointer hover:underline">
+                📷 Insert image here
+                <input type="file" accept="image/*" className="hidden" onChange={handleInsertImageAtCursor} />
+              </label>
+            </div>
+            <textarea
+              ref={contentRef}
+              required
+              placeholder="Write your blog... place your cursor where you want an image and click 'Insert image here'"
+              rows={10}
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              className="w-full border rounded-md px-3 py-2 font-mono text-sm"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Tip: click into the text where you want a picture to appear, then click "Insert image here" above.
+            </p>
+          </div>
+
+          {/* Gallery images */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Gallery images (optional, shown at the end of the post)</label>
             {form.images.map((img, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
+              <div key={idx} className="flex items-center gap-2 mb-2">
+                {img && <img src={img} alt="" className="h-10 w-10 object-cover rounded-md" />}
                 <input
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="Image URL"
                   value={img}
                   onChange={(e) => setImageAt(idx, e.target.value)}
-                  className="flex-1 border rounded-md px-3 py-2"
+                  className="flex-1 border rounded-md px-3 py-2 text-sm"
                 />
+                <label className="text-xs text-blue-600 cursor-pointer hover:underline whitespace-nowrap">
+                  Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadToGallerySlot(idx, e.target.files[0])} />
+                </label>
                 {form.images.length > 1 && (
-                  <button type="button" onClick={() => removeImageField(idx)} className="text-red-500 px-2">
-                    ✕
-                  </button>
+                  <button type="button" onClick={() => removeImageField(idx)} className="text-red-500 px-2">✕</button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addImageField} className="text-sm text-blue-600">
-              + Add image
-            </button>
+            <button type="button" onClick={addImageField} className="text-sm text-blue-600">+ Add image slot</button>
           </div>
 
           {/* Links */}
@@ -164,27 +245,23 @@ const Blogs = () => {
                   placeholder="Label (optional)"
                   value={link.label}
                   onChange={(e) => setLinkAt(idx, "label", e.target.value)}
-                  className="w-1/3 border rounded-md px-3 py-2"
+                  className="w-1/3 border rounded-md px-3 py-2 text-sm"
                 />
                 <input
                   placeholder="https://example.com"
                   value={link.url}
                   onChange={(e) => setLinkAt(idx, "url", e.target.value)}
-                  className="flex-1 border rounded-md px-3 py-2"
+                  className="flex-1 border rounded-md px-3 py-2 text-sm"
                 />
                 {form.links.length > 1 && (
-                  <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 px-2">
-                    ✕
-                  </button>
+                  <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 px-2">✕</button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addLinkField} className="text-sm text-blue-600">
-              + Add link
-            </button>
+            <button type="button" onClick={addLinkField} className="text-sm text-blue-600">+ Add link</button>
           </div>
 
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md">
+          <button type="submit" disabled={uploading} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">
             {editingId ? "Update Post" : "Publish"}
           </button>
         </form>
@@ -195,27 +272,10 @@ const Blogs = () => {
           const isOwner = b.author?._id === user?.id || b.author === user?.id;
           return (
             <div key={b._id} className="bg-white rounded-lg shadow p-4">
+              {b.coverImage && <img src={b.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
               <span className="text-xs text-blue-600 uppercase">{b.category}</span>
               <h2 className="font-medium mt-1">{b.title}</h2>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{b.excerpt || b.content}</p>
-
-              {b.images?.length > 0 && (
-                <div className="flex gap-2 mt-2 overflow-x-auto">
-                  {b.images.map((img, i) => (
-                    <img key={i} src={img} alt="" className="h-16 w-16 object-cover rounded-md" />
-                  ))}
-                </div>
-              )}
-
-              {b.links?.length > 0 && (
-                <ul className="mt-2 text-xs text-blue-600 space-y-1">
-                  {b.links.map((l, i) => (
-                    <li key={i}>
-                      <a href={l.url} target="_blank" rel="noreferrer">{l.label || l.url}</a>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{previewText(b.content)}</p>
 
               {isOwner && (
                 <div className="flex gap-3 mt-3">
@@ -226,6 +286,7 @@ const Blogs = () => {
             </div>
           );
         })}
+        {blogs.length === 0 && <p className="text-gray-500">No blog posts yet.</p>}
       </div>
     </div>
   );

@@ -1,6 +1,16 @@
 const Blog = require("../models/Blog");
 
-// Mentor/Admin: notun blog create
+// Mentor/Admin: upload a single image, get back its URL to use inline or in the gallery
+const uploadBlogImage = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+    const url = `${req.protocol}://${req.get("host")}/uploads/blogs/${req.file.filename}`;
+    res.status(201).json({ url });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 const createBlog = async (req, res) => {
   try {
     const { title, content, category, session, coverImage, images, links } = req.body;
@@ -20,7 +30,6 @@ const createBlog = async (req, res) => {
   }
 };
 
-// Shobai: blog list (category / session diye filter kora jai)
 const getBlogs = async (req, res) => {
   try {
     const filter = {};
@@ -38,7 +47,6 @@ const getBlogs = async (req, res) => {
   }
 };
 
-// Shobai: single blog details
 const getBlogById = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id)
@@ -51,13 +59,11 @@ const getBlogById = async (req, res) => {
   }
 };
 
-// Author/Admin: blog update
 const updateBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    // only the original author or an admin may edit
     if (req.user.role !== "ADMIN" && blog.author.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to edit this blog" });
     }
@@ -78,7 +84,6 @@ const updateBlog = async (req, res) => {
   }
 };
 
-// Author/Admin: blog delete
 const deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
@@ -95,4 +100,4 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-module.exports = { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog };
+module.exports = { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog, uploadBlogImage };

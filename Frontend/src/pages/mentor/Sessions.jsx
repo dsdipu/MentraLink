@@ -34,6 +34,13 @@ const Sessions = () => {
 
   useEffect(() => { load(); }, []);
 
+  // auto-fill the next session number whenever a group is picked (create mode only)
+  useEffect(() => {
+    if (editingId || !form.group) return;
+    const countInGroup = sessions.filter((s) => (s.group?._id || s.group) === form.group).length;
+    setForm((f) => ({ ...f, sessionNumber: countInGroup + 1 }));
+  }, [form.group, sessions, editingId]);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const openCreate = () => {
@@ -119,7 +126,20 @@ const Sessions = () => {
             ))}
           </select>
 
-          <input required type="number" min="1" placeholder="Session number" name="sessionNumber" value={form.sessionNumber} onChange={handleChange} className="w-full border rounded-md px-3 py-2" />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Session number (auto)</label>
+            <input
+              required
+              type="number"
+              min="1"
+              name="sessionNumber"
+              value={form.sessionNumber}
+              readOnly={!editingId}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 ${!editingId ? "bg-gray-100" : ""}`}
+            />
+          </div>
+
           <input required placeholder="Title" name="title" value={form.title} onChange={handleChange} className="w-full border rounded-md px-3 py-2" />
           <textarea placeholder="Description (optional)" name="description" value={form.description} onChange={handleChange} rows={2} className="w-full border rounded-md px-3 py-2" />
 

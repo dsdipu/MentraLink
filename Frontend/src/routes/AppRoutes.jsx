@@ -32,6 +32,8 @@ import PendingRequests from "../pages/PendingRequests";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
 import Semesters from "../pages/Semesters";
+import AdminMentorRatings from "../pages/AdminMentorRatings";
+import AdminSessions from "../pages/AdminSessions";
 
 const AppRoutes = () => {
   return (
@@ -79,6 +81,8 @@ const AppRoutes = () => {
           <Route path="/admin/pending-requests" element={<PendingRequests />} />
           <Route path="/admin/semesters" element={<Semesters />} />
           <Route path="/admin/mentors" element={<Mentors />} />
+          <Route path="/admin/sessions" element={<AdminSessions />} />
+<Route path="/admin/ratings" element={<AdminMentorRatings />} />
         </Route>
       </Route>
 

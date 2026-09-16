@@ -4,22 +4,18 @@ const { hashPassword } = require("../utils/hashPassword");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
 
-// Admin: create mentor (creates User + Mentor together)
 const createMentor = async (req, res) => {
   try {
     const { name, email, password, mentorStudentId, department } = req.body;
-
     const hashedPassword = await hashPassword(password);
     const user = await User.create({ name, email, password: hashedPassword, role: "MENTOR" });
     const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });
-
     res.status(201).json({ mentor });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// Admin/Mentor: get all mentors
 const getMentors = async (req, res) => {
   try {
     const mentors = await Mentor.find().populate("user", "name email isActive");
@@ -29,7 +25,6 @@ const getMentors = async (req, res) => {
   }
 };
 
-// Get single mentor
 const getMentorById = async (req, res) => {
   try {
     const mentor = await Mentor.findById(req.params.id).populate("user", "name email isActive");
@@ -40,7 +35,6 @@ const getMentorById = async (req, res) => {
   }
 };
 
-// Admin: update mentor
 const updateMentor = async (req, res) => {
   try {
     const mentor = await Mentor.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -51,7 +45,6 @@ const updateMentor = async (req, res) => {
   }
 };
 
-// Admin: activate/deactivate mentor
 const toggleMentorStatus = async (req, res) => {
   try {
     const mentor = await Mentor.findById(req.params.id);
@@ -70,7 +63,6 @@ const toggleMentorStatus = async (req, res) => {
   }
 };
 
-// Mentor: get own profile
 const getMyProfile = async (req, res) => {
   try {
     const mentor = await Mentor.findOneAndUpdate(
@@ -92,16 +84,9 @@ const getMyProfile = async (req, res) => {
   }
 };
 
-// Mentor: update own profile (name, phone, department, expertise)
 const updateMyProfile = async (req, res) => {
   try {
-    const { name, phone, department, expertise } = req.body;
-
-    // name lives on User, not Mentor — update it separately
-    if (name !== undefined) {
-      await User.findByIdAndUpdate(req.user.id, { name });
-    }
-
+    const { phone, department, expertise } = req.body;
     const mentor = await Mentor.findOneAndUpdate(
       { user: req.user.id },
       { phone, department, expertise },
@@ -135,6 +120,9 @@ const getMyStudents = async (req, res) => {
     const students = [];
     for (const group of groups) {
       for (const student of group.students) {
+        // skip broken/orphaned references (Student doc with no linked User — stale data)
+        if (!student.user) continue;
+
         const totalAttendance = await Attendance.countDocuments({ student: student._id });
         const presentCount = await Attendance.countDocuments({ student: student._id, status: "PRESENT" });
         const attendancePercent =
@@ -142,8 +130,8 @@ const getMyStudents = async (req, res) => {
 
         students.push({
           _id: student._id,
-          name: student.user?.name,
-          email: student.user?.email,
+          name: student.user.name,
+          email: student.user.email,
           semester: group.semester?.name,
           attendancePercent,
         });

@@ -6,6 +6,8 @@ const Attendance = require("../models/Attendance");
 const MentorEvaluation = require("../models/MentorEvaluation");
 const Feedback = require("../models/Feedback");
 
+const startOfToday = () => new Date(new Date().setHours(0, 0, 0, 0));
+
 const getAdminDashboard = async (req, res) => {
   try {
     const totalStudents = await Student.countDocuments();
@@ -13,36 +15,24 @@ const getAdminDashboard = async (req, res) => {
     const activeGroups = await MentorshipGroup.countDocuments({ status: "ACTIVE" });
     const totalSessions = await Session.countDocuments();
 
-    // Attendance statistics
     const totalAttendanceRecords = await Attendance.countDocuments();
     const presentCount = await Attendance.countDocuments({ status: "PRESENT" });
     const attendanceRate =
-      totalAttendanceRecords > 0
-        ? +((presentCount / totalAttendanceRecords) * 100).toFixed(2)
-        : 0;
+      totalAttendanceRecords > 0 ? +((presentCount / totalAttendanceRecords) * 100).toFixed(2) : 0;
 
-    // Average mentor rating (across all evaluations, all mentors)
     const evaluations = await MentorEvaluation.find();
     let averageMentorRating = 0;
     if (evaluations.length > 0) {
       const totalOverall = evaluations.reduce((sum, ev) => {
         const avg =
-          (ev.ratings.communication +
-            ev.ratings.guidance +
-            ev.ratings.availability +
-            ev.ratings.knowledgeSharing +
-            ev.ratings.overallExperience) /
-          5;
+          (ev.ratings.communication + ev.ratings.guidance + ev.ratings.availability +
+            ev.ratings.knowledgeSharing + ev.ratings.overallExperience) / 5;
         return sum + avg;
       }, 0);
       averageMentorRating = +(totalOverall / evaluations.length).toFixed(2);
     }
 
-    // Recent sessions (last 5, most recent first)
-    const recentSessions = await Session.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("title date status");
+    const recentSessions = await Session.find().sort({ createdAt: -1 }).limit(5).select("title date status");
 
     res.json({
       totalStudents,
@@ -62,7 +52,6 @@ const getAdminDashboard = async (req, res) => {
   }
 };
 
-// Student: own dashboard summary
 const getStudentDashboard = async (req, res) => {
   try {
     const student = await Student.findOne({ user: req.user.id });
@@ -74,7 +63,7 @@ const getStudentDashboard = async (req, res) => {
       ? await Session.findOne({
           group: group._id,
           status: "UPCOMING",
-          date: { $gte: new Date() },
+          date: { $gte: startOfToday() },
         }).sort({ date: 1 })
       : null;
 
@@ -93,6 +82,7 @@ const getStudentDashboard = async (req, res) => {
 
     res.json({
       nextSession: nextSession?.title || null,
+      nextSessionDate: nextSession?.date || null,
       attendancePercent,
       pendingFeedback,
     });
@@ -101,7 +91,6 @@ const getStudentDashboard = async (req, res) => {
   }
 };
 
-// Mentor: own dashboard summary
 const getMentorDashboard = async (req, res) => {
   try {
     const mentor = await Mentor.findOne({ user: req.user.id });
@@ -115,7 +104,7 @@ const getMentorDashboard = async (req, res) => {
     const upcomingSessions = await Session.countDocuments({
       group: { $in: groupIds },
       status: "UPCOMING",
-      date: { $gte: new Date() },
+      date: { $gte: startOfToday() },
     });
 
     const evaluations = await MentorEvaluation.find({ mentor: mentor._id });
@@ -123,12 +112,8 @@ const getMentorDashboard = async (req, res) => {
     if (evaluations.length > 0) {
       const totalOverall = evaluations.reduce((sum, ev) => {
         const avg =
-          (ev.ratings.communication +
-            ev.ratings.guidance +
-            ev.ratings.availability +
-            ev.ratings.knowledgeSharing +
-            ev.ratings.overallExperience) /
-          5;
+          (ev.ratings.communication + ev.ratings.guidance + ev.ratings.availability +
+            ev.ratings.knowledgeSharing + ev.ratings.overallExperience) / 5;
         return sum + avg;
       }, 0);
       averageRating = +(totalOverall / evaluations.length).toFixed(2);

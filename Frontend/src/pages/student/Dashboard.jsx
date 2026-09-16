@@ -30,6 +30,13 @@ const StudentDashboard = () => {
         <div className="bg-white p-4 rounded-lg shadow">
           <p className="text-sm text-gray-500">Next Session</p>
           <p className="text-lg font-medium">{data?.nextSession || "None"}</p>
+          {data?.nextSessionDate && (
+            <p className="text-xs text-gray-400 mt-1">
+              {new Date(data.nextSessionDate).toLocaleDateString(undefined, {
+                weekday: "short", month: "short", day: "numeric",
+              })}
+            </p>
+          )}
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <p className="text-sm text-gray-500">Attendance</p>
