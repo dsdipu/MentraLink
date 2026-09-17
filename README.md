@@ -150,25 +150,25 @@ MentraLink brings these activities together into a centralized platform with rol
 
 ### Landing Page
 
-![MentraLink Landing Page](docs/screenshots/landing-page.png)
+![MentraLink Landing Page](docs/screenshots/homePage.png)
 
 ### Login
 
-![MentraLink Login](docs/screenshots/login.png)
+![MentraLink Login](docs/screenshots/loginPage.png)
 
 ### Student Dashboard
 
-![Student Dashboard](docs/screenshots/student-dashboard.png)
+![Student Dashboard](docs/screenshots/studentDashboard.png)
 
 ### Mentor Dashboard
 
-![Mentor Dashboard](docs/screenshots/mentor-dashboard.png)
+![Mentor Dashboard](docs/screenshots/mentorDashboard.png)
 
 ### Admin Dashboard
 
-![Admin Dashboard](docs/screenshots/admin-dashboard.png)
+![Admin Dashboard](docs/screenshots/adminDashboard.png)
 
-### Mentorship Sessions
+<!-- ### Mentorship Sessions
 
 ![Mentorship Sessions](docs/screenshots/sessions.png)
 
@@ -178,11 +178,11 @@ MentraLink brings these activities together into a centralized platform with rol
 
 ### Evaluations
 
-![Evaluations](docs/screenshots/evaluations.png)
+![Evaluations](docs/screenshots/evaluations.png) -->
 
 ### Blog
 
-![MentraLink Blog](docs/screenshots/blog.png)
+![MentraLink Blog](docs/screenshots/mentorshipBlogSection.png)
 
 ---
 
