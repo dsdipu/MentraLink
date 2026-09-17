@@ -49,6 +49,14 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.post("/api/test", (req, res) => {
+  console.log("TEST BODY:", req.body);
+  res.json({
+    message: "POST is working",
+    body: req.body,
+  });
+});
+
 app.use("/api/otp", otpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
