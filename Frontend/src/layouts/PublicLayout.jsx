@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
+import logo from "../assets/mentraLink.png";
 
 const PublicLayout = () => {
   const location = useLocation();
@@ -17,9 +18,9 @@ const PublicLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur z-40">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="font-display text-xl font-semibold text-brand-navy">
-            MentraLink
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="MentraLink" className="h-14 object-contain" />
           </Link>
           <nav className="hidden sm:flex items-center gap-8">
             {navLink("/", "Home")}
@@ -45,8 +46,8 @@ const PublicLayout = () => {
 
       <footer className="bg-brand-navy text-white/70 mt-16">
         <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="font-display text-lg text-white">MentraLink</p>
-          <p className="text-sm">Structured mentorship for students and mentors.</p>
+          <img src={logo} alt="MentraLink" className="h-10 object-contain brightness-0 invert opacity-90" />
+          <p className="text-sm">Software Engineering, Green University of Bangladesh</p>
           <div className="flex gap-6 text-sm">
             <Link to="/blogs" className="hover:text-white">Blog</Link>
             <Link to="/login" className="hover:text-white">Log in</Link>

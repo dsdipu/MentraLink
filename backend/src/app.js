@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+const otpRoutes = require("./routes/otp.routes");
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
 const mentorRoutes = require("./routes/mentor.routes");
@@ -48,6 +49,7 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api/otp", otpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/mentors", mentorRoutes);

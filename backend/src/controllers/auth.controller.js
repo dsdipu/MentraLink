@@ -1,24 +1,26 @@
 const User = require("../models/User");
 const Student = require("../models/Student");
 const Mentor = require("../models/Mentor");
+const Otp = require("../models/Otp");
 const { comparePassword, hashPassword } = require("../utils/hashPassword");
 const generateToken = require("../utils/generateToken");
 
 const register = async (req, res) => {
   try {
     const { name, email, password, role, studentId } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // ---- Student verification checks ----
-    if (role === "STUDENT") {
+    // Students and mentors (senior students) share the same verification rules
+    if (role === "STUDENT" || role === "MENTOR") {
       const allowedDomain = process.env.ALLOWED_STUDENT_EMAIL_DOMAIN;
-      if (allowedDomain && !email.toLowerCase().endsWith(allowedDomain.toLowerCase())) {
+      if (allowedDomain && !normalizedEmail.endsWith(allowedDomain.toLowerCase())) {
         return res.status(400).json({
-          message: `Students must register with their university email (must end with ${allowedDomain})`,
+          message: `Please register with your university email (must end with ${allowedDomain})`,
         });
       }
 
@@ -30,9 +32,20 @@ const register = async (req, res) => {
         return res.status(400).json({ message: "A photo of your student ID card is required" });
       }
 
-      const duplicateId = await User.findOne({ submittedStudentId: studentId.trim(), role: "STUDENT" });
+      // one real person (one university ID) can only hold one account, in either role
+      const duplicateId = await User.findOne({ submittedStudentId: studentId.trim() });
       if (duplicateId) {
         return res.status(400).json({ message: "This student ID has already been registered" });
+      }
+
+      const verifiedOtp = await Otp.findOne({
+        email: normalizedEmail,
+        verified: true,
+        expiresAt: { $gt: new Date() },
+      }).sort({ createdAt: -1 });
+
+      if (!verifiedOtp) {
+        return res.status(400).json({ message: "Please verify your email with the code sent to you before registering" });
       }
     }
 
@@ -41,13 +54,15 @@ const register = async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
       isActive,
-      submittedStudentId: role === "STUDENT" ? studentId.trim() : undefined,
-      idCardImage: role === "STUDENT" ? req.file?.path : undefined,
+      submittedStudentId: role === "STUDENT" || role === "MENTOR" ? studentId.trim() : undefined,
+      idCardImage: role === "STUDENT" || role === "MENTOR" ? req.file?.path : undefined,
     });
+
+    await Otp.deleteMany({ email: normalizedEmail });
 
     res.status(201).json({
       message: isActive ? "Account created" : "Registration submitted. Waiting for admin approval.",
@@ -66,11 +81,10 @@ const approveUser = async (req, res) => {
     if (user.role === "STUDENT") {
       const existing = await Student.findOne({ user: user._id });
       if (!existing) {
-        // use their real, submitted university ID rather than a generated one
         let studentId = user.submittedStudentId;
         if (!studentId) {
           const count = await Student.countDocuments();
-          studentId = `SWE${String(count + 1).padStart(3, "0")}`; // fallback for legacy/edge cases
+          studentId = `SWE${String(count + 1).padStart(3, "0")}`;
         }
         await Student.create({ user: user._id, studentId, department: "", batch: "" });
       }
@@ -116,7 +130,8 @@ const rejectUser = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user || !user.isActive) {
       return res.status(401).json({ message: "Invalid credentials" });
     }

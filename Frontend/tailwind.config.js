@@ -17,6 +17,8 @@ export default {
             dark: "#7C1FA0",
           },
           gold: "#F0B429",
+          green: "#0F7A3E",
+          mint: "#E7F4EC",
         },
       },
       fontFamily: {
