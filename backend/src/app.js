@@ -11,15 +11,37 @@ const sessionRoutes = require("./routes/session.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const evaluationRoutes = require("./routes/evaluation.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
-const feedbackRoutes = require("./routes/feedback.routes"); // lowercase "f" — matches the actual filename
+const feedbackRoutes = require("./routes/feedback.routes");
 const blogRoutes = require("./routes/blog.routes");
 const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
-app.use(cors({
-  origin: ["http://localhost:5173", "https://mms-kappa-ten.vercel.app"],
-}));
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/$/, ""))
+  : [];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      console.log("CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
+  })
+);
+
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
