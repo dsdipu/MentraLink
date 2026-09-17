@@ -7,6 +7,10 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ["ADMIN", "MENTOR", "STUDENT"], required: true },
     isActive: { type: Boolean, default: true },
+
+    // Student verification (only populated for role === "STUDENT")
+    submittedStudentId: { type: String }, // their real university-issued ID, entered at registration
+    idCardImage: { type: String }, // Cloudinary URL of their uploaded ID card photo
   },
   { timestamps: true }
 );

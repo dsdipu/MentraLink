@@ -11,8 +11,9 @@ const sessionRoutes = require("./routes/session.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const evaluationRoutes = require("./routes/evaluation.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
-const feedbackRoutes = require("./routes/feedback.routes");
+const feedbackRoutes = require("./routes/feedback.routes"); // lowercase "f" — matches the actual filename
 const blogRoutes = require("./routes/blog.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
@@ -20,9 +21,6 @@ app.use(cors({
   origin: ["http://localhost:5173", "https://mms-kappa-ten.vercel.app"],
 }));
 app.use(express.json());
-
-// serve uploaded blog images
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
@@ -39,5 +37,6 @@ app.use("/api/evaluations", evaluationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api/admins", adminRoutes);
 
 module.exports = app;

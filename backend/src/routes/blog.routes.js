@@ -12,12 +12,14 @@ const {
   uploadBlogImage,
 } = require("../controllers/blog.controllers");
 
-router.use(protect);
-
+// Public — anyone can read blogs, no login required
 router.get("/", getBlogs);
+router.get("/:id", getBlogById);
+
+// Everything else requires auth
+router.use(protect);
 router.post("/upload-image", authorize("ADMIN", "MENTOR"), upload.single("image"), uploadBlogImage);
 router.post("/", authorize("ADMIN", "MENTOR"), createBlog);
-router.get("/:id", getBlogById);
 router.put("/:id", authorize("ADMIN", "MENTOR"), updateBlog);
 router.delete("/:id", authorize("ADMIN", "MENTOR"), deleteBlog);
 

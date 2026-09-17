@@ -4,8 +4,7 @@ const Blog = require("../models/Blog");
 const uploadBlogImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No image uploaded" });
-    const url = `${req.protocol}://${req.get("host")}/uploads/blogs/${req.file.filename}`;
-    res.status(201).json({ url });
+    res.status(201).json({ url: req.file.path }); // Cloudinary's secure URL, provided by multer-storage-cloudinary
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

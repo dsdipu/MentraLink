@@ -125,4 +125,16 @@ const getMentorDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getAdminDashboard, getStudentDashboard, getMentorDashboard };
+// Public — no auth required, powers the landing page stats strip
+const getPublicStats = async (req, res) => {
+  try {
+    const totalMentors = await Mentor.countDocuments();
+    const totalStudents = await Student.countDocuments();
+    const totalSessionsCompleted = await Session.countDocuments({ status: "COMPLETED" });
+    res.json({ totalMentors, totalStudents, totalSessionsCompleted });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { getAdminDashboard, getStudentDashboard, getMentorDashboard, getPublicStats };

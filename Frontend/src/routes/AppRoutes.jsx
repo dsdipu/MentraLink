@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-
+import PublicLayout from "../layouts/PublicLayout";
+import Home from "../pages/public/Home";
+import PublicBlogs from "../pages/public/PublicBlogs";
+import PublicBlogDetails from "../pages/public/PublicBlogDetails";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 
@@ -34,6 +37,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import Semesters from "../pages/Semesters";
 import AdminMentorRatings from "../pages/AdminMentorRatings";
 import AdminSessions from "../pages/AdminSessions";
+import AdminManageAdmins from "../pages/AdminManageAdmins";
 
 const AppRoutes = () => {
   return (
@@ -53,10 +57,7 @@ const AppRoutes = () => {
           <Route path="/student/feedback" element={<StudentFeedback />} />
           <Route path="/student/evaluation" element={<StudentEvaluation />} />
           <Route path="/student/blogs" element={<StudentBlogs />} />
-          <Route
-            path="/student/blogs/:id"
-            element={<StudentBlogDetails />}
-          />
+          <Route path="/student/blogs/:id" element={<StudentBlogDetails />} />
         </Route>
       </Route>
 
@@ -82,16 +83,21 @@ const AppRoutes = () => {
           <Route path="/admin/semesters" element={<Semesters />} />
           <Route path="/admin/mentors" element={<Mentors />} />
           <Route path="/admin/sessions" element={<AdminSessions />} />
-<Route path="/admin/ratings" element={<AdminMentorRatings />} />
+          <Route path="/admin/ratings" element={<AdminMentorRatings />} />
+          <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
         </Route>
       </Route>
 
-      {/* Default Routes */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Public */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/blogs" element={<PublicBlogs />} />
+        <Route path="/blogs/:id" element={<PublicBlogDetails />} />
+      </Route>
+
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
   );
 };
 
 export default AppRoutes;
-
