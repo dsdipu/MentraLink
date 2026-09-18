@@ -1,5 +1,4 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star, ShieldCheck } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star, ShieldCheck, Mail } from "lucide-react";
