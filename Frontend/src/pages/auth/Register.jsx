@@ -190,7 +190,19 @@ const Register = () => {
           )}
         </div>
 
-          {!otpVerified && otpEmailSentFor === form.email && otpEmailSentFor !== "" && (
+        <p className="text-xs mt-1.5">
+          <span className="text-gray-400">Don&apos;t have a student email? </span>
+          <a
+            href={import.meta.env.VITE_STUDENT_EMAIL_INFO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            Collect from here
+          </a>
+        </p>
+
+        {!otpVerified && otpEmailSentFor === form.email && otpEmailSentFor !== "" && (
           <div className="mt-2 mb-2">
             <div className="flex gap-2">
               <input
@@ -214,7 +226,7 @@ const Register = () => {
 
         {otpMessage && <p className="text-xs text-green-600 mt-1 mb-2">{otpMessage}</p>}
         {otpError && <p className="text-xs text-red-500 mt-1 mb-2">{otpError}</p>}
-        {!otpEmailSentFor && !otpVerified && <div className="mb-4"></div>}
+        {!otpEmailSentFor && !otpVerified && <div className="mb-2"></div>}
 
         <label className="block text-sm mb-1 mt-2">Password</label>
         <input

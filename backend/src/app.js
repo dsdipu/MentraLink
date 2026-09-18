@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
-const otpRoutes = require("./routes/otp.routes");
 const authRoutes = require("./routes/auth.routes");
 const studentRoutes = require("./routes/student.routes");
 const mentorRoutes = require("./routes/mentor.routes");
@@ -15,8 +14,7 @@ const dashboardRoutes = require("./routes/dashboard.routes");
 const feedbackRoutes = require("./routes/feedback.routes");
 const blogRoutes = require("./routes/blog.routes");
 const adminRoutes = require("./routes/admin.routes");
-const emailRequestRoutes = require("./routes/emailRequest.routes");
-
+const otpRoutes = require("./routes/otp.routes");
 
 const app = express();
 
@@ -51,15 +49,6 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/api/test", (req, res) => {
-  console.log("TEST BODY:", req.body);
-  res.json({
-    message: "POST is working",
-    body: req.body,
-  });
-});
-
-app.use("/api/otp", otpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/mentors", mentorRoutes);
@@ -72,7 +61,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/admins", adminRoutes);
-app.use("/api/email-requests", emailRequestRoutes);
-
+app.use("/api/otp", otpRoutes);
 
 module.exports = app;

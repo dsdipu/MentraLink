@@ -1,13 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-import PublicLayout from "../layouts/PublicLayout";
-import Home from "../pages/public/Home";
-import PublicBlogs from "../pages/public/PublicBlogs";
-import PublicBlogDetails from "../pages/public/PublicBlogDetails";
+
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
-import GetStudentEmail from "../pages/public/GetStudentEmail";
-import AdminEmailRequests from "../pages/AdminEmailRequests";
 
 // Student
 import StudentLayout from "../layouts/StudentLayout";
@@ -41,15 +36,19 @@ import AdminMentorRatings from "../pages/AdminMentorRatings";
 import AdminSessions from "../pages/AdminSessions";
 import AdminManageAdmins from "../pages/AdminManageAdmins";
 
+// Public
+import PublicLayout from "../layouts/PublicLayout";
+import Home from "../pages/public/Home";
+import PublicBlogs from "../pages/public/PublicBlogs";
+import PublicBlogDetails from "../pages/public/PublicBlogDetails";
+
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<div>Not authorized</div>} />
 
-      {/* Student */}
       <Route element={<ProtectedRoute allowedRoles={["STUDENT", "student"]} />}>
         <Route element={<StudentLayout />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
@@ -63,7 +62,6 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* Mentor */}
       <Route element={<ProtectedRoute allowedRoles={["MENTOR", "mentor"]} />}>
         <Route element={<MentorLayout />}>
           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
@@ -77,7 +75,6 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* Admin */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN", "admin"]} />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -87,16 +84,13 @@ const AppRoutes = () => {
           <Route path="/admin/sessions" element={<AdminSessions />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
-          <Route path="/admin/email-requests" element={<AdminEmailRequests />} />
         </Route>
       </Route>
 
-      {/* Public */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/blogs" element={<PublicBlogs />} />
         <Route path="/blogs/:id" element={<PublicBlogDetails />} />
-        <Route path="/get-student-email" element={<GetStudentEmail />} />
       </Route>
 
       <Route path="*" element={<div>404 Not Found</div>} />
