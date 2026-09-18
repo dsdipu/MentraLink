@@ -15,6 +15,8 @@ const dashboardRoutes = require("./routes/dashboard.routes");
 const feedbackRoutes = require("./routes/feedback.routes");
 const blogRoutes = require("./routes/blog.routes");
 const adminRoutes = require("./routes/admin.routes");
+const emailRequestRoutes = require("./routes/emailRequest.routes");
+
 
 const app = express();
 
@@ -70,5 +72,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/admins", adminRoutes);
+app.use("/api/email-requests", emailRequestRoutes);
+
 
 module.exports = app;

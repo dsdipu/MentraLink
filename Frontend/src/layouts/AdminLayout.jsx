@@ -2,6 +2,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star, ShieldCheck } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
+import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star, ShieldCheck, Mail } from "lucide-react";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +12,7 @@ const navItems = [
   { to: "/admin/sessions", label: "Sessions", icon: CalendarClock },
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
+  { to: "/admin/email-requests", label: "Email Requests", icon: Mail },
 ];
 
 

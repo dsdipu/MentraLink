@@ -6,6 +6,8 @@ import PublicBlogs from "../pages/public/PublicBlogs";
 import PublicBlogDetails from "../pages/public/PublicBlogDetails";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import GetStudentEmail from "../pages/public/GetStudentEmail";
+import AdminEmailRequests from "../pages/AdminEmailRequests";
 
 // Student
 import StudentLayout from "../layouts/StudentLayout";
@@ -85,6 +87,7 @@ const AppRoutes = () => {
           <Route path="/admin/sessions" element={<AdminSessions />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
+          <Route path="/admin/email-requests" element={<AdminEmailRequests />} />
         </Route>
       </Route>
 
@@ -93,6 +96,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/blogs" element={<PublicBlogs />} />
         <Route path="/blogs/:id" element={<PublicBlogDetails />} />
+        <Route path="/get-student-email" element={<GetStudentEmail />} />
       </Route>
 
       <Route path="*" element={<div>404 Not Found</div>} />

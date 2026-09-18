@@ -190,7 +190,7 @@ const Register = () => {
           )}
         </div>
 
-        {!otpVerified && otpEmailSentFor === form.email && otpEmailSentFor !== "" && (
+          {!otpVerified && otpEmailSentFor === form.email && otpEmailSentFor !== "" && (
           <div className="mt-2 mb-2">
             <div className="flex gap-2">
               <input
