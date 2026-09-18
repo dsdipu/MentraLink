@@ -18,6 +18,8 @@ const otpRoutes = require("./routes/otp.routes");
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS
       .split(",")
