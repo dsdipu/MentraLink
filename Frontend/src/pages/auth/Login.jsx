@@ -37,7 +37,9 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] px-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
-          <img src={logo} alt="MentraLink" className="h-28 object-contain" />
+          <Link to="/">
+            <img src={logo} alt="MentraLink" className="h-28 object-contain" />
+          </Link>
         </div>
 
         <form
@@ -80,6 +82,10 @@ const Login = () => {
             placeholder="••••••••"
             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 mb-6 text-sm focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent"
           />
+
+          <p className="text-right text-xs text-red-700 hover:underline mb-6">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
 
           <button
             type="submit"

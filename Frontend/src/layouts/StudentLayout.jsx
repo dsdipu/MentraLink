@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, Link } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 import {
@@ -39,7 +39,9 @@ const StudentLayout = () => {
         >
           <Menu size={22} />
         </button>
-        <img src={logo} alt="MentraLink" className="h-9 object-contain" />
+        <Link to="/">
+          <img src={logo} alt="MentraLink" className="h-14 object-contain" />
+        </Link>
         <div className="w-9" />
       </header>
 
@@ -56,7 +58,9 @@ const StudentLayout = () => {
         } lg:translate-x-0`}
       >
         <div className="py-4 bg-white border-b border-gray-200 flex items-center justify-between px-4">
-          <img src={logo} alt="MentraLink" className="h-14 object-contain" />
+          <Link to="/">
+            <img src={logo} alt="MentraLink" className="h-14 object-contain" />
+          </Link>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-1 rounded-md text-gray-500 hover:bg-gray-100"

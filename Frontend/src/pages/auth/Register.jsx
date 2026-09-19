@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { registerUser } from "../../services/authService";
 import { requestOtp, verifyOtp } from "../../services/otpService";
+import logo from "../../assets/mentraLink.png";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -133,9 +134,13 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-semibold mb-6 text-center">Create Account</h1>
-
+            <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
+              <div className="flex justify-center mb-4">
+                <Link to="/">
+                  <img src={logo} alt="MentraLink" className="h-16 object-contain" />
+                </Link>
+              </div>
+              <h1 className="text-2xl font-semibold mb-6 text-center">Create Account</h1>
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 
         <label className="block text-sm mb-1">I am a</label>

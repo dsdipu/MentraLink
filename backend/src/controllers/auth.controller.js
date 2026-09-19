@@ -146,4 +146,68 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login, register, approveUser, getPendingUsers, rejectUser };
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // don't reveal whether the email exists — respond the same either way
+    if (user && user.isActive) {
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      await Otp.create({
+        email: normalizedEmail,
+        code,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      const sendEmail = require("../utils/sendEmail");
+      await sendEmail({
+        to: normalizedEmail,
+        subject: "Reset your MentraLink password",
+        html: `
+          <div style="font-family: sans-serif;">
+            <p>Your password reset code is:</p>
+            <h2 style="letter-spacing:6px;">${code}</h2>
+            <p style="color:#666;font-size:13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    }
+
+    res.json({ message: "If that email is registered, a reset code has been sent." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const otp = await Otp.findOne({
+      email: normalizedEmail,
+      code,
+      expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!otp) {
+      return res.status(400).json({ message: "Invalid or expired code" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) return res.status(404).json({ message: "Account not found" });
+
+    user.password = await hashPassword(newPassword);
+    await user.save();
+
+    await Otp.deleteMany({ email: normalizedEmail });
+
+    res.json({ message: "Password updated. You can now log in." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { login, register, approveUser, getPendingUsers, rejectUser, forgotPassword, resetPassword };

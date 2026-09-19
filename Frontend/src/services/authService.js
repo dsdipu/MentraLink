@@ -5,6 +5,10 @@ export const loginUser = async (email, password) => {
   return data;
 };
 
+export const forgotPassword = (email) => api.post("/auth/forgot-password", { email }).then((r) => r.data);
+export const resetPassword = (email, code, newPassword) =>
+  api.post("/auth/reset-password", { email, code, newPassword }).then((r) => r.data);
+
 export const getCurrentUser = () => {
   const user = localStorage.getItem("user");
   return user ? JSON.parse(user) : null;
