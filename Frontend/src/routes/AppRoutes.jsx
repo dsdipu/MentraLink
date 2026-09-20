@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-
+import AdminStudents from "../pages/AdminStudents";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import ForgotPassword from "../pages/auth/ForgotPassword";
@@ -83,6 +83,7 @@ const AppRoutes = () => {
           <Route path="/admin/pending-requests" element={<PendingRequests />} />
           <Route path="/admin/semesters" element={<Semesters />} />
           <Route path="/admin/mentors" element={<Mentors />} />
+          <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/sessions" element={<AdminSessions />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { Users, GraduationCap, UsersRound, CalendarDays } from "lucide-react";
 
 function AdminDashboard() {
@@ -18,9 +19,7 @@ function AdminDashboard() {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/dashboard/admin`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = response.data;
         setStats({
@@ -47,6 +46,7 @@ function AdminDashboard() {
       icon: GraduationCap,
       iconBg: "bg-[#E7F0FF]",
       iconColor: "text-[#1877F2]",
+      to: "/admin/students",
     },
     {
       label: "Total Mentors",
@@ -54,6 +54,7 @@ function AdminDashboard() {
       icon: Users,
       iconBg: "bg-[#E9F8EF]",
       iconColor: "text-[#31A24C]",
+      to: "/admin/ratings",
     },
     {
       label: "Active Groups",
@@ -61,6 +62,7 @@ function AdminDashboard() {
       icon: UsersRound,
       iconBg: "bg-[#FFF1E6]",
       iconColor: "text-[#F7923F]",
+      to: "/admin/mentors",
     },
     {
       label: "Total Sessions",
@@ -68,6 +70,7 @@ function AdminDashboard() {
       icon: CalendarDays,
       iconBg: "bg-[#F3E8FF]",
       iconColor: "text-[#9333EA]",
+      to: "/admin/sessions",
     },
   ];
 
@@ -75,9 +78,7 @@ function AdminDashboard() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Overview of your mentorship program
-        </p>
+        <p className="text-sm text-gray-500 mt-1">Overview of your mentorship program</p>
       </div>
 
       {error && (
@@ -89,10 +90,7 @@ function AdminDashboard() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-[104px] animate-pulse"
-            />
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-[104px] animate-pulse" />
           ))}
         </div>
       ) : (
@@ -100,22 +98,19 @@ function AdminDashboard() {
           {cards.map((c) => {
             const Icon = c.icon;
             return (
-              <div
+              <Link
                 key={c.label}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 hover:shadow-md transition-shadow"
+                to={c.to}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
               >
-                <div
-                  className={`w-12 h-12 rounded-full ${c.iconBg} flex items-center justify-center shrink-0`}
-                >
+                <div className={`w-12 h-12 rounded-full ${c.iconBg} flex items-center justify-center shrink-0`}>
                   <Icon size={22} className={c.iconColor} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {c.value}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{c.value}</p>
                   <p className="text-sm text-gray-500">{c.label}</p>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

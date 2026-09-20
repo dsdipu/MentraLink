@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Menu,
   X,
+  UserSquare2,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/admin/sessions", label: "Sessions", icon: CalendarClock },
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
+  { to: "/admin/students", label: "Students", icon: UserSquare2 },
 ];
 
 const AdminLayout = () => {
