@@ -18,7 +18,11 @@ const createStudent = async (req, res) => {
 
 const getStudents = async (req, res) => {
   try {
-    const students = await Student.find().populate("user", "name email isActive");
+    const filter = {};
+    if (req.query.batch) filter.batch = req.query.batch;
+    if (req.query.studentId) filter.studentId = { $regex: req.query.studentId, $options: "i" };
+
+    const students = await Student.find(filter).populate("user", "name email isActive");
     res.json({ students });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
