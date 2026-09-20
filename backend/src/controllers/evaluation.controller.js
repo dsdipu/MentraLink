@@ -3,6 +3,7 @@ const Student = require("../models/Student");
 const Mentor = require("../models/Mentor");
 const Session = require("../models/Session");
 const { calculateMentorRating } = require("../services/rating.service");
+const MentorshipGroup=require("../models/MentorshipGroup");
 
 // Anyone permitted: a specific mentor's aggregated rating
 const getMentorRating = async (req, res) => {
@@ -68,11 +69,17 @@ const getAllMentorRatings = async (req, res) => {
         .populate("session", "title date")
         .sort({ createdAt: -1 });
 
+      const semestersMentored = await MentorshipGroup.find({ mentor: mentor._id }).distinct("semester");
+
       results.push({
         mentorId: mentor._id,
         name: mentor.user?.name,
         email: mentor.user?.email,
         ...rating,
+        profileImage: mentor.profileImage || null,
+        mentorStudentId: mentor.mentorStudentId,
+        batch: mentor.batch,
+        batchesMentored: semestersMentored.length,
         evaluations: evaluations.map((e) => ({
           _id: e._id,
           studentName: e.student?.user?.name || "Anonymous",
