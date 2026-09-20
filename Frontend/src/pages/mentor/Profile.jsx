@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { getMyProfile, updateMyProfile, uploadMyPhoto, removeMyPhoto } from "../../services/mentorService";
+import { getMentorRating } from "../../services/evaluationService";
 import useAuth from "../../hooks/useAuth";
-import { Camera, X } from "lucide-react";
+import Card from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
+import StatCard from "../../components/ui/StatCard";
+import { Camera, X, GraduationCap, BadgeCheck, Heart, Star } from "lucide-react";
 
 const Profile = () => {
   const { updateUser } = useAuth();
   const [form, setForm] = useState(null);
+  const [rating, setRating] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -13,7 +18,12 @@ const Profile = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    getMyProfile().then(setForm).finally(() => setLoading(false));
+    Promise.all([getMyProfile(), getMentorRating().catch(() => null)])
+      .then(([profileData, ratingData]) => {
+        setForm(profileData);
+        setRating(ratingData);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -68,46 +78,64 @@ const Profile = () => {
       <h1 className="text-2xl font-semibold mb-4">My Profile</h1>
       {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
 
-      <div className="bg-white rounded-lg shadow p-6 mb-4 flex items-center gap-5">
-        <div className="relative shrink-0">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-semibold border-4 border-white shadow">
-            {form.profileImage ? (
-              <img src={form.profileImage} alt={form.name} className="w-full h-full object-cover" />
-            ) : (
-              form.name?.charAt(0)?.toUpperCase() || "M"
-            )}
+      <Card padded={false} className="mb-4 overflow-hidden">
+        <div className="h-16 bg-mentor-gradient-vertical" />
+        <div className="px-6 pb-6">
+          <div className="relative -mt-10 mb-3 inline-block">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-semibold border-4 border-white shadow">
+              {form.profileImage ? (
+                <img src={form.profileImage} alt={form.name} className="w-full h-full object-cover" />
+              ) : (
+                form.name?.charAt(0)?.toUpperCase() || "M"
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-brand-navy text-white flex items-center justify-center shadow hover:opacity-90 disabled:opacity-50"
+              aria-label="Change photo"
+            >
+              <Camera size={14} />
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
           </div>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingPhoto}
-            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-brand-navy text-white flex items-center justify-center shadow hover:opacity-90 disabled:opacity-50"
-            aria-label="Change photo"
-          >
-            <Camera size={14} />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handlePhotoSelect}
-          />
-        </div>
-        <div>
-          <p className="font-medium text-brand-navy">{form.name}</p>
-          <p className="text-sm text-gray-500">{form.mentorStudentId} · Batch {form.batch || "—"}</p>
+
+          <p className="font-semibold text-lg text-brand-navy">{form.name}</p>
+          <p className="text-sm text-gray-500 mb-3">{form.email}</p>
+
+          <div className="flex flex-wrap gap-2 mb-2">
+            {form.mentorStudentId && (
+              <Badge tone="brand">
+                <BadgeCheck size={12} className="mr-1" />
+                {form.mentorStudentId}
+              </Badge>
+            )}
+            {form.batch && (
+              <Badge tone="info">
+                <GraduationCap size={12} className="mr-1" />
+                Batch {form.batch}
+              </Badge>
+            )}
+            {form.department && <Badge tone="neutral">{form.department}</Badge>}
+          </div>
+
           {form.profileImage && (
             <button
               type="button"
               onClick={handleRemovePhoto}
               disabled={uploadingPhoto}
-              className="text-xs text-red-500 hover:underline flex items-center gap-1 mt-1 disabled:opacity-50"
+              className="text-xs text-red-500 hover:underline flex items-center gap-1 mt-2 disabled:opacity-50"
             >
               <X size={12} /> Remove photo
             </button>
           )}
         </div>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <StatCard icon={Heart} label="Blog likes" value={form.totalLikes ?? 0} tone="gold" />
+        <StatCard icon={Star} label="Mentor rating" value={rating?.overallRating ? `${rating.overallRating}/5` : "—"} tone="blue" />
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
