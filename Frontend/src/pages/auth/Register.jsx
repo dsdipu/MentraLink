@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { registerUser } from "../../services/authService";
 import { requestOtp, verifyOtp } from "../../services/otpService";
-import logo from "../../assets/mentraLink.png";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -10,7 +9,6 @@ const Register = () => {
     email: "",
     password: "",
     role: "STUDENT",
-    studentId: "",
   });
   const [idCardImage, setIdCardImage] = useState(null);
   const [error, setError] = useState("");
@@ -25,6 +23,10 @@ const Register = () => {
   const [otpMessage, setOtpMessage] = useState("");
   const [otpError, setOtpError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+
+  const detectedId = form.email.split("@")[0];
+  const idLooksValid = /^\d{9}$/.test(detectedId);
+  const detectedBatch = idLooksValid ? detectedId.slice(0, 3) : null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,7 +110,6 @@ const Register = () => {
       payload.append("email", form.email);
       payload.append("password", form.password);
       payload.append("role", form.role);
-      payload.append("studentId", form.studentId);
       payload.append("idCardImage", idCardImage);
 
       const res = await registerUser(payload);
@@ -134,13 +135,9 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
-            <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
-              <div className="flex justify-center mb-4">
-                <Link to="/">
-                  <img src={logo} alt="MentraLink" className="h-16 object-contain" />
-                </Link>
-              </div>
-              <h1 className="text-2xl font-semibold mb-6 text-center">Create Account</h1>
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
+        <h1 className="text-2xl font-semibold mb-6 text-center">Create Account</h1>
+
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 
         <label className="block text-sm mb-1">I am a</label>
@@ -158,7 +155,7 @@ const Register = () => {
         </div>
         {form.role === "MENTOR" && (
           <p className="text-xs text-gray-400 -mt-2 mb-4">
-            Mentors are senior students of the university and use the same student email and ID.
+            Mentors are senior students of the university and use the same student email.
           </p>
         )}
 
@@ -180,7 +177,7 @@ const Register = () => {
             onChange={handleChange}
             required
             disabled={otpVerified}
-            placeholder="your university email"
+            placeholder="e.g. 242034037@student.green.ac.bd"
             className="flex-1 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
           />
           {!otpVerified && (
@@ -194,6 +191,14 @@ const Register = () => {
             </button>
           )}
         </div>
+
+        {form.email && (
+          <p className={`text-xs mt-1.5 ${idLooksValid ? "text-green-600" : "text-gray-400"}`}>
+            {idLooksValid
+              ? `Detected Student ID: ${detectedId} · Batch ${detectedBatch}`
+              : "Your student ID should be the 9 digits before @ in your email"}
+          </p>
+        )}
 
         <p className="text-xs mt-1.5">
           <span className="text-gray-400">Don&apos;t have a student email? </span>
@@ -241,16 +246,6 @@ const Register = () => {
           onChange={handleChange}
           required
           minLength={6}
-          className="w-full border rounded-md px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <label className="block text-sm mb-1">University Student ID</label>
-        <input
-          name="studentId"
-          value={form.studentId}
-          onChange={handleChange}
-          required
-          placeholder="e.g. 191-15-2530"
           className="w-full border rounded-md px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 

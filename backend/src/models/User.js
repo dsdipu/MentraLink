@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["ADMIN", "MENTOR", "STUDENT"], required: true },
     isActive: { type: Boolean, default: true },
 
-    submittedStudentId: { type: String },
+    submittedStudentId: { type: String }, // derived from email, e.g. "242034037"
+    batch: { type: String }, // first 3 digits, e.g. "242"
     idCardImage: { type: String },
   },
   { timestamps: true }
