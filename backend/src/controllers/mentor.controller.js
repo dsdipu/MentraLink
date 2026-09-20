@@ -3,6 +3,7 @@ const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
+const Blog = require("../models/Blog");
 
 const createMentor = async (req, res) => {
   try {
@@ -71,6 +72,9 @@ const getMyProfile = async (req, res) => {
       { new: true, upsert: true, setDefaultsOnInsert: true }
     ).populate("user", "name email");
 
+    const blogs= await Blog.find({ author:req.user.id}).select("likes");
+    const totalLikes = blogs.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
+
     res.json({
       name: mentor.user.name,
       email: mentor.user.email,
@@ -78,6 +82,7 @@ const getMyProfile = async (req, res) => {
       department: mentor.department,
       expertise: mentor.expertise,
       status: mentor.status,
+      totalLikes,
       mentorStudentId: mentor.mentorStudentId,
       batch: mentor.batch,
       profileImage: mentor.profileImage || null,
@@ -97,6 +102,9 @@ const updateMyProfile = async (req, res) => {
     ).populate("user", "name email");
     if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
 
+    const blogs = await Blog.find({ author: req.user.id }).select("likes");
+    const totalLikes = blogs.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
+
     res.json({
       name: mentor.user.name,
       email: mentor.user.email,
@@ -104,6 +112,7 @@ const updateMyProfile = async (req, res) => {
       department: mentor.department,
       expertise: mentor.expertise,
       status: mentor.status,
+      totalLikes,
       mentorStudentId: mentor.mentorStudentId,
       batch: mentor.batch,
       profileImage: mentor.profileImage || null,
