@@ -99,4 +99,67 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-module.exports = { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog, uploadBlogImage };
+const Comment = require("../models/Comment"); // add this import at the top of the file
+
+const toggleLike = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    const userId = req.user.id;
+    const alreadyLiked = blog.likes.some((id) => id.toString() === userId);
+
+    if (alreadyLiked) {
+      blog.likes = blog.likes.filter((id) => id.toString() !== userId);
+    } else {
+      blog.likes.push(userId);
+    }
+    await blog.save();
+
+    res.json({ likesCount: blog.likes.length, liked: !alreadyLiked });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const getComments = async (req, res) => {
+  try {
+    const comments = await Comment.find({ blog: req.params.id })
+      .populate("author", "name")
+      .sort({ createdAt: -1 });
+    res.json({ comments });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const addComment = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ message: "Comment cannot be empty" });
+
+    const comment = await Comment.create({ blog: req.params.id, author: req.user.id, text: text.trim() });
+    const populated = await comment.populate("author", "name");
+    res.status(201).json({ comment: populated });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const deleteComment = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    if (req.user.role !== "ADMIN" && comment.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+
+    await comment.deleteOne();
+    res.json({ message: "Comment deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog, uploadBlogImage, toggleLike, getComments, addComment, deleteComment };
