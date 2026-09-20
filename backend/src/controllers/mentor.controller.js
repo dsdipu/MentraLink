@@ -78,6 +78,9 @@ const getMyProfile = async (req, res) => {
       department: mentor.department,
       expertise: mentor.expertise,
       status: mentor.status,
+      mentorStudentId: mentor.mentorStudentId,
+      batch: mentor.batch,
+      profileImage: mentor.profileImage || null,
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -101,13 +104,44 @@ const updateMyProfile = async (req, res) => {
       department: mentor.department,
       expertise: mentor.expertise,
       status: mentor.status,
+      mentorStudentId: mentor.mentorStudentId,
+      batch: mentor.batch,
+      profileImage: mentor.profileImage || null,
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// Mentor: get all students across their active groups, with attendance %
+const uploadMyPhoto = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+    const mentor = await Mentor.findOneAndUpdate(
+      { user: req.user.id },
+      { profileImage: req.file.path },
+      { new: true }
+    );
+    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+    res.json({ profileImage: mentor.profileImage });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const removeMyPhoto = async (req, res) => {
+  try {
+    const mentor = await Mentor.findOneAndUpdate(
+      { user: req.user.id },
+      { profileImage: "" },
+      { new: true }
+    );
+    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+    res.json({ message: "Photo removed" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 const getMyStudents = async (req, res) => {
   try {
     const mentor = await Mentor.findOne({ user: req.user.id });
@@ -120,7 +154,6 @@ const getMyStudents = async (req, res) => {
     const students = [];
     for (const group of groups) {
       for (const student of group.students) {
-        // skip broken/orphaned references (Student doc with no linked User — stale data)
         if (!student.user) continue;
 
         const totalAttendance = await Attendance.countDocuments({ student: student._id });
@@ -152,5 +185,7 @@ module.exports = {
   toggleMentorStatus,
   getMyProfile,
   updateMyProfile,
+  uploadMyPhoto,
+  removeMyPhoto,
   getMyStudents,
 };

@@ -7,7 +7,7 @@ const generateToken = require("../utils/generateToken");
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, studentId } = req.body;
+    const { name, email, password, role } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -15,7 +15,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // Students and mentors (senior students) share the same verification rules
+    let derivedStudentId, batch;
+
     if (role === "STUDENT" || role === "MENTOR") {
       const allowedDomain = process.env.ALLOWED_STUDENT_EMAIL_DOMAIN;
       if (allowedDomain && !normalizedEmail.endsWith(allowedDomain.toLowerCase())) {
@@ -24,16 +25,22 @@ const register = async (req, res) => {
         });
       }
 
-      if (!studentId || !studentId.trim()) {
-        return res.status(400).json({ message: "University student ID is required" });
+      // student ID is derived from the email itself: XXXYYYZZZ@domain
+      const localPart = normalizedEmail.split("@")[0];
+      const idMatch = localPart.match(/^(\d{3})(\d{3})(\d{3})$/);
+      if (!idMatch) {
+        return res.status(400).json({
+          message: "Your university email doesn't match the expected student ID format (9 digits before @)",
+        });
       }
+      derivedStudentId = localPart;
+      batch = idMatch[1];
 
       if (!req.file) {
         return res.status(400).json({ message: "A photo of your student ID card is required" });
       }
 
-      // one real person (one university ID) can only hold one account, in either role
-      const duplicateId = await User.findOne({ submittedStudentId: studentId.trim() });
+      const duplicateId = await User.findOne({ submittedStudentId: derivedStudentId });
       if (duplicateId) {
         return res.status(400).json({ message: "This student ID has already been registered" });
       }
@@ -58,7 +65,8 @@ const register = async (req, res) => {
       password: hashedPassword,
       role,
       isActive,
-      submittedStudentId: role === "STUDENT" || role === "MENTOR" ? studentId.trim() : undefined,
+      submittedStudentId: derivedStudentId,
+      batch,
       idCardImage: role === "STUDENT" || role === "MENTOR" ? req.file?.path : undefined,
     });
 
@@ -86,12 +94,22 @@ const approveUser = async (req, res) => {
           const count = await Student.countDocuments();
           studentId = `SWE${String(count + 1).padStart(3, "0")}`;
         }
-        await Student.create({ user: user._id, studentId, department: "", batch: "" });
+        await Student.create({
+          user: user._id,
+          studentId,
+          department: "Software Engineering",
+          batch: user.batch || "",
+        });
       }
     } else if (user.role === "MENTOR") {
       const existing = await Mentor.findOne({ user: user._id });
       if (!existing) {
-        await Mentor.create({ user: user._id, department: "" });
+        await Mentor.create({
+          user: user._id,
+          mentorStudentId: user.submittedStudentId || "",
+          department: "Software Engineering",
+          batch: user.batch || "",
+        });
       }
     }
 
