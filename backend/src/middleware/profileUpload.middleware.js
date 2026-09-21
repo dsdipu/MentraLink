@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "mentralink/profiles",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ width: 500, height: 500, crop: "fill", gravity: "face" }],
+    transformation: [{ width: 500, height: 500, crop: "fill" }],
   },
 });
 
