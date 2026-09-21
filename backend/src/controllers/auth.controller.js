@@ -228,4 +228,13 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, register, approveUser, getPendingUsers, rejectUser, forgotPassword, resetPassword };
+const getPendingCount = async (req, res) => {
+  try {
+    const count = await User.countDocuments({ isActive: false });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { login, register, approveUser, getPendingUsers, rejectUser, forgotPassword, resetPassword, getPendingCount };

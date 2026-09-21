@@ -23,3 +23,5 @@ export const registerUser = async (payload) => {
   });
   return data;
 };
+
+export const getPendingCount = () => api.get("/auth/pending-count").then((r) => r.data.count);

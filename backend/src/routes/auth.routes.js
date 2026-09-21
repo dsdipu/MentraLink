@@ -20,6 +20,7 @@ router.post("/forgot-password", otpRequestLimiter, forgotPassword);
 router.post("/reset-password", otpVerifyLimiter, resetPassword);
 
 router.get("/pending", protect, authorize("ADMIN"), getPendingUsers);
+router.get("/pending-count", protect, authorize("ADMIN"), getPendingCount);
 router.patch("/approve/:id", protect, authorize("ADMIN"), approveUser);
 router.delete("/reject/:id", protect, authorize("ADMIN"), rejectUser);
 
