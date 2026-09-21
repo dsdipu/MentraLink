@@ -57,6 +57,7 @@ const AdminLayout = () => {
           <Link to="/">
             <img src={logo} alt="MentraLink" className="h-14 object-contain" />
           </Link>
+
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-1 rounded-md text-gray-500 hover:bg-gray-100"
@@ -69,6 +70,7 @@ const AdminLayout = () => {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
+
             return (
               <NavLink
                 key={item.to}
@@ -76,17 +78,21 @@ const AdminLayout = () => {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? "bg-brand-mint text-brand-green" : "text-gray-700 hover:bg-gray-100"
+                    isActive
+                      ? "bg-brand-mint text-brand-green"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`
                 }
               >
                 <Icon size={20} />
                 <span className="flex-1">{item.label}</span>
-                {item.to === "/admin/pending-requests" && pendingCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {pendingCount}
-                  </span>
-                )}
+
+                {item.to === "/admin/pending-requests" &&
+                  pendingCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {pendingCount}
+                    </span>
+                  )}
               </NavLink>
             );
           })}
@@ -97,11 +103,15 @@ const AdminLayout = () => {
             <div className="w-9 h-9 rounded-full bg-brand-navy text-white flex items-center justify-center text-sm font-semibold shrink-0">
               {user?.name?.charAt(0)?.toUpperCase() || "A"}
             </div>
+
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {user?.name}
+              </p>
               <p className="text-xs text-gray-500">Admin</p>
             </div>
           </div>
+
           <button
             onClick={logout}
             className="mt-2 flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
@@ -122,23 +132,32 @@ const AdminLayout = () => {
             >
               <Menu size={22} />
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">Admin Panel</h2>
+
+            <h2 className="text-lg font-semibold text-gray-900">
+              Admin Panel
+            </h2>
           </div>
+
           <div className="flex items-center gap-4">
             <Link
               to="/admin/pending-requests"
               className="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
             >
               <Bell size={18} className="text-gray-600" />
+
               {pendingCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
                   {pendingCount}
                 </span>
               )}
             </Link>
-            <div className="w-9 h-9 rounded-full bg-brand-navy text-white flex items-center justify-center text-sm font-semibold">
+
+            <Link
+              to="/admin/profile"
+              className="w-9 h-9 rounded-full bg-brand-navy text-white flex items-center justify-center text-sm font-semibold hover:opacity-90"
+            >
               {user?.name?.charAt(0)?.toUpperCase() || "A"}
-            </div>
+            </Link>
           </div>
         </header>
 

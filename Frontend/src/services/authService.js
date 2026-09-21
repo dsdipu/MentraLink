@@ -25,3 +25,8 @@ export const registerUser = async (payload) => {
 };
 
 export const getPendingCount = () => api.get("/auth/pending-count").then((r) => r.data.count);
+
+export const getMe = () => api.get("/auth/me").then((r) => r.data.user);
+export const updateMe = (name) => api.put("/auth/me", { name }).then((r) => r.data.user);
+export const changePassword = (currentPassword, newPassword) =>
+  api.post("/auth/change-password", { currentPassword, newPassword }).then((r) => r.data);

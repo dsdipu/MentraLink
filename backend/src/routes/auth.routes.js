@@ -8,6 +8,10 @@ const {
   rejectUser,
   forgotPassword,
   resetPassword,
+  getMe,
+  updateMe,
+  changePassword,
+  getPendingCount,
 } = require("../controllers/auth.controller");
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
@@ -23,5 +27,9 @@ router.get("/pending", protect, authorize("ADMIN"), getPendingUsers);
 router.get("/pending-count", protect, authorize("ADMIN"), getPendingCount);
 router.patch("/approve/:id", protect, authorize("ADMIN"), approveUser);
 router.delete("/reject/:id", protect, authorize("ADMIN"), rejectUser);
+router.get("/me", protect, getMe);
+router.put("/me", protect, updateMe);
+router.post("/change-password", protect, changePassword);
+
 
 module.exports = router;
