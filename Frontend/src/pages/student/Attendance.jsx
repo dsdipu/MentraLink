@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { getMyAttendance, getAttendanceStats } from "../../services/attendanceService";
+import StatCard from "../../components/ui/StatCard";
+import Badge from "../../components/ui/Badge";
+import EmptyState from "../../components/ui/EmptyState";
+import { CheckCircle2, XCircle, Percent, ClipboardCheck } from "lucide-react";
 
 const Attendance = () => {
   const [records, setRecords] = useState([]);
@@ -22,47 +26,41 @@ const Attendance = () => {
       <h1 className="text-2xl font-semibold mb-4">My Attendance</h1>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <p className="text-sm text-gray-500">Present</p>
-          <p className="text-xl font-semibold text-green-600">{stats?.present ?? 0}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <p className="text-sm text-gray-500">Absent</p>
-          <p className="text-xl font-semibold text-red-600">{stats?.absent ?? 0}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <p className="text-sm text-gray-500">Percentage</p>
-          <p className="text-xl font-semibold text-blue-600">{stats?.percentage ?? 0}%</p>
-        </div>
+        <StatCard icon={CheckCircle2} label="Present" value={stats?.present ?? 0} tone="brand" />
+        <StatCard icon={XCircle} label="Absent" value={stats?.absent ?? 0} tone="gold" />
+        <StatCard icon={Percent} label="Attendance" value={`${stats?.percentage ?? 0}%`} tone="blue" />
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left">
-            <tr>
-              <th className="p-3">Date</th>
-              <th className="p-3">Session</th>
-              <th className="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((r) => (
-              <tr key={r._id} className="border-t">
-                <td className="p-3">{r.session?.date ? new Date(r.session.date).toLocaleDateString() : "-"}</td>
-                <td className="p-3">{r.session?.title || "-"}</td>
-                <td className="p-3">
-                  <span className={r.status === "PRESENT" ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                    {r.status}
-                  </span>
-                </td>
+      {records.length === 0 ? (
+        <EmptyState
+          icon={ClipboardCheck}
+          title="No attendance records yet"
+          description="Records appear here once your mentor marks attendance for a completed session."
+        />
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left">
+              <tr>
+                <th className="p-3">Date</th>
+                <th className="p-3">Session</th>
+                <th className="p-3">Status</th>
               </tr>
-            ))}
-            {records.length === 0 && (
-              <tr><td colSpan={3} className="p-3 text-gray-400 text-center">No attendance records yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {records.map((r) => (
+                <tr key={r._id} className="border-t">
+                  <td className="p-3">{r.session?.date ? new Date(r.session.date).toLocaleDateString() : "-"}</td>
+                  <td className="p-3">{r.session?.title || "-"}</td>
+                  <td className="p-3">
+                    <Badge tone={r.status === "PRESENT" ? "success" : "danger"}>{r.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

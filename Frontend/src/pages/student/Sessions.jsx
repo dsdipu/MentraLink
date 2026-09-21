@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { getMySessions } from "../../services/sessionService";
+import Card from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
+import EmptyState from "../../components/ui/EmptyState";
+import { CalendarClock, MapPin, Video } from "lucide-react";
 
-const statusColor = {
-  upcoming: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
+const STATUS_TONE = {
+  UPCOMING: "info",
+  ONGOING: "warning",
+  COMPLETED: "success",
+  CANCELLED: "danger",
 };
 
 const Sessions = () => {
@@ -24,37 +29,38 @@ const Sessions = () => {
       <h1 className="text-2xl font-semibold mb-4">My Sessions</h1>
 
       {sessions.length === 0 ? (
-        <p className="text-gray-500">No sessions scheduled yet.</p>
+        <EmptyState
+          icon={CalendarClock}
+          title="No sessions yet"
+          description="Once your mentor schedules a session, it'll show up here."
+        />
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">Mentor</th>
-                <th className="p-3">Topic</th>
-                <th className="p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr key={s._id} className="border-t">
-                  <td className="p-3">{new Date(s.date).toLocaleString()}</td>
-                  <td className="p-3">{s.mentorName}</td>
-                  <td className="p-3">{s.topic}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        statusColor[s.status] || "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {s.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {sessions.map((s) => (
+            <Card key={s._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-medium text-brand-navy">#{s.sessionNumber} — {s.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {new Date(s.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                  {s.time && ` · ${s.time}`}
+                  {s.mentor?.user?.name && ` · with ${s.mentor.user.name}`}
+                </p>
+                {(s.location || s.meetingLink) && (
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    {s.meetingLink ? <Video size={12} /> : <MapPin size={12} />}
+                    {s.meetingLink ? (
+                      <a href={s.meetingLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                        Join meeting
+                      </a>
+                    ) : (
+                      s.location
+                    )}
+                  </p>
+                )}
+              </div>
+              <Badge tone={STATUS_TONE[s.status] || "neutral"}>{s.status}</Badge>
+            </Card>
+          ))}
         </div>
       )}
     </div>
