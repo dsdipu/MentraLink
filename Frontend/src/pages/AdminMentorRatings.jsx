@@ -14,6 +14,7 @@ const CATEGORY_LABELS = {
 
 const AdminMentorRatings = () => {
   const [mentors, setMentors] = useState([]);
+  const [ratingFilter, setRatingFilter] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,9 +27,21 @@ const AdminMentorRatings = () => {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Mentor Ratings & Feedback</h1>
+      <div className="mb-4">
+        <select
+          value={ratingFilter}
+          onChange={(e) => setRatingFilter(Number(e.target.value))}
+          className="border rounded-md px-3 py-2 text-sm"
+        >
+          <option value={0}>All ratings</option>
+          <option value={4}>4+ stars</option>
+          <option value={3}>3+ stars</option>
+          <option value={2}>2+ stars</option>
+        </select>
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {mentors.map((m) => (
+        {mentors.filter((m) => (m.overallRating || 0) >= ratingFilter).map((m) => (
           <Card key={m.mentorId} padded={false} className="overflow-hidden">
             <div
               className="p-4 cursor-pointer"
@@ -110,7 +123,7 @@ const AdminMentorRatings = () => {
             )}
           </Card>
         ))}
-        {mentors.length === 0 && <p className="text-gray-500">No mentors yet.</p>}
+        {mentors.filter((m) => (m.overallRating || 0) >= ratingFilter).length === 0 && <p className="text-gray-500">No mentors match this filter.</p>}
       </div>
     </div>
   );
