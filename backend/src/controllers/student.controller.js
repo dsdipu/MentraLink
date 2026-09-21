@@ -41,10 +41,29 @@ const getStudentById = async (req, res) => {
 
 const updateStudent = async (req, res) => {
   try {
-    const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { name, email, studentId, department, batch, phone } = req.body;
+    const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: "Student not found" });
-    res.json({ student });
+
+    if (name !== undefined || email !== undefined) {
+      const userUpdate = {};
+      if (name !== undefined) userUpdate.name = name;
+      if (email !== undefined) userUpdate.email = email.toLowerCase().trim();
+      await User.findByIdAndUpdate(student.user, userUpdate);
+    }
+
+    if (studentId !== undefined) student.studentId = studentId;
+    if (department !== undefined) student.department = department;
+    if (batch !== undefined) student.batch = batch;
+    if (phone !== undefined) student.phone = phone;
+    await student.save();
+
+    const updated = await Student.findById(student._id).populate("user", "name email isActive");
+    res.json({ student: updated });
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "That email or student ID is already in use" });
+    }
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -90,11 +109,9 @@ const getMyProfile = async (req, res) => {
 
 const updateMyProfile = async (req, res) => {
   try {
-    const { name, phone, department } = req.body;
+    const { phone, department } = req.body;
 
-    if (name !== undefined) {
-      await User.findByIdAndUpdate(req.user.id, { name });
-    }
+    
 
     const student = await Student.findOneAndUpdate(
       { user: req.user.id },

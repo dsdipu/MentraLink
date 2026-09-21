@@ -38,10 +38,28 @@ const getMentorById = async (req, res) => {
 
 const updateMentor = async (req, res) => {
   try {
-    const mentor = await Mentor.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { name, email, mentorStudentId, department, batch } = req.body;
+    const mentor = await Mentor.findById(req.params.id);
     if (!mentor) return res.status(404).json({ message: "Mentor not found" });
-    res.json({ mentor });
+
+    if (name !== undefined || email !== undefined) {
+      const userUpdate = {};
+      if (name !== undefined) userUpdate.name = name;
+      if (email !== undefined) userUpdate.email = email.toLowerCase().trim();
+      await User.findByIdAndUpdate(mentor.user, userUpdate);
+    }
+
+    if (mentorStudentId !== undefined) mentor.mentorStudentId = mentorStudentId;
+    if (department !== undefined) mentor.department = department;
+    if (batch !== undefined) mentor.batch = batch;
+    await mentor.save();
+
+    const updated = await Mentor.findById(mentor._id).populate("user", "name email isActive");
+    res.json({ mentor: updated });
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "That email is already in use" });
+    }
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };

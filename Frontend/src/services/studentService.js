@@ -10,3 +10,6 @@ export const uploadMyPhoto = (file) => {
   return api.post("/students/me/photo", formData).then((r) => r.data);
 };
 export const removeMyPhoto = () => api.delete("/students/me/photo").then((r) => r.data);
+
+
+export const updateStudent = (id, payload) => api.put(`/students/${id}`, payload).then((r) => r.data.student);

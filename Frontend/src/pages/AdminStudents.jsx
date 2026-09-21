@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { getAllStudents } from "../services/studentService";
+import { getAllStudents, updateStudent } from "../services/studentService";
 import Badge from "../components/ui/Badge";
-import { Search } from "lucide-react";
+import { Search, Pencil, Check, X } from "lucide-react";
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [batchFilter, setBatchFilter] = useState("");
   const [idSearch, setIdSearch] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", studentId: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -22,6 +26,31 @@ const AdminStudents = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     load();
+  };
+
+  const startEdit = (s) => {
+    setError("");
+    setEditingId(s._id);
+    setEditForm({ name: s.user?.name || "", email: s.user?.email || "", studentId: s.studentId || "" });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setError("");
+  };
+
+  const saveEdit = async (id) => {
+    setSaving(true);
+    setError("");
+    try {
+      await updateStudent(id, editForm);
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update student");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const batches = [...new Set(students.map((s) => s.batch).filter(Boolean))].sort();
@@ -56,6 +85,8 @@ const AdminStudents = () => {
         </select>
       </div>
 
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+
       {loading ? (
         <p className="text-gray-500">Loading...</p>
       ) : (
@@ -68,26 +99,75 @@ const AdminStudents = () => {
                 <th className="p-3">Batch</th>
                 <th className="p-3">Email</th>
                 <th className="p-3">Status</th>
+                <th className="p-3"></th>
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => (
-                <tr key={s._id} className="border-t">
-                  <td className="p-3">{s.user?.name}</td>
-                  <td className="p-3">{s.studentId}</td>
-                  <td className="p-3">
-                    {s.batch ? <Badge tone="info">Batch {s.batch}</Badge> : "—"}
-                  </td>
-                  <td className="p-3">{s.user?.email}</td>
-                  <td className="p-3">
-                    <Badge tone={s.user?.isActive ? "success" : "danger"}>
-                      {s.user?.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
+              {students.map((s) => {
+                const isEditing = editingId === s._id;
+                return (
+                  <tr key={s._id} className="border-t">
+                    {isEditing ? (
+                      <>
+                        <td className="p-2">
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            className="border rounded-md px-2 py-1 text-sm w-full"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            value={editForm.studentId}
+                            onChange={(e) => setEditForm({ ...editForm, studentId: e.target.value })}
+                            className="border rounded-md px-2 py-1 text-sm w-full"
+                          />
+                        </td>
+                        <td className="p-3">{s.batch ? <Badge tone="info">Batch {s.batch}</Badge> : "—"}</td>
+                        <td className="p-2">
+                          <input
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            className="border rounded-md px-2 py-1 text-sm w-full"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Badge tone={s.user?.isActive ? "success" : "danger"}>
+                            {s.user?.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">
+                          <button onClick={() => saveEdit(s._id)} disabled={saving} className="text-green-600 p-1 disabled:opacity-50">
+                            <Check size={16} />
+                          </button>
+                          <button onClick={cancelEdit} className="text-gray-400 p-1">
+                            <X size={16} />
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-3">{s.user?.name}</td>
+                        <td className="p-3">{s.studentId}</td>
+                        <td className="p-3">{s.batch ? <Badge tone="info">Batch {s.batch}</Badge> : "—"}</td>
+                        <td className="p-3">{s.user?.email}</td>
+                        <td className="p-3">
+                          <Badge tone={s.user?.isActive ? "success" : "danger"}>
+                            {s.user?.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <button onClick={() => startEdit(s)} className="text-gray-400 hover:text-blue-600">
+                            <Pencil size={14} />
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
               {students.length === 0 && (
-                <tr><td colSpan={5} className="p-4 text-center text-gray-400">No students found.</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-gray-400">No students found.</td></tr>
               )}
             </tbody>
           </table>

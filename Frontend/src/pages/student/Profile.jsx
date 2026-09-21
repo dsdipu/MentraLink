@@ -144,12 +144,8 @@ const Profile = () => {
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
         <div>
           <label className="block text-sm mb-1">Name</label>
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full border rounded-md px-3 py-2"
-          />
+          <input value={form.name} disabled className="w-full border rounded-md px-3 py-2 bg-gray-100" />
+          <p className="text-xs text-gray-400 mt-1">Contact an admin to change your name.</p>
         </div>
 
         <div>

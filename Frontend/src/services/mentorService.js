@@ -12,3 +12,6 @@ export const uploadMyPhoto = (file) => {
   return api.post("/mentors/me/photo", formData).then((r) => r.data);
 };
 export const removeMyPhoto = () => api.delete("/mentors/me/photo").then((r) => r.data);
+
+
+export const updateMentor = (id, payload) => api.put(`/mentors/${id}`, payload).then((r) => r.data.mentor);
