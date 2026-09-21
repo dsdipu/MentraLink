@@ -37,6 +37,7 @@ import AdminMentorRatings from "../pages/AdminMentorRatings";
 import AdminSessions from "../pages/AdminSessions";
 import AdminManageAdmins from "../pages/AdminManageAdmins";
 import AdminProfile from "../pages/AdminProfile";
+import AdminGroups from "../pages/AdminGroups";
 
 // Public
 import PublicLayout from "../layouts/PublicLayout";
@@ -89,6 +90,7 @@ const AppRoutes = () => {
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/groups" element={<AdminGroups />} />
         </Route>
       </Route>
 

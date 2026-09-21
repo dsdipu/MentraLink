@@ -4,20 +4,7 @@ import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 import { getPendingCount } from "../services/authService";
 
-import {
-  LayoutDashboard,
-  UserCheck,
-  LogOut,
-  Bell,
-  CalendarRange,
-  Users2,
-  CalendarClock,
-  Star,
-  ShieldCheck,
-  Menu,
-  X,
-  UserSquare2,
-} from "lucide-react";
+import { LayoutDashboard, UserCheck, LogOut, Bell, CalendarRange, Users2, CalendarClock, Star, ShieldCheck, UserSquare2, Layers } from "lucide-react";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,6 +15,7 @@ const navItems = [
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
   { to: "/admin/students", label: "Students", icon: UserSquare2 },
+  { to: "/admin/groups", label: "Groups", icon: Layers },
 ];
 
 const AdminLayout = () => {

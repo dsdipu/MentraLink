@@ -62,7 +62,7 @@ function AdminDashboard() {
       icon: UsersRound,
       iconBg: "bg-[#FFF1E6]",
       iconColor: "text-[#F7923F]",
-      to: "/admin/mentors",
+      to: "/admin/groups",
     },
     {
       label: "Total Sessions",
