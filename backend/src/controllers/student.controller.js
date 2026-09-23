@@ -1,5 +1,6 @@
 const Student = require("../models/Student");
 const User = require("../models/User");
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 
 const createStudent = async (req, res) => {
   try {
@@ -137,16 +138,33 @@ const updateMyProfile = async (req, res) => {
 
 const uploadMyPhoto = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "mentralink/profiles",
+      [{ width: 500, height: 500, crop: "fill" }]
+    );
+
     const student = await Student.findOneAndUpdate(
       { user: req.user.id },
-      { profileImage: req.file.path },
+      { profileImage: result.secure_url },
       { new: true }
     );
-    if (!student) return res.status(404).json({ message: "Student profile not found" });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+
     res.json({ profileImage: student.profileImage });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Student photo upload error:", err);
+    res.status(500).json({
+      message: "Profile image upload failed",
+      error: err.message,
+    });
   }
 };
 

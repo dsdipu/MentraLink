@@ -1,4 +1,8 @@
 import { Globe } from "lucide-react";
+import dipankar from "../assets/dipuMentraLink.jpg";
+import tanha from "../assets/tanhaMentraLink.jpg";
+import tuhin from "../assets/tuhinMentraLink.jpg";
+import taimia from "../assets/taimiaMentraLink.jpg";
 
 const TEAM = [
   {
@@ -8,6 +12,7 @@ const TEAM = [
     github: "https://github.com/dsdipu",
     portfolio: "https://dsdipu.vercel.app",
     color: "bg-brand-navy",
+    image: dipankar,
   },
   {
     name: "Tanha Tasri",
@@ -15,6 +20,7 @@ const TEAM = [
     role: "Frontend Lead",
     github: "https://github.com/tanha-tasri",
     color: "bg-brand-green",
+    image: tanha,
   },
   {
     name: "Tuhinur Rahman",
@@ -22,6 +28,7 @@ const TEAM = [
     role: "Frontend Developer",
     github: "https://github.com/tuhintr0",
     color: "bg-brand-blue",
+    image: tuhin,
   },
   {
     name: "Taimia Howlader",
@@ -29,6 +36,7 @@ const TEAM = [
     role: "Backend Developer",
     github: "https://github.com/taimiyea",
     color: "bg-brand-purple",
+    image: taimia,
   },
 ];
 
@@ -54,10 +62,12 @@ const TeamGrid = () => (
           key={m.id}
           className="group bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
         >
-          <div
-            className={`w-20 h-20 rounded-full ${m.color} text-white flex items-center justify-center text-2xl font-display mx-auto mb-4 shadow-md`}
-          >
-            {m.name.split(" ").map((n) => n[0]).join("")}
+          <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-full overflow-hidden mx-auto mb-4 shadow-md">
+            <img
+                src={m.image}
+                alt={m.name}
+                className="w-full h-full object-cover"
+            />
           </div>
 
           <p className="font-semibold text-brand-navy">{m.name}</p>

@@ -1,12 +1,27 @@
 const Blog = require("../models/Blog");
-
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 // Mentor/Admin: upload a single image, get back its URL to use inline or in the gallery
 const uploadBlogImage = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
-    res.status(201).json({ url: req.file.path }); // Cloudinary's secure URL, provided by multer-storage-cloudinary
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "mentralink/blogs",
+      [{ width: 1600, crop: "limit" }]
+    );
+
+    res.status(201).json({
+      url: result.secure_url,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Cloudinary blog upload error:", err);
+    res.status(500).json({
+      message: "Image upload failed",
+      error: err.message,
+    });
   }
 };
 

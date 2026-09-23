@@ -27,9 +27,14 @@ const allowedOrigins = process.env.FRONTEND_URLS
   : [];
 
 
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Server error", error: err.message });
+// app.use((err, req, res, next) => {
+//   console.error("Unhandled error:", err);
+//   res.status(500).json({ message: "Server error", error: err.message });
+// });
+
+app.use((req, res, next) => {
+  console.log(req.method, req.originalUrl);
+  next();
 });
 
 app.use(

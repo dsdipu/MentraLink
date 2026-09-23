@@ -4,6 +4,7 @@ const { hashPassword } = require("../utils/hashPassword");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
 const Blog = require("../models/Blog");
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 
 const createMentor = async (req, res) => {
   try {
@@ -90,7 +91,7 @@ const getMyProfile = async (req, res) => {
       { new: true, upsert: true, setDefaultsOnInsert: true }
     ).populate("user", "name email");
 
-    const blogs= await Blog.find({ author:req.user.id}).select("likes");
+    const blogs = await Blog.find({ author: req.user.id }).select("likes");
     const totalLikes = blogs.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
 
     res.json({
@@ -118,6 +119,7 @@ const updateMyProfile = async (req, res) => {
       { phone, department, expertise },
       { new: true }
     ).populate("user", "name email");
+
     if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
 
     const blogs = await Blog.find({ author: req.user.id }).select("likes");
@@ -142,16 +144,33 @@ const updateMyProfile = async (req, res) => {
 
 const uploadMyPhoto = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "mentralink/profiles",
+      [{ width: 500, height: 500, crop: "fill" }]
+    );
+
     const mentor = await Mentor.findOneAndUpdate(
       { user: req.user.id },
-      { profileImage: req.file.path },
+      { profileImage: result.secure_url },
       { new: true }
     );
-    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+
+    if (!mentor) {
+      return res.status(404).json({ message: "Mentor profile not found" });
+    }
+
     res.json({ profileImage: mentor.profileImage });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Mentor photo upload error:", err);
+    res.status(500).json({
+      message: "Profile image upload failed",
+      error: err.message,
+    });
   }
 };
 
@@ -162,7 +181,9 @@ const removeMyPhoto = async (req, res) => {
       { profileImage: "" },
       { new: true }
     );
+
     if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+
     res.json({ message: "Photo removed" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -176,17 +197,27 @@ const getMyStudents = async (req, res) => {
 
     const groups = await MentorshipGroup.find({ mentor: mentor._id, status: "ACTIVE" })
       .populate("semester", "name")
-      .populate({ path: "students", populate: { path: "user", select: "name email" } });
+      .populate({
+        path: "students",
+        populate: { path: "user", select: "name email" },
+      });
 
     const students = [];
+
     for (const group of groups) {
       for (const student of group.students) {
         if (!student.user) continue;
 
         const totalAttendance = await Attendance.countDocuments({ student: student._id });
-        const presentCount = await Attendance.countDocuments({ student: student._id, status: "PRESENT" });
+        const presentCount = await Attendance.countDocuments({
+          student: student._id,
+          status: "PRESENT",
+        });
+
         const attendancePercent =
-          totalAttendance > 0 ? +((presentCount / totalAttendance) * 100).toFixed(2) : null;
+          totalAttendance > 0
+            ? +((presentCount / totalAttendance) * 100).toFixed(2)
+            : null;
 
         students.push({
           _id: student._id,

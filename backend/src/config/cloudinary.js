@@ -17,12 +17,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-console.log("Cloudinary check:", {
-  cloudinaryLoaded: !!cloudinary,
-  uploaderLoaded: !!cloudinary.uploader,
-  cloudNameLoaded: !!process.env.CLOUDINARY_CLOUD_NAME,
-  apiKeyLoaded: !!process.env.CLOUDINARY_API_KEY,
-  apiSecretLoaded: !!process.env.CLOUDINARY_API_SECRET,
-});
+// console.log("Cloudinary check:", {
+//   cloudinaryLoaded: !!cloudinary,
+//   uploaderLoaded: !!cloudinary.uploader,
+//   cloudNameLoaded: !!process.env.CLOUDINARY_CLOUD_NAME,
+//   apiKeyLoaded: !!process.env.CLOUDINARY_API_KEY,
+//   apiSecretLoaded: !!process.env.CLOUDINARY_API_SECRET,
+// });
 
 module.exports = cloudinary;

@@ -24,7 +24,7 @@ router.get("/", authorize("ADMIN", "MENTOR"), getStudents);
 
 router.get("/me", authorize("STUDENT"), getMyProfile);
 router.put("/me", authorize("STUDENT"), updateMyProfile);
-router.post("/me/photo", authorize("STUDENT"), profileUpload.single("photo"), uploadMyPhoto);
+router.patch("/me/photo", authorize("STUDENT"), handleUpload(profileUpload.single("photo")), uploadMyPhoto);
 router.delete("/me/photo", authorize("STUDENT"), removeMyPhoto);
 router.post("/me/photo", authorize("STUDENT"), handleUpload(profileUpload.single("photo")), uploadMyPhoto);
 
