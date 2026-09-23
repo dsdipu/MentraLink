@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getPublicStats } from "../../services/publicService";
 import { getBlogs } from "../../services/blogService";
 import { previewText } from "../../utils/blogPreview";
+import TeamGrid from "../../components/TeamGrid";
 
 const Home = () => {
   const [stats, setStats] = useState(null);
@@ -73,6 +74,8 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      <TeamGrid />
 
       {blogs.length > 0 && (
         <section className="max-w-6xl mx-auto px-6 py-16 border-t border-gray-100">
