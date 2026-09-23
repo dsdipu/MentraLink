@@ -3,6 +3,8 @@ const router = express.Router();
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 const upload = require("../middleware/upload.middleware");
+const handleUpload = require("../middleware/handleUpload");
+
 const {
   createBlog,
   getBlogs,
@@ -24,7 +26,7 @@ router.get("/:id/comments", getComments);
 
 // Everything else requires auth
 router.use(protect);
-router.post("/upload-image", authorize("ADMIN", "MENTOR"), upload.single("image"), uploadBlogImage);
+router.post("/upload-image", authorize("ADMIN", "MENTOR"), handleUpload(upload.single("image")), uploadBlogImage);
 router.post("/", authorize("ADMIN", "MENTOR"), createBlog);
 router.put("/:id", authorize("ADMIN", "MENTOR"), updateBlog);
 router.delete("/:id", authorize("ADMIN", "MENTOR"), deleteBlog);

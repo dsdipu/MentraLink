@@ -3,6 +3,8 @@ const router = express.Router();
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 const profileUpload = require("../middleware/profileUpload.middleware");
+const handleUpload = require("../middleware/handleUpload");
+
 const {
   createMentor,
   getMentors,
@@ -23,7 +25,7 @@ router.get("/", authorize("ADMIN", "STUDENT"), getMentors);
 
 router.get("/me", authorize("MENTOR"), getMyProfile);
 router.put("/me", authorize("MENTOR"), updateMyProfile);
-router.post("/me/photo", authorize("MENTOR"), profileUpload.single("photo"), uploadMyPhoto);
+router.post("/me/photo", authorize("MENTOR"), handleUpload(profileUpload.single("photo")), uploadMyPhoto);
 router.delete("/me/photo", authorize("MENTOR"), removeMyPhoto);
 router.get("/me/students", authorize("MENTOR"), getMyStudents);
 
