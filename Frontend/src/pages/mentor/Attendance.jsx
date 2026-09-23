@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getMyMentorSessions, getSessionById } from "../../services/sessionService";
 import { getSessionAttendance, markAttendance } from "../../services/attendanceService";
 import AttendanceMarking from "../../components/AttendanceMarking";
+import EmptyState from "../../components/ui/EmptyState";
+import { ClipboardCheck } from "lucide-react";
 
 const Attendance = () => {
   const [sessions, setSessions] = useState([]);
@@ -59,6 +61,14 @@ const Attendance = () => {
       </select>
 
       {message && <p className="mb-3 text-sm text-blue-600">{message}</p>}
+
+      {!selectedId && (
+        <EmptyState
+          icon={ClipboardCheck}
+          title="Select a session"
+          description="Pick a completed session above to mark attendance for its students."
+        />
+      )}
 
       {selectedId && loadingRoster && <p className="text-gray-500">Loading roster...</p>}
 
