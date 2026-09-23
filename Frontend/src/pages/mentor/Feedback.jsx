@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { getMyMentorSessions } from "../../services/sessionService";
 import { getSessionFeedback } from "../../services/feedbackService";
+import Card from "../../components/ui/Card";
+import StarRating from "../../components/ui/StarRating";
+import EmptyState from "../../components/ui/EmptyState";
+import { MessageSquare } from "lucide-react";
 
 const Feedback = () => {
   const [sessions, setSessions] = useState([]);
@@ -36,12 +40,21 @@ const Feedback = () => {
 
       {loading && <p className="text-sm text-gray-500">Loading feedback...</p>}
 
+      {!selectedId && !loading && (
+        <EmptyState
+          icon={MessageSquare}
+          title="Select a session"
+          description="Pick a completed session above to see student feedback."
+        />
+      )}
+
       {feedback && (
-        <div className="bg-white rounded-lg shadow p-4">
+        <Card>
           <p className="text-sm text-gray-500">Average Rating</p>
-          <p className="text-2xl font-bold text-blue-600 mb-1">
-            {feedback.averageRating ?? "-"}/5
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-2xl font-bold text-brand-navy">{feedback.averageRating ?? "-"}/5</p>
+            <StarRating value={Math.round(feedback.averageRating || 0)} onChange={() => {}} size={16} />
+          </div>
           <p className="text-xs text-gray-400 mb-3">
             {feedback.totalFeedback ?? 0} response(s)
           </p>
@@ -50,9 +63,7 @@ const Feedback = () => {
               <div key={f._id} className="py-3 text-sm">
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-medium">{f.student?.user?.name || "Anonymous"}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                    {f.rating}/5
-                  </span>
+                  <StarRating value={f.rating} onChange={() => {}} size={14} />
                 </div>
                 <p className="text-gray-600">{f.comment || <em className="text-gray-400">No comment</em>}</p>
               </div>
@@ -61,7 +72,7 @@ const Feedback = () => {
               <p className="py-4 text-gray-500">No feedback submitted for this session yet.</p>
             )}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

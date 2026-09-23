@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../../services/blogService";
 import { previewText } from "../../utils/blogPreview";
 import useAuth from "../../hooks/useAuth";
+import Card from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
+import EmptyState from "../../components/ui/EmptyState";
+import { Newspaper, Heart } from "lucide-react";
 
 const emptyForm = { title: "", category: "", content: "", coverImage: "", images: [""], links: [{ label: "", url: "" }] };
 
@@ -69,7 +73,6 @@ const Blogs = () => {
     }
   };
 
-  // Insert an uploaded image right at the cursor position inside the content textarea
   const handleInsertImageAtCursor = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -154,140 +157,152 @@ const Blogs = () => {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow mb-4 space-y-3">
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          {uploading && <p className="text-blue-500 text-sm">Uploading image...</p>}
+        <Card className="mb-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {uploading && <p className="text-blue-500 text-sm">Uploading image...</p>}
 
-          <input
-            required
-            placeholder="Title"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-
-          <select
-            required
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          >
-            <option value="">Select category</option>
-            <option value="EXPERIENCE">Experience</option>
-            <option value="TECH">Tech</option>
-            <option value="CAREER_TIPS">Career Tips</option>
-            <option value="SESSION_RECAP">Session Recap</option>
-            <option value="OTHER">Other</option>
-          </select>
-
-          {/* Cover image */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Cover image</label>
-            <div className="flex items-center gap-3">
-              {form.coverImage && <img src={form.coverImage} alt="cover" className="h-16 w-16 object-cover rounded-md" />}
-              <input type="file" accept="image/*" onChange={(e) => handleUploadCoverImage(e.target.files[0])} className="text-sm" />
-            </div>
-          </div>
-
-          {/* Content + inline image insertion */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium">Content</label>
-              <label className="text-xs text-blue-600 cursor-pointer hover:underline">
-                📷 Insert image here
-                <input type="file" accept="image/*" className="hidden" onChange={handleInsertImageAtCursor} />
-              </label>
-            </div>
-            <textarea
-              ref={contentRef}
+            <input
               required
-              placeholder="Write your blog... place your cursor where you want an image and click 'Insert image here'"
-              rows={10}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              className="w-full border rounded-md px-3 py-2 font-mono text-sm"
+              placeholder="Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
             />
-            <p className="text-xs text-gray-400 mt-1">
-              Tip: click into the text where you want a picture to appear, then click "Insert image here" above.
-            </p>
-          </div>
 
-          {/* Gallery images */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Gallery images (optional, shown at the end of the post)</label>
-            {form.images.map((img, idx) => (
-              <div key={idx} className="flex items-center gap-2 mb-2">
-                {img && <img src={img} alt="" className="h-10 w-10 object-cover rounded-md" />}
-                <input
-                  placeholder="Image URL"
-                  value={img}
-                  onChange={(e) => setImageAt(idx, e.target.value)}
-                  className="flex-1 border rounded-md px-3 py-2 text-sm"
-                />
-                <label className="text-xs text-blue-600 cursor-pointer hover:underline whitespace-nowrap">
-                  Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadToGallerySlot(idx, e.target.files[0])} />
+            <select
+              required
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="">Select category</option>
+              <option value="EXPERIENCE">Experience</option>
+              <option value="TECH">Tech</option>
+              <option value="CAREER_TIPS">Career Tips</option>
+              <option value="SESSION_RECAP">Session Recap</option>
+              <option value="OTHER">Other</option>
+            </select>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Cover image</label>
+              <div className="flex items-center gap-3">
+                {form.coverImage && <img src={form.coverImage} alt="cover" className="h-16 w-16 object-cover rounded-md" />}
+                <input type="file" accept="image/*" onChange={(e) => handleUploadCoverImage(e.target.files[0])} className="text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium">Content</label>
+                <label className="text-xs text-blue-600 cursor-pointer hover:underline">
+                  📷 Insert image here
+                  <input type="file" accept="image/*" className="hidden" onChange={handleInsertImageAtCursor} />
                 </label>
-                {form.images.length > 1 && (
-                  <button type="button" onClick={() => removeImageField(idx)} className="text-red-500 px-2">✕</button>
-                )}
               </div>
-            ))}
-            <button type="button" onClick={addImageField} className="text-sm text-blue-600">+ Add image slot</button>
-          </div>
+              <textarea
+                ref={contentRef}
+                required
+                placeholder="Write your blog... place your cursor where you want an image and click 'Insert image here'"
+                rows={10}
+                value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 font-mono text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Tip: click into the text where you want a picture to appear, then click "Insert image here" above.
+              </p>
+            </div>
 
-          {/* Links */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Links</label>
-            {form.links.map((link, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <input
-                  placeholder="Label (optional)"
-                  value={link.label}
-                  onChange={(e) => setLinkAt(idx, "label", e.target.value)}
-                  className="w-1/3 border rounded-md px-3 py-2 text-sm"
-                />
-                <input
-                  placeholder="https://example.com"
-                  value={link.url}
-                  onChange={(e) => setLinkAt(idx, "url", e.target.value)}
-                  className="flex-1 border rounded-md px-3 py-2 text-sm"
-                />
-                {form.links.length > 1 && (
-                  <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 px-2">✕</button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addLinkField} className="text-sm text-blue-600">+ Add link</button>
-          </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Gallery images (optional, shown at the end of the post)</label>
+              {form.images.map((img, idx) => (
+                <div key={idx} className="flex items-center gap-2 mb-2">
+                  {img && <img src={img} alt="" className="h-10 w-10 object-cover rounded-md" />}
+                  <input
+                    placeholder="Image URL"
+                    value={img}
+                    onChange={(e) => setImageAt(idx, e.target.value)}
+                    className="flex-1 border rounded-md px-3 py-2 text-sm"
+                  />
+                  <label className="text-xs text-blue-600 cursor-pointer hover:underline whitespace-nowrap">
+                    Upload
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadToGallerySlot(idx, e.target.files[0])} />
+                  </label>
+                  {form.images.length > 1 && (
+                    <button type="button" onClick={() => removeImageField(idx)} className="text-red-500 px-2">✕</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addImageField} className="text-sm text-blue-600">+ Add image slot</button>
+            </div>
 
-          <button type="submit" disabled={uploading} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">
-            {editingId ? "Update Post" : "Publish"}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium mb-1">Links</label>
+              {form.links.map((link, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input
+                    placeholder="Label (optional)"
+                    value={link.label}
+                    onChange={(e) => setLinkAt(idx, "label", e.target.value)}
+                    className="w-1/3 border rounded-md px-3 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="https://example.com"
+                    value={link.url}
+                    onChange={(e) => setLinkAt(idx, "url", e.target.value)}
+                    className="flex-1 border rounded-md px-3 py-2 text-sm"
+                  />
+                  {form.links.length > 1 && (
+                    <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 px-2">✕</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addLinkField} className="text-sm text-blue-600">+ Add link</button>
+            </div>
+
+            <button type="submit" disabled={uploading} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">
+              {editingId ? "Update Post" : "Publish"}
+            </button>
+          </form>
+        </Card>
       )}
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {blogs.map((b) => {
-          const isOwner = b.author?._id === user?.id || b.author === user?.id;
-          return (
-            <div key={b._id} className="bg-white rounded-lg shadow p-4">
-              {b.coverImage && <img src={b.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
-              <span className="text-xs text-blue-600 uppercase">{b.category}</span>
-              <h2 className="font-medium mt-1">{b.title}</h2>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{previewText(b.content)}</p>
-
-              {isOwner && (
-                <div className="flex gap-3 mt-3">
-                  <button onClick={() => startEdit(b)} className="text-sm text-blue-600">Edit</button>
-                  <button onClick={() => handleDelete(b._id)} className="text-sm text-red-500">Delete</button>
+      {blogs.length === 0 ? (
+        <EmptyState
+          icon={Newspaper}
+          title="No blog posts yet"
+          description="Publish your first post to start sharing with students."
+        />
+      ) : (
+        <div className="grid md:grid-cols-2 gap-4">
+          {blogs.map((b) => {
+            const isOwner = b.author?._id === user?.id || b.author === user?.id;
+            return (
+              <Card key={b._id} padded={false} className="overflow-hidden">
+                {b.coverImage && <img src={b.coverImage} alt="" className="w-full h-32 object-cover" />}
+                <div className="p-4">
+                  <Badge tone="brand" className="mb-2">{b.category}</Badge>
+                  <h2 className="font-medium text-brand-navy">{b.title}</h2>
+                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{previewText(b.content)}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                      <Heart size={12} />
+                      {b.likes?.length || 0}
+                    </span>
+                    {isOwner && (
+                      <div className="flex gap-3">
+                        <button onClick={() => startEdit(b)} className="text-sm text-blue-600">Edit</button>
+                        <button onClick={() => handleDelete(b._id)} className="text-sm text-red-500">Delete</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
-        {blogs.length === 0 && <p className="text-gray-500">No blog posts yet.</p>}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
