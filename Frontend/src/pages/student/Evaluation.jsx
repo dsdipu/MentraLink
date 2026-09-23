@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { getMySessions } from "../../services/sessionService";
 import { getMyEvaluations, submitEvaluation } from "../../services/evaluationService";
+import Card from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import StarRating from "../../components/ui/StarRating";
+import { Star } from "lucide-react";
 
 const RATING_FIELDS = [
   { key: "communication", label: "Communication" },
@@ -59,44 +63,47 @@ const Evaluation = () => {
       {message && <p className="text-sm mb-4 text-blue-600">{message}</p>}
 
       {availableSessions.length === 0 ? (
-        <p className="text-gray-500">
-          {sessions.length === 0 ? "No completed sessions yet." : "You've evaluated all your completed sessions."}
-        </p>
+        <EmptyState
+          icon={Star}
+          title={sessions.length === 0 ? "No completed sessions yet" : "All caught up"}
+          description={
+            sessions.length === 0
+              ? "You'll be able to evaluate your mentor once a session is completed."
+              : "You've evaluated all your completed sessions."
+          }
+        />
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
-          <select
-            required
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="w-full border rounded-md px-3 py-2"
-          >
-            <option value="">Select a completed session</option>
-            {availableSessions.map((s) => (
-              <option key={s._id} value={s._id}>#{s.sessionNumber} — {s.title}</option>
+        <Card>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <select
+              required
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="">Select a completed session</option>
+              {availableSessions.map((s) => (
+                <option key={s._id} value={s._id}>#{s.sessionNumber} — {s.title}</option>
+              ))}
+            </select>
+
+            {RATING_FIELDS.map(({ key, label }) => (
+              <div key={key} className="flex items-center justify-between">
+                <label className="text-sm text-gray-700">{label}</label>
+                <StarRating value={ratings[key]} onChange={(v) => setRatings({ ...ratings, [key]: v })} size={18} />
+              </div>
             ))}
-          </select>
 
-          {RATING_FIELDS.map(({ key, label }) => (
-            <div key={key}>
-              <label className="block text-sm mb-1">{label} (1-5)</label>
-              <input
-                type="number" min="1" max="5"
-                value={ratings[key]}
-                onChange={(e) => setRatings({ ...ratings, [key]: Number(e.target.value) })}
-                className="w-full border rounded-md px-3 py-2"
-              />
+            <div>
+              <label className="block text-sm mb-1">Comments</label>
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4} className="w-full border rounded-md px-3 py-2" />
             </div>
-          ))}
 
-          <div>
-            <label className="block text-sm mb-1">Comments</label>
-            <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4} className="w-full border rounded-md px-3 py-2" />
-          </div>
-
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-            Submit Evaluation
-          </button>
-        </form>
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full">
+              Submit Evaluation
+            </button>
+          </form>
+        </Card>
       )}
     </div>
   );
