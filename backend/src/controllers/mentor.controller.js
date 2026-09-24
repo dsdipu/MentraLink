@@ -21,7 +21,8 @@ const createMentor = async (req, res) => {
 const getMentors = async (req, res) => {
   try {
     const mentors = await Mentor.find().populate("user", "name email isActive");
-    res.json({ mentors });
+    const validMentors = mentors.filter((m) => m.user); // drop any with a missing/deleted linked User
+    res.json({ mentors: validMentors });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
