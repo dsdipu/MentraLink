@@ -25,7 +25,7 @@ const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
   { to: "/admin/semesters", label: "Semesters", icon: CalendarRange },
-  { to: "/admin/mentors", label: "Mentors", icon: Users2 },
+  { to: "/admin/mentors", label: "Mentor Assignment", icon: Users2 },
   { to: "/admin/sessions", label: "Sessions", icon: CalendarClock },
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
