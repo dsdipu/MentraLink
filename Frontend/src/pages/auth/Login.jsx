@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import logo from "../../assets/mentraLink.png";
@@ -8,15 +8,61 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (
+        window.turnstile &&
+        turnstileRef.current &&
+        turnstileWidgetId.current === null
+      ) {
+        turnstileWidgetId.current = window.turnstile.render(
+          turnstileRef.current,
+          {
+            sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+            callback: (token) => setTurnstileToken(token),
+            "expired-callback": () => setTurnstileToken(""),
+            "error-callback": () => setTurnstileToken(""),
+          }
+        );
+      }
+    };
+
+    if (window.turnstile) {
+      renderTurnstile();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    script.async = true;
+    script.defer = true;
+    script.onload = renderTurnstile;
+
+    document.head.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      const user = await login(email, password);
+      if (!turnstileToken) {
+        setError("Please complete the CAPTCHA verification");
+        setSubmitting(false);
+        return;
+      }
+
+      const user = await login(email, password, turnstileToken);
       const role = user?.role?.toLowerCase();
 
       if (role === "admin") {
@@ -27,8 +73,17 @@ const Login = () => {
         navigate("/student/dashboard");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
-    } finally {
+        setError(err.response?.data?.message || "Login failed");
+
+        setTurnstileToken("");
+
+        if (
+          window.turnstile &&
+          turnstileWidgetId.current !== null
+        ) {
+          window.turnstile.reset(turnstileWidgetId.current);
+        }
+      } finally {
       setSubmitting(false);
     }
   };
@@ -86,6 +141,11 @@ const Login = () => {
           <p className="text-right text-xs text-red-700 hover:underline mb-6">
             <Link to="/forgot-password">Forgot password?</Link>
           </p>
+
+          <div
+            ref={turnstileRef}
+            className="mb-5 flex justify-center"
+          />
 
           <button
             type="submit"

@@ -145,9 +145,46 @@ const rejectUser = async (req, res) => {
   }
 };
 
+const verifyTurnstile = async (token, ip) => {
+  if (!token) {
+    return false;
+  }
+
+  const response = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: token,
+        remoteip: ip || "",
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  return result.success === true;
+};
+
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, turnstileToken } = req.body;
+
+    const captchaValid = await verifyTurnstile(
+      turnstileToken,
+      req.ip
+    );
+
+    if (!captchaValid) {
+      return res.status(400).json({
+        message: "Please complete the CAPTCHA verification",
+      });
+    }
+    
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
     if (!user || !user.isActive) {

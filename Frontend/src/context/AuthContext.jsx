@@ -16,8 +16,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const { token, user } = await loginUser(email, password);
+  const login = async (email, password, turnstileToken) => {
+    const { token, user } = await loginUser(email, password, turnstileToken);
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
     setUser(user);
