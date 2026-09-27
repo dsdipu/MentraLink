@@ -23,7 +23,7 @@ const getAdminDashboard = async (req, res) => {
       totalAttendanceRecords > 0 ? +((presentCount / totalAttendanceRecords) * 100).toFixed(2) : 0;
 
     const evaluations = await MentorEvaluation.find();
-    let averageMentorRating = 0;
+    let averageMentorRating = 5.0;
     if (evaluations.length > 0) {
       const totalOverall = evaluations.reduce((sum, ev) => {
         const avg =
@@ -110,7 +110,7 @@ const getMentorDashboard = async (req, res) => {
     });
 
     const evaluations = await MentorEvaluation.find({ mentor: mentor._id });
-    let averageRating = 0;
+    let averageRating = 5.0;
     if (evaluations.length > 0) {
       const totalOverall = evaluations.reduce((sum, ev) => {
         const avg =

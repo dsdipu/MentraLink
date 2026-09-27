@@ -9,14 +9,14 @@ const calculateMentorRating = async (mentorId, semesterId = null) => {
 
   if (evaluations.length === 0) {
     return {
-      overallRating: 0,
+      overallRating: 5,
       totalEvaluations: 0,
       categoryAverages: {
-        communication: 0,
-        guidance: 0,
-        availability: 0,
-        knowledgeSharing: 0,
-        overallExperience: 0,
+        communication: 5,
+        guidance: 5,
+        availability: 5,
+        knowledgeSharing: 5,
+        overallExperience: 5,
       },
     };
   }
@@ -38,6 +38,7 @@ const calculateMentorRating = async (mentorId, semesterId = null) => {
   });
 
   const count = evaluations.length;
+
   const categoryAverages = {
     communication: +(totals.communication / count).toFixed(2),
     guidance: +(totals.guidance / count).toFixed(2),
@@ -55,7 +56,11 @@ const calculateMentorRating = async (mentorId, semesterId = null) => {
     5
   ).toFixed(2);
 
-  return { overallRating, totalEvaluations: count, categoryAverages };
+  return {
+    overallRating,
+    totalEvaluations: count,
+    categoryAverages,
+  };
 };
 
 module.exports = { calculateMentorRating };
