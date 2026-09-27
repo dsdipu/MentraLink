@@ -26,6 +26,7 @@ import MentorAttendance from "../pages/mentor/Attendance";
 import MentorFeedback from "../pages/mentor/Feedback";
 import MentorEvaluation from "../pages/mentor/Evaluation";
 import MentorBlogs from "../pages/mentor/Blogs";
+import MentorBlogDetails from "../pages/mentor/BlogDetails";
 import Mentors from "../pages/Mentor";
 
 // Admin
@@ -76,6 +77,7 @@ const AppRoutes = () => {
           <Route path="/mentor/feedback" element={<MentorFeedback />} />
           <Route path="/mentor/evaluation" element={<MentorEvaluation />} />
           <Route path="/mentor/blogs" element={<MentorBlogs />} />
+          <Route path="/mentor/blogs/:id" element={<MentorBlogDetails />} />
         </Route>
       </Route>
 

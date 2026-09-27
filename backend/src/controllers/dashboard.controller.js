@@ -5,6 +5,8 @@ const Session = require("../models/Session");
 const Attendance = require("../models/Attendance");
 const MentorEvaluation = require("../models/MentorEvaluation");
 const Feedback = require("../models/Feedback");
+const Blog = require("../models/Blog");
+const { calculateMentorRating } = require("../services/rating.service");
 
 const startOfToday = () => new Date(new Date().setHours(0, 0, 0, 0));
 
@@ -119,7 +121,9 @@ const getMentorDashboard = async (req, res) => {
       averageRating = +(totalOverall / evaluations.length).toFixed(2);
     }
 
-    res.json({ studentCount, upcomingSessions, averageRating });
+    const blogCount = await Blog.countDocuments({ author: req.user.id });
+
+    res.json({ studentCount, upcomingSessions, averageRating, blogCount });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -137,4 +141,47 @@ const getPublicStats = async (req, res) => {
   }
 };
 
-module.exports = { getAdminDashboard, getStudentDashboard, getMentorDashboard, getPublicStats };
+// Public — no auth required, powers the "Top rated mentors" section on the homepage.
+// Mentors with zero feedback are shown as a 5/5 default so new mentors aren't buried,
+// but a real average (once they have feedback) always outranks that default.
+const getTopRatedMentors = async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 6, 12);
+
+    const mentors = await Mentor.find({ status: "ACTIVE" }).populate("user", "name isActive");
+    const activeMentors = mentors.filter((m) => m.user && m.user.isActive);
+
+    const results = await Promise.all(
+      activeMentors.map(async (mentor) => {
+        const rating = await calculateMentorRating(mentor._id);
+        const hasFeedback = rating.totalEvaluations > 0;
+        return {
+          mentorId: mentor._id,
+          name: mentor.user.name,
+          department: mentor.department,
+          expertise: mentor.expertise,
+          profileImage: mentor.profileImage || null,
+          overallRating: hasFeedback ? rating.overallRating : 5,
+          totalFeedbacks: rating.totalEvaluations,
+        };
+      })
+    );
+
+    results.sort((a, b) => {
+      if (b.overallRating !== a.overallRating) return b.overallRating - a.overallRating;
+      return b.totalFeedbacks - a.totalFeedbacks;
+    });
+
+    res.json({ mentors: results.slice(0, limit) });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = {
+  getAdminDashboard,
+  getStudentDashboard,
+  getMentorDashboard,
+  getPublicStats,
+  getTopRatedMentors,
+};
