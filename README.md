@@ -188,6 +188,8 @@ MentraLink brings these activities together into a centralized platform with rol
 
 ## System Architecture
 
+![MentraLink Blog](docs/screenshots/diagram.png)
+
 ```text
                          ┌─────────────────────────┐
                          │        End Users         │
