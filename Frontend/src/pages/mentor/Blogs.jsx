@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../../services/blogService";
 import { previewText } from "../../utils/blogPreview";
 import useAuth from "../../hooks/useAuth";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import EmptyState from "../../components/ui/EmptyState";
-import { Newspaper, Heart } from "lucide-react";
+import { Newspaper, Heart, Share2, Check } from "lucide-react";
 
 const emptyForm = { title: "", category: "", content: "", coverImage: "", images: [""], links: [{ label: "", url: "" }] };
 
@@ -17,6 +18,7 @@ const Blogs = () => {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
   const contentRef = useRef(null);
 
   const load = () => getBlogs().then(setBlogs);
@@ -49,6 +51,19 @@ const Blogs = () => {
       load();
     } catch (err) {
       alert(err.response?.data?.message || "Failed to delete blog");
+    }
+  };
+
+  const handleShare = async (e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/blogs/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 2000);
+    } catch {
+      window.prompt("Copy this link to share:", url);
     }
   };
 
@@ -279,26 +294,62 @@ const Blogs = () => {
           {blogs.map((b) => {
             const isOwner = b.author?._id === user?.id || b.author === user?.id;
             return (
-              <Card key={b._id} padded={false} className="overflow-hidden">
-                {b.coverImage && <img src={b.coverImage} alt="" className="w-full h-32 object-cover" />}
-                <div className="p-4">
-                  <Badge tone="brand" className="mb-2">{b.category}</Badge>
-                  <h2 className="font-medium text-brand-navy">{b.title}</h2>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{previewText(b.content)}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
-                      <Heart size={12} />
-                      {b.likes?.length || 0}
-                    </span>
-                    {isOwner && (
-                      <div className="flex gap-3">
-                        <button onClick={() => startEdit(b)} className="text-sm text-blue-600">Edit</button>
-                        <button onClick={() => handleDelete(b._id)} className="text-sm text-red-500">Delete</button>
+              <Link key={b._id} to={`/mentor/blogs/${b._id}`} className="block">
+                <Card padded={false} className="overflow-hidden h-full hover:shadow-md transition">
+                  {b.coverImage && <img src={b.coverImage} alt="" className="w-full h-32 object-cover" />}
+                  <div className="p-4">
+                    <Badge tone="brand" className="mb-2">{b.category}</Badge>
+                    <h2 className="font-medium text-brand-navy">{b.title}</h2>
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{previewText(b.content)}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Heart size={12} />
+                        {b.likes?.length || 0}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => handleShare(e, b._id)}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-brand-green"
+                        >
+                          {copiedId === b._id ? (
+                            <>
+                              <Check size={12} /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Share2 size={12} /> Share
+                            </>
+                          )}
+                        </button>
+                        {isOwner && (
+                          <div className="flex gap-3">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                startEdit(b);
+                              }}
+                              className="text-sm text-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDelete(b._id);
+                              }}
+                              className="text-sm text-red-500"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             );
           })}
         </div>
