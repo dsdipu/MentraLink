@@ -1,17 +1,63 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getPublicStats } from "../../services/publicService";
+import { getPublicStats, getTopMentors } from "../../services/publicService";
 import { getBlogs } from "../../services/blogService";
 import { previewText } from "../../utils/blogPreview";
 import TeamGrid from "../../components/TeamGrid";
+import { Star } from "lucide-react";
+
+const AVATAR_TONES = ["bg-brand-navy", "bg-brand-green", "bg-brand-blue", "bg-brand-purple"];
+
+const initials = (name = "") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+
+const MentorCard = ({ mentor, tone }) => (
+  <div className="group bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-4 shadow-md flex items-center justify-center text-white font-display text-xl ${tone}`}>
+      {mentor.profileImage ? (
+        <img src={mentor.profileImage} alt={mentor.name} className="w-full h-full object-cover" />
+      ) : (
+        initials(mentor.name)
+      )}
+    </div>
+
+    <p className="font-semibold text-brand-navy">{mentor.name}</p>
+    <p className="text-sm text-brand-green mb-3">{mentor.department}</p>
+
+    <div className="flex items-center justify-center gap-0.5 mb-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={15}
+          className={n <= Math.round(mentor.overallRating) ? "text-brand-gold" : "text-gray-200"}
+          fill={n <= Math.round(mentor.overallRating) ? "currentColor" : "none"}
+        />
+      ))}
+    </div>
+    <p className="text-xs text-gray-400">
+      {mentor.overallRating.toFixed(1)} out of 5
+      {" · "}
+      {mentor.totalFeedbacks > 0
+        ? `${mentor.totalFeedbacks} feedback${mentor.totalFeedbacks !== 1 ? "s" : ""}`
+        : "New mentor"}
+    </p>
+  </div>
+);
 
 const Home = () => {
   const [stats, setStats] = useState(null);
   const [blogs, setBlogs] = useState([]);
+  const [topMentors, setTopMentors] = useState([]);
 
   useEffect(() => {
     getPublicStats().then(setStats).catch(() => {});
     getBlogs().then((b) => setBlogs(b.slice(0, 3))).catch(() => {});
+    getTopMentors(6).then(setTopMentors).catch(() => {});
   }, []);
 
   const statItems = [
@@ -74,6 +120,23 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      {topMentors.length > 0 && (
+        <section className="max-w-6xl mx-auto px-6 py-16 border-t border-gray-100">
+          <div className="text-center mb-12">
+            <p className="text-sm font-medium text-brand-green mb-2">Top Rated</p>
+            <h2 className="font-display text-3xl text-brand-navy">Mentors students love</h2>
+            <p className="text-gray-500 mt-2 max-w-md mx-auto">
+              Ratings come straight from student evaluations after each session.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {topMentors.map((m, i) => (
+              <MentorCard key={m.mentorId} mentor={m} tone={AVATAR_TONES[i % AVATAR_TONES.length]} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <TeamGrid />
 
