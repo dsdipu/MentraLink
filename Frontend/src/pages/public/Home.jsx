@@ -44,7 +44,12 @@ const MentorCard = ({ mentor, tone }) => (
       {" · "}
       {mentor.totalFeedbacks > 0
         ? `${mentor.totalFeedbacks} feedback${mentor.totalFeedbacks !== 1 ? "s" : ""}`
-        : "New mentor"}
+        : "No feedback yet"}
+    </p>
+
+    <p className="text-xs text-brand-green mt-2 font-medium">
+      Mentored {mentor.totalSemesters || 0}{" "}
+      {mentor.totalSemesters === 1 ? "semester" : "semesters"}
     </p>
   </div>
 );

@@ -6,6 +6,7 @@ import { getPendingCount } from "../services/authService";
 
 import {
   LayoutDashboard,
+  House,
   UserCheck,
   LogOut,
   Bell,
@@ -22,6 +23,7 @@ import {
 
 
 const navItems = [
+  { to: "/", label: "Home", icon: House },
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
   { to: "/admin/semesters", label: "Semesters", icon: CalendarRange },
@@ -39,7 +41,30 @@ const AdminLayout = () => {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    getPendingCount().then(setPendingCount).catch(() => {});
+    const loadPendingCount = async () => {
+      try {
+        const count = await getPendingCount();
+        setPendingCount(count);
+      } catch {}
+    };
+
+    loadPendingCount();
+
+    const interval = setInterval(loadPendingCount, 5000);
+
+    const handlePendingUpdate = () => {
+      loadPendingCount();
+    };
+
+    window.addEventListener("pendingRequestsUpdated", handlePendingUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(
+        "pendingRequestsUpdated",
+        handlePendingUpdate
+      );
+    };
   }, []);
 
   return (
