@@ -4,6 +4,7 @@ import useAuth from "../hooks/useAuth";
 import logo from "../assets/mentraLink.png";
 import {
   LayoutDashboard,
+  House,
   UserCircle2,
   Users2,
   CalendarClock,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
+  { to: "/", label: "Home", icon: House },
   { to: "/mentor/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/mentor/profile", label: "Profile", icon: UserCircle2 },
   { to: "/mentor/students", label: "Students", icon: Users2 },

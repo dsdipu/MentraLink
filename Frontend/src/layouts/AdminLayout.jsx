@@ -6,6 +6,7 @@ import { getPendingCount } from "../services/authService";
 
 import {
   LayoutDashboard,
+  House,
   UserCheck,
   LogOut,
   Bell,
@@ -22,6 +23,7 @@ import {
 
 
 const navItems = [
+  { to: "/", label: "Home", icon: House },
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/pending-requests", label: "Pending Requests", icon: UserCheck },
   { to: "/admin/semesters", label: "Semesters", icon: CalendarRange },

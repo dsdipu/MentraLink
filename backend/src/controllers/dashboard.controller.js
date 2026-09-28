@@ -155,6 +155,17 @@ const getTopRatedMentors = async (req, res) => {
       activeMentors.map(async (mentor) => {
         const rating = await calculateMentorRating(mentor._id);
         const hasFeedback = rating.totalEvaluations > 0;
+
+        const mentorGroups = await MentorshipGroup.find({
+          mentor: mentor._id,
+        }).select("semester");
+
+        const semesterIds = new Set(
+          mentorGroups
+            .map((group) => group.semester?.toString())
+            .filter(Boolean)
+        );
+
         return {
           mentorId: mentor._id,
           name: mentor.user.name,
@@ -163,6 +174,7 @@ const getTopRatedMentors = async (req, res) => {
           profileImage: mentor.profileImage || null,
           overallRating: hasFeedback ? rating.overallRating : 5,
           totalFeedbacks: rating.totalEvaluations,
+          totalSemesters: semesterIds.size,
         };
       })
     );
