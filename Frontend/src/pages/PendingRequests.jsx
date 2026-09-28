@@ -39,6 +39,7 @@ function PendingRequests() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setPendingUsers((prev) => prev.filter((u) => u._id !== userId));
+      window.dispatchEvent(new Event("pendingRequestsUpdated"));
     } catch (err) {
       alert(err.response?.data?.message || "Failed to approve user");
       console.error(err);
@@ -55,6 +56,7 @@ function PendingRequests() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPendingUsers((prev) => prev.filter((u) => u._id !== userId));
+      window.dispatchEvent(new Event("pendingRequestsUpdated"));
     } catch (err) {
       alert("Failed to reject user");
       console.error(err);
