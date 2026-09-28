@@ -37,13 +37,17 @@ const MentorAssignment = () => {
     setError("");
 
     try {
-      const [groupsData, mentorsData, studentsData, semestersData] =
-        await Promise.all([
-          getGroups(),
-          getAllMentors(),
-          getAllStudents(),
-          getSemesters(),
-        ]);
+      const [
+        groupsData,
+        mentorsData,
+        studentsData,
+        semestersData,
+      ] = await Promise.all([
+        getGroups(),
+        getAllMentors(),
+        getAllStudents(),
+        getSemesters(),
+      ]);
 
       setGroups(Array.isArray(groupsData) ? groupsData : []);
       setMentors(Array.isArray(mentorsData) ? mentorsData : []);
@@ -69,8 +73,13 @@ const MentorAssignment = () => {
     return groups
       .filter((group) => group.status === "ACTIVE")
       .sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
+        const dateA = new Date(
+          a.createdAt || 0
+        ).getTime();
+
+        const dateB = new Date(
+          b.createdAt || 0
+        ).getTime();
 
         return dateB - dateA;
       });
@@ -90,12 +99,21 @@ const MentorAssignment = () => {
     return ids;
   }, [activeSections]);
 
-  const availableStudents = useMemo(() => {
+  const getAvailableStudents = (section) => {
+    const sectionBatch = section.semester?.batch;
+
+    if (!sectionBatch) {
+      return [];
+    }
+
     return students.filter(
       (student) =>
-        !assignedStudentIds.has(student._id.toString())
+        student.batch === sectionBatch &&
+        !assignedStudentIds.has(
+          student._id.toString()
+        )
     );
-  }, [students, assignedStudentIds]);
+  };
 
   const setActionLoadingState = (key, value) => {
     setActionLoading((prev) => ({
@@ -154,7 +172,10 @@ const MentorAssignment = () => {
     }
 
     setError("");
-    setActionLoadingState(`mentor-${sectionId}`, true);
+    setActionLoadingState(
+      `mentor-${sectionId}`,
+      true
+    );
 
     try {
       await assignMentor(sectionId, mentorId);
@@ -187,7 +208,10 @@ const MentorAssignment = () => {
     }
 
     setError("");
-    setActionLoadingState(`student-${sectionId}`, true);
+    setActionLoadingState(
+      `student-${sectionId}`,
+      true
+    );
 
     try {
       await assignStudents(sectionId, [studentId]);
@@ -249,7 +273,10 @@ const MentorAssignment = () => {
     }
   };
 
-  const handleDeleteSection = async (sectionId, name) => {
+  const handleDeleteSection = async (
+    sectionId,
+    name
+  ) => {
     const confirmed = window.confirm(
       `Delete section "${name}"? This action cannot be undone.`
     );
@@ -374,14 +401,21 @@ const MentorAssignment = () => {
               >
                 <option value="">Select semester</option>
 
-                {semesters.map((semester) => (
-                  <option
-                    key={semester._id}
-                    value={semester._id}
-                  >
-                    {semester.name} ({semester.academicYear})
-                  </option>
-                ))}
+                {semesters
+                  .filter(
+                    (semester) =>
+                      semester.status === "ACTIVE"
+                  )
+                  .map((semester) => (
+                    <option
+                      key={semester._id}
+                      value={semester._id}
+                    >
+                      {semester.name} (
+                      {semester.academicYear}) - Batch{" "}
+                      {semester.batch || "Not set"}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -443,6 +477,9 @@ const MentorAssignment = () => {
           const deleteLoading =
             actionLoading[`delete-${sectionId}`];
 
+          const availableStudents =
+            getAvailableStudents(section);
+
           return (
             <div
               key={sectionId}
@@ -469,6 +506,12 @@ const MentorAssignment = () => {
                         ? ` (${section.semester.academicYear})`
                         : ""}
                     </p>
+
+                    {section.semester?.batch && (
+                      <p className="mt-1 text-sm font-medium text-blue-600">
+                        Batch {section.semester.batch}
+                      </p>
+                    )}
                   </div>
 
                   <button
@@ -516,7 +559,9 @@ const MentorAssignment = () => {
 
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <select
-                        value={mentorPick[sectionId] || ""}
+                        value={
+                          mentorPick[sectionId] || ""
+                        }
                         onChange={(event) =>
                           setMentorPick((prev) => ({
                             ...prev,
@@ -566,9 +611,26 @@ const MentorAssignment = () => {
                       Add Student
                     </label>
 
+                    {section.semester?.batch ? (
+                      <p className="mb-1.5 text-xs text-gray-500">
+                        Only batch{" "}
+                        <span className="font-medium">
+                          {section.semester.batch}
+                        </span>{" "}
+                        students are shown.
+                      </p>
+                    ) : (
+                      <p className="mb-1.5 text-xs text-red-500">
+                        Semester batch is not configured.
+                        Set the batch from Semesters first.
+                      </p>
+                    )}
+
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <select
-                        value={studentPick[sectionId] || ""}
+                        value={
+                          studentPick[sectionId] || ""
+                        }
                         onChange={(event) =>
                           setStudentPick((prev) => ({
                             ...prev,
@@ -576,7 +638,10 @@ const MentorAssignment = () => {
                               event.target.value,
                           }))
                         }
-                        className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        disabled={
+                          !section.semester?.batch
+                        }
+                        className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
                       >
                         <option value="">
                           Select student
@@ -598,14 +663,19 @@ const MentorAssignment = () => {
                         {availableStudents.length ===
                           0 && (
                           <option value="" disabled>
-                            No unassigned students
+                            {section.semester?.batch
+                              ? "No unassigned students from this batch"
+                              : "Semester batch not configured"}
                           </option>
                         )}
                       </select>
 
                       <button
                         type="button"
-                        disabled={studentLoading}
+                        disabled={
+                          studentLoading ||
+                          !section.semester?.batch
+                        }
                         onClick={() =>
                           handleAddStudent(
                             sectionId
@@ -656,7 +726,8 @@ const MentorAssignment = () => {
                             value={semester._id}
                           >
                             {semester.name} (
-                            {semester.academicYear})
+                            {semester.academicYear}) - Batch{" "}
+                            {semester.batch || "Not set"}
                           </option>
                         ))}
                       </select>

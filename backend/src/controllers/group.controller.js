@@ -1,12 +1,86 @@
 const MentorshipGroup = require("../models/MentorshipGroup");
 
+const getSemesterModel = () => require("../models/Semester");
 const getMentorModel = () => require("../models/Mentor");
 const getStudentModel = () => require("../models/Student");
 
+const validateStudentsForSemester = async (semesterId, studentIds) => {
+  const Semester = getSemesterModel();
+  const Student = getStudentModel();
+
+  const semester = await Semester.findById(semesterId).select(
+    "name batch"
+  );
+
+  if (!semester) {
+    return {
+      valid: false,
+      message: "Semester not found",
+    };
+  }
+
+  if (!semester.batch) {
+    return {
+      valid: false,
+      message: `Batch is not configured for ${semester.name}. Please set the semester batch first.`,
+    };
+  }
+
+  if (!Array.isArray(studentIds)) {
+    return {
+      valid: false,
+      message: "Students must be an array",
+    };
+  }
+
+  if (studentIds.length === 0) {
+    return {
+      valid: true,
+      semester,
+    };
+  }
+
+  const uniqueStudentIds = [
+    ...new Set(studentIds.map((studentId) => studentId.toString())),
+  ];
+
+  const students = await Student.find({
+    _id: { $in: uniqueStudentIds },
+  }).select("_id studentId batch");
+
+  if (students.length !== uniqueStudentIds.length) {
+    return {
+      valid: false,
+      message: "One or more selected students do not exist",
+    };
+  }
+
+  const invalidStudents = students.filter(
+    (student) => student.batch !== semester.batch
+  );
+
+  if (invalidStudents.length > 0) {
+    return {
+      valid: false,
+      message: `Only batch ${semester.batch} students can be assigned to ${semester.name}.`,
+    };
+  }
+
+  return {
+    valid: true,
+    semester,
+  };
+};
+
 const createGroup = async (req, res) => {
   try {
-    const { name, semester, mentor, students = [], status = "ACTIVE" } =
-      req.body;
+    const {
+      name,
+      semester,
+      mentor,
+      students = [],
+      status = "ACTIVE",
+    } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -29,6 +103,17 @@ const createGroup = async (req, res) => {
     if (!Array.isArray(students)) {
       return res.status(400).json({
         message: "Students must be an array",
+      });
+    }
+
+    const studentValidation = await validateStudentsForSemester(
+      semester,
+      students
+    );
+
+    if (!studentValidation.valid) {
+      return res.status(400).json({
+        message: studentValidation.message,
       });
     }
 
@@ -66,7 +151,10 @@ const createGroup = async (req, res) => {
     });
 
     const populatedGroup = await MentorshipGroup.findById(group._id)
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -136,7 +224,10 @@ const getGroups = async (req, res) => {
         status: 1,
         createdAt: -1,
       })
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -166,7 +257,10 @@ const getGroups = async (req, res) => {
 const getGroupById = async (req, res) => {
   try {
     const group = await MentorshipGroup.findById(req.params.id)
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -227,6 +321,12 @@ const updateGroup = async (req, res) => {
       group.name = name.trim();
     }
 
+    const targetSemester =
+      semester !== undefined ? semester : group.semester;
+
+    const targetStudents =
+      students !== undefined ? students : group.students;
+
     if (semester !== undefined) {
       group.semester = semester;
     }
@@ -269,6 +369,17 @@ const updateGroup = async (req, res) => {
       group.students = students;
     }
 
+    const studentValidation = await validateStudentsForSemester(
+      targetSemester,
+      targetStudents
+    );
+
+    if (!studentValidation.valid) {
+      return res.status(400).json({
+        message: studentValidation.message,
+      });
+    }
+
     if (group.status === "ACTIVE" && group.students.length > 0) {
       const existingAssignment = await MentorshipGroup.findOne({
         students: { $in: group.students },
@@ -286,7 +397,10 @@ const updateGroup = async (req, res) => {
     await group.save();
 
     const updatedGroup = await MentorshipGroup.findById(group._id)
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -352,7 +466,10 @@ const assignMentor = async (req, res) => {
     await group.save();
 
     const updatedGroup = await MentorshipGroup.findById(group._id)
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -403,23 +520,28 @@ const assignStudents = async (req, res) => {
       });
     }
 
-    const Student = getStudentModel();
+    const uniqueStudentIds = [
+      ...new Set(studentIds.map((studentId) => studentId.toString())),
+    ];
 
-    const validStudents = await Student.find({
-      _id: { $in: studentIds },
-    }).select("_id studentId");
+    const validation = await validateStudentsForSemester(
+      group.semester,
+      uniqueStudentIds
+    );
 
-    if (validStudents.length !== studentIds.length) {
+    if (!validation.valid) {
       return res.status(400).json({
-        message: "One or more selected students do not exist",
+        message: validation.message,
       });
     }
 
     const currentStudentIds = new Set(
-      group.students.map((studentId) => studentId.toString())
+      group.students.map((studentId) =>
+        studentId.toString()
+      )
     );
 
-    const studentsToAdd = studentIds.filter(
+    const studentsToAdd = uniqueStudentIds.filter(
       (studentId) =>
         !currentStudentIds.has(studentId.toString())
     );
@@ -447,7 +569,10 @@ const assignStudents = async (req, res) => {
     await group.save();
 
     const updatedGroup = await MentorshipGroup.findById(group._id)
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
@@ -492,7 +617,10 @@ const getMyGroup = async (req, res) => {
       students: student._id,
       status: "ACTIVE",
     })
-      .populate("semester", "name academicYear status")
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
       .populate({
         path: "mentor",
         populate: {
