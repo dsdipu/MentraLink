@@ -4,6 +4,7 @@ import {
   createGroup,
   updateGroup,
   assignMentor,
+  unassignStudent,
   assignStudents,
   deleteGroup,
 } from "../services/groupService";
@@ -230,6 +231,41 @@ const MentorAssignment = () => {
     } finally {
       setActionLoadingState(
         `student-${sectionId}`,
+        false
+      );
+    }
+  };
+
+  const handleUnassignStudent = async (
+    sectionId,
+    studentId,
+    studentName
+  ) => {
+    const confirmed = window.confirm(
+      `Unassign ${studentName} from this section?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setActionLoadingState(
+      `unassign-${sectionId}-${studentId}`,
+      true
+    );
+
+    try {
+      await unassignStudent(sectionId, studentId);
+      await loadAll();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to unassign student."
+      );
+    } finally {
+      setActionLoadingState(
+        `unassign-${sectionId}-${studentId}`,
         false
       );
     }
@@ -764,23 +800,53 @@ const MentorAssignment = () => {
                   {section.students?.length > 0 ? (
                     <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {section.students.map(
-                        (student) => (
-                          <div
-                            key={student._id}
-                            className="min-w-0 rounded-md bg-gray-50 px-3 py-2"
-                          >
-                            <p className="truncate text-sm font-medium text-gray-800">
-                              {student.user?.name ||
-                                "Unnamed student"}
-                            </p>
+                        (student) => {
+                          const unassignLoading =
+                            actionLoading[
+                              `unassign-${sectionId}-${student._id}`
+                            ];
 
-                            {student.studentId && (
-                              <p className="truncate text-xs text-gray-500">
-                                {student.studentId}
-                              </p>
-                            )}
-                          </div>
-                        )
+                          const studentName =
+                            student.user?.name || "Unnamed student";
+
+                          return (
+                            <div
+                              key={student._id}
+                              className="min-w-0 rounded-md bg-gray-50 px-3 py-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-gray-800">
+                                    {studentName}
+                                  </p>
+
+                                  {student.studentId && (
+                                    <p className="truncate text-xs text-gray-500">
+                                      {student.studentId}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={unassignLoading}
+                                  onClick={() =>
+                                    handleUnassignStudent(
+                                      sectionId,
+                                      student._id,
+                                      studentName
+                                    )
+                                  }
+                                  className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {unassignLoading
+                                    ? "Removing..."
+                                    : "Unassign"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
                       )}
                     </div>
                   ) : (

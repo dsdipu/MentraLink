@@ -9,6 +9,10 @@ export const assignMentor = (id, mentorId) =>
   api.patch(`/groups/${id}/assign-mentor`, { mentorId }).then((r) => r.data.group);
 export const assignStudents = (id, studentIds) =>
   api.patch(`/groups/${id}/assign-students`, { studentIds }).then((r) => r.data.group);
+export const unassignStudent = (id, studentId) =>
+  api
+    .patch(`/groups/${id}/unassign-student`, { studentId })
+    .then((r) => r.data.group);
 export const deleteGroup = (id) =>
   api.delete(`/groups/${id}`).then((r) => r.data);
 

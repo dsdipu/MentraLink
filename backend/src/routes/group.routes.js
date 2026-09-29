@@ -8,6 +8,7 @@ const {
   getGroupById,
   updateGroup,
   assignMentor,
+  unassignStudent,
   assignStudents,
   deleteGroup,
 } = require("../controllers/group.controller");
@@ -22,6 +23,11 @@ router.get("/:id", authorize("ADMIN", "MENTOR", "STUDENT"), getGroupById);
 router.put("/:id", authorize("ADMIN"), updateGroup);
 router.patch("/:id/assign-mentor", authorize("ADMIN"), assignMentor);
 router.patch("/:id/assign-students", authorize("ADMIN"), assignStudents);
+router.patch(
+  "/:id/unassign-student",
+  authorize("ADMIN"),
+  unassignStudent
+);
 router.delete("/:id", authorize("ADMIN"), deleteGroup);
 
 module.exports = router;
