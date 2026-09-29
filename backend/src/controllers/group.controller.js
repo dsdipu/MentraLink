@@ -599,6 +599,69 @@ const assignStudents = async (req, res) => {
   }
 };
 
+const unassignStudent = async (req, res) => {
+  try {
+    const { studentId } = req.body;
+
+    if (!studentId) {
+      return res.status(400).json({
+        message: "Student is required",
+      });
+    }
+
+    const group = await MentorshipGroup.findById(req.params.id);
+
+    if (!group) {
+      return res.status(404).json({
+        message: "Section not found",
+      });
+    }
+
+    const studentIndex = group.students.findIndex(
+      (id) => id.toString() === studentId.toString()
+    );
+
+    if (studentIndex === -1) {
+      return res.status(400).json({
+        message: "Student is not assigned to this section",
+      });
+    }
+
+    group.students.splice(studentIndex, 1);
+
+    await group.save();
+
+    const updatedGroup = await MentorshipGroup.findById(group._id)
+      .populate(
+        "semester",
+        "name academicYear status batch"
+      )
+      .populate({
+        path: "mentor",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      })
+      .populate({
+        path: "students",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      });
+
+    res.json({
+      group: updatedGroup,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
 const getMyGroup = async (req, res) => {
   try {
     const Student = getStudentModel();
@@ -676,6 +739,7 @@ module.exports = {
   updateGroup,
   assignMentor,
   assignStudents,
+  unassignStudent,
   deleteGroup,
   getMyGroup,
 };
