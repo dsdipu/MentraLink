@@ -1,0 +1,1128 @@
+--- a/Frontend/src/pages/mentor/Sessions.jsx	2026-09-23 12:03:22.000000000 +0000
++++ b/Frontend/src/pages/mentor/Sessions.jsx	2026-09-30 14:23:57.219284116 +0000
+@@ -1,210 +1,375 @@
+-import { useEffect, useState } from "react";
+-import { getMyMentorSessions, createSession, updateSession, updateSessionStatus } from "../../services/sessionService";
+-import { getGroups } from "../../services/groupService";
+-import Card from "../../components/ui/Card";
+-import Badge from "../../components/ui/Badge";
+-import EmptyState from "../../components/ui/EmptyState";
+-import { CalendarClock } from "lucide-react";
+-
+-const emptyForm = {
+-  group: "",
+-  sessionNumber: "",
+-  title: "",
+-  description: "",
+-  date: "",
+-  time: "",
+-  location: "",
+-  meetingLink: "",
+-};
+-
+-const STATUS_TONE = {
+-  UPCOMING: "info",
+-  ONGOING: "warning",
+-  COMPLETED: "success",
+-  CANCELLED: "danger",
+-};
+-
+-const Sessions = () => {
+-  const [sessions, setSessions] = useState([]);
+-  const [groups, setGroups] = useState([]);
+-  const [loading, setLoading] = useState(true);
+-  const [showForm, setShowForm] = useState(false);
+-  const [editingId, setEditingId] = useState(null);
+-  const [form, setForm] = useState(emptyForm);
+-  const [error, setError] = useState("");
+-
+-  const load = () => {
+-    setLoading(true);
+-    return Promise.all([getMyMentorSessions(), getGroups()])
+-      .then(([s, g]) => {
+-        setSessions(s);
+-        setGroups(g);
+-      })
+-      .finally(() => setLoading(false));
+-  };
+-
+-  useEffect(() => { load(); }, []);
+-
+-  useEffect(() => {
+-    if (editingId || !form.group) return;
+-    const countInGroup = sessions.filter((s) => (s.group?._id || s.group) === form.group).length;
+-    setForm((f) => ({ ...f, sessionNumber: countInGroup + 1 }));
+-  }, [form.group, sessions, editingId]);
+-
+-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+-
+-  const openCreate = () => {
+-    setEditingId(null);
+-    setForm(emptyForm);
+-    setShowForm(true);
+-  };
+-
+-  const openEdit = (s) => {
+-    setEditingId(s._id);
+-    setForm({
+-      group: s.group?._id || s.group || "",
+-      sessionNumber: s.sessionNumber,
+-      title: s.title,
+-      description: s.description || "",
+-      date: s.date?.slice(0, 10) || "",
+-      time: s.time || "",
+-      location: s.location || "",
+-      meetingLink: s.meetingLink || "",
+-    });
+-    setShowForm(true);
+-  };
+-
+-  const handleSubmit = async (e) => {
+-    e.preventDefault();
+-    setError("");
+-
+-    const selectedGroup = groups.find((g) => g._id === form.group);
+-    if (!selectedGroup) {
+-      setError("Please select a valid group");
+-      return;
+-    }
+-
+-    const payload = {
+-      ...form,
+-      semester: selectedGroup.semester?._id || selectedGroup.semester,
+-      mentor: selectedGroup.mentor?._id || selectedGroup.mentor,
+-      sessionNumber: Number(form.sessionNumber),
+-    };
+-
+-    try {
+-      if (editingId) {
+-        await updateSession(editingId, payload);
+-      } else {
+-        await createSession(payload);
+-      }
+-      setShowForm(false);
+-      setForm(emptyForm);
+-      setEditingId(null);
+-      load();
+-    } catch (err) {
+-      setError(err.response?.data?.message || "Failed to save session");
+-    }
+-  };
+-
+-  const handleStatusChange = async (id, status) => {
+-    await updateSessionStatus(id, status);
+-    load();
+-  };
+-
+-  if (loading) return <p>Loading sessions...</p>;
+-
+-  return (
+-    <div>
+-      <div className="flex justify-between items-center mb-4">
+-        <h1 className="text-2xl font-semibold">My Sessions</h1>
+-        <button
+-          onClick={() => (showForm ? setShowForm(false) : openCreate())}
+-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+-        >
+-          {showForm ? "Cancel" : "+ New Session"}
+-        </button>
+-      </div>
+-
+-      {showForm && (
+-        <Card className="mb-4">
+-          <form onSubmit={handleSubmit} className="space-y-3">
+-            {error && <p className="text-red-500 text-sm">{error}</p>}
+-
+-            <select required name="group" value={form.group} onChange={handleChange} className="w-full border rounded-md px-3 py-2">
+-              <option value="">Select group</option>
+-              {groups.map((g) => (
+-                <option key={g._id} value={g._id}>{g.name} — {g.semester?.name}</option>
+-              ))}
+-            </select>
+-
+-            <div>
+-              <label className="block text-xs text-gray-500 mb-1">Session number (auto)</label>
+-              <input
+-                required
+-                type="number"
+-                min="1"
+-                name="sessionNumber"
+-                value={form.sessionNumber}
+-                readOnly={!editingId}
+-                onChange={handleChange}
+-                className={`w-full border rounded-md px-3 py-2 ${!editingId ? "bg-gray-100" : ""}`}
+-              />
+-            </div>
+-
+-            <input required placeholder="Title" name="title" value={form.title} onChange={handleChange} className="w-full border rounded-md px-3 py-2" />
+-            <textarea placeholder="Description (optional)" name="description" value={form.description} onChange={handleChange} rows={2} className="w-full border rounded-md px-3 py-2" />
+-
+-            <div className="flex gap-3">
+-              <input required type="date" name="date" value={form.date} onChange={handleChange} className="flex-1 border rounded-md px-3 py-2" />
+-              <input required type="time" name="time" value={form.time} onChange={handleChange} className="flex-1 border rounded-md px-3 py-2" />
+-            </div>
+-
+-            <input placeholder="Location (optional)" name="location" value={form.location} onChange={handleChange} className="w-full border rounded-md px-3 py-2" />
+-            <input placeholder="Meeting link (optional)" name="meetingLink" value={form.meetingLink} onChange={handleChange} className="w-full border rounded-md px-3 py-2" />
+-
+-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md">
+-              {editingId ? "Update Session" : "Create Session"}
+-            </button>
+-          </form>
+-        </Card>
+-      )}
+-
+-      {sessions.length === 0 ? (
+-        <EmptyState
+-          icon={CalendarClock}
+-          title="No sessions yet"
+-          description="Create your first session for one of your groups to get started."
+-        />
+-      ) : (
+-        <div className="space-y-2">
+-          {sessions.map((s) => (
+-            <Card key={s._id} className="flex justify-between items-center">
+-              <div>
+-                <p className="font-medium text-brand-navy">#{s.sessionNumber} — {s.title}</p>
+-                <p className="text-sm text-gray-500">
+-                  {new Date(s.date).toLocaleDateString()} {s.time} — {s.semester?.name}
+-                </p>
+-              </div>
+-              <div className="flex items-center gap-3">
+-                <select
+-                  value={s.status}
+-                  onChange={(e) => handleStatusChange(s._id, e.target.value)}
+-                  className="text-xs border rounded-full px-2 py-1"
+-                >
+-                  <option value="UPCOMING">UPCOMING</option>
+-                  <option value="ONGOING">ONGOING</option>
+-                  <option value="COMPLETED">COMPLETED</option>
+-                  <option value="CANCELLED">CANCELLED</option>
+-                </select>
+-                <Badge tone={STATUS_TONE[s.status] || "neutral"}>{s.status}</Badge>
+-                <button onClick={() => openEdit(s)} className="text-sm text-blue-600 hover:underline">Edit</button>
+-              </div>
+-            </Card>
+-          ))}
+-        </div>
+-      )}
+-    </div>
+-  );
+-};
+-
+-export default Sessions;
+\ No newline at end of file
++import { useEffect, useMemo, useState } from "react";
++import {
++  getMyMentorSessions,
++  createSession,
++  updateSession,
++  updateSessionStatus,
++} from "../../services/sessionService";
++import { getGroups } from "../../services/groupService";
++import { getMyMentorSessionTemplates } from "../../services/sessionTemplateService";
++import Card from "../../components/ui/Card";
++import Badge from "../../components/ui/Badge";
++import EmptyState from "../../components/ui/EmptyState";
++import { CalendarClock, ClipboardList } from "lucide-react";
++
++const emptyForm = {
++  group: "",
++  template: "",
++  date: "",
++  time: "",
++  location: "",
++  meetingLink: "",
++};
++
++const STATUS_TONE = {
++  UPCOMING: "info",
++  ONGOING: "warning",
++  COMPLETED: "success",
++  CANCELLED: "danger",
++};
++
++const Sessions = () => {
++  const [sessions, setSessions] = useState([]);
++  const [groups, setGroups] = useState([]);
++  const [templates, setTemplates] = useState([]);
++  const [loading, setLoading] = useState(true);
++  const [showForm, setShowForm] = useState(false);
++  const [editingId, setEditingId] = useState(null);
++  const [form, setForm] = useState(emptyForm);
++  const [error, setError] = useState("");
++
++  const load = () => {
++    setLoading(true);
++    return Promise.all([
++      getMyMentorSessions(),
++      getGroups(),
++      getMyMentorSessionTemplates(),
++    ])
++      .then(([s, g, t]) => {
++        setSessions(s);
++        setGroups(g);
++        setTemplates(t);
++      })
++      .finally(() => setLoading(false));
++  };
++
++  useEffect(() => {
++    load();
++  }, []);
++
++  const selectedGroup = useMemo(
++    () => groups.find((group) => group._id === form.group),
++    [groups, form.group]
++  );
++
++  const availableTemplates = useMemo(() => {
++    if (!selectedGroup) return [];
++
++    const semesterId = selectedGroup.semester?._id || selectedGroup.semester;
++    const scheduledTemplateIds = new Set(
++      sessions
++        .filter((session) => (session.group?._id || session.group) === selectedGroup._id)
++        .map((session) => session.template?._id || session.template)
++        .filter(Boolean)
++    );
++
++    return templates.filter(
++      (template) =>
++        (template.semester?._id || template.semester) === semesterId &&
++        !scheduledTemplateIds.has(template._id)
++    );
++  }, [groups, form.group, sessions, templates, selectedGroup]);
++
++  const selectedTemplate = useMemo(
++    () => templates.find((template) => template._id === form.template),
++    [templates, form.template]
++  );
++
++  const handleChange = (e) => {
++    const { name, value } = e.target;
++    setForm((current) => ({ ...current, [name]: value }));
++
++    if (name === "group") {
++      setForm((current) => ({ ...current, group: value, template: "" }));
++    }
++  };
++
++  const openCreate = () => {
++    setEditingId(null);
++    setForm(emptyForm);
++    setError("");
++    setShowForm(true);
++  };
++
++  const openEdit = (session) => {
++    setEditingId(session._id);
++    setForm({
++      group: session.group?._id || session.group || "",
++      template: session.template?._id || session.template || "",
++      date: session.date?.slice(0, 10) || "",
++      time: session.time || "",
++      location: session.location || "",
++      meetingLink: session.meetingLink || "",
++    });
++    setError("");
++    setShowForm(true);
++  };
++
++  const handleSubmit = async (e) => {
++    e.preventDefault();
++    setError("");
++
++    const group = groups.find((item) => item._id === form.group);
++    const template = templates.find((item) => item._id === form.template);
++
++    if (!group) {
++      setError("Please select a valid section");
++      return;
++    }
++
++    if (!template) {
++      setError("Please select a session from the admin's session plan");
++      return;
++    }
++
++    const payload = {
++      group: form.group,
++      template: form.template,
++      date: form.date,
++      time: form.time,
++      location: form.location,
++      meetingLink: form.meetingLink,
++    };
++
++    try {
++      if (editingId) {
++        await updateSession(editingId, payload);
++      } else {
++        await createSession(payload);
++      }
++      setShowForm(false);
++      setForm(emptyForm);
++      setEditingId(null);
++      load();
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to save session");
++    }
++  };
++
++  const handleStatusChange = async (id, status) => {
++    try {
++      await updateSessionStatus(id, status);
++      load();
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to update session status");
++    }
++  };
++
++  if (loading) return <p>Loading sessions...</p>;
++
++  return (
++    <div>
++      <div className="flex justify-between items-center mb-6 gap-3">
++        <div>
++          <h1 className="text-2xl font-semibold">My Sessions</h1>
++          <p className="text-sm text-gray-500 mt-1">
++            Schedule sessions from the session plans prepared by the admin.
++          </p>
++        </div>
++        <button
++          onClick={() => (showForm ? setShowForm(false) : openCreate())}
++          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
++        >
++          {showForm ? "Cancel" : "+ Schedule Session"}
++        </button>
++      </div>
++
++      {showForm && (
++        <Card className="mb-6">
++          <form onSubmit={handleSubmit} className="space-y-4">
++            {error && <p className="text-red-500 text-sm">{error}</p>}
++
++            <div>
++              <label className="block text-sm font-medium mb-1">Section</label>
++              <select
++                required
++                name="group"
++                value={form.group}
++                onChange={handleChange}
++                className="w-full border rounded-md px-3 py-2"
++              >
++                <option value="">Select section</option>
++                {groups.map((group) => (
++                  <option key={group._id} value={group._id}>
++                    {group.name} — {group.semester?.name}
++                  </option>
++                ))}
++              </select>
++            </div>
++
++            <div>
++              <label className="block text-sm font-medium mb-1">Session</label>
++              <select
++                required
++                name="template"
++                value={form.template}
++                onChange={handleChange}
++                disabled={!form.group || editingId}
++                className="w-full border rounded-md px-3 py-2 disabled:bg-gray-100"
++              >
++                <option value="">
++                  {form.group ? "Select an admin-created session" : "Select a section first"}
++                </option>
++                {availableTemplates.map((template) => (
++                  <option key={template._id} value={template._id}>
++                    Session {template.sessionNumber} — {template.title}
++                  </option>
++                ))}
++                {editingId && selectedTemplate && (
++                  <option value={selectedTemplate._id}>
++                    Session {selectedTemplate.sessionNumber} — {selectedTemplate.title}
++                  </option>
++                )}
++              </select>
++              {!editingId && form.group && availableTemplates.length === 0 && (
++                <p className="text-xs text-gray-500 mt-1">
++                  No unscheduled session plan is available for this section.
++                </p>
++              )}
++            </div>
++
++            {selectedTemplate && (
++              <div className="rounded-lg bg-gray-50 border p-4">
++                <div className="flex items-start gap-3">
++                  <ClipboardList size={20} className="text-blue-600 mt-0.5 shrink-0" />
++                  <div>
++                    <p className="font-semibold text-brand-navy">
++                      Session {selectedTemplate.sessionNumber}: {selectedTemplate.title}
++                    </p>
++                    {selectedTemplate.description && (
++                      <p className="text-sm text-gray-600 mt-1">
++                        {selectedTemplate.description}
++                      </p>
++                    )}
++                    <div className="mt-3">
++                      <p className="text-xs font-medium text-gray-500 mb-1">
++                        Feedback questions set by admin
++                      </p>
++                      <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
++                        {selectedTemplate.questions?.map((question) => (
++                          <li key={question._id}>{question.question}</li>
++                        ))}
++                      </ol>
++                    </div>
++                  </div>
++                </div>
++              </div>
++            )}
++
++            <div className="flex gap-3">
++              <div className="flex-1">
++                <label className="block text-sm font-medium mb-1">Date</label>
++                <input
++                  required
++                  type="date"
++                  name="date"
++                  value={form.date}
++                  onChange={handleChange}
++                  className="w-full border rounded-md px-3 py-2"
++                />
++              </div>
++              <div className="flex-1">
++                <label className="block text-sm font-medium mb-1">Time</label>
++                <input
++                  required
++                  type="time"
++                  name="time"
++                  value={form.time}
++                  onChange={handleChange}
++                  className="w-full border rounded-md px-3 py-2"
++                />
++              </div>
++            </div>
++
++            <input
++              placeholder="Location (optional)"
++              name="location"
++              value={form.location}
++              onChange={handleChange}
++              className="w-full border rounded-md px-3 py-2"
++            />
++            <input
++              placeholder="Meeting link (optional)"
++              name="meetingLink"
++              value={form.meetingLink}
++              onChange={handleChange}
++              className="w-full border rounded-md px-3 py-2"
++            />
++
++            <button
++              type="submit"
++              disabled={!form.group || !form.template || !form.date || !form.time}
++              className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50"
++            >
++              {editingId ? "Update Schedule" : "Schedule Session"}
++            </button>
++          </form>
++        </Card>
++      )}
++
++      {sessions.length === 0 ? (
++        <EmptyState
++          icon={CalendarClock}
++          title="No sessions scheduled"
++          description="Choose an admin-created session plan and schedule it for one of your sections."
++        />
++      ) : (
++        <div className="space-y-3">
++          {sessions.map((session) => (
++            <Card key={session._id}>
++              <div className="flex justify-between items-start gap-4">
++                <div>
++                  <p className="font-medium text-brand-navy">
++                    Session {session.sessionNumber} — {session.title}
++                  </p>
++                  <p className="text-sm text-gray-500 mt-1">
++                    {session.group?.name} — {session.semester?.name}
++                  </p>
++                  <p className="text-sm text-gray-500">
++                    {new Date(session.date).toLocaleDateString()} {session.time}
++                  </p>
++                  {session.description && (
++                    <p className="text-sm text-gray-600 mt-2">{session.description}</p>
++                  )}
++                </div>
++                <div className="flex items-center gap-3 shrink-0">
++                  <select
++                    value={session.status}
++                    onChange={(e) => handleStatusChange(session._id, e.target.value)}
++                    className="text-xs border rounded-full px-2 py-1"
++                  >
++                    <option value="UPCOMING">UPCOMING</option>
++                    <option value="ONGOING">ONGOING</option>
++                    <option value="COMPLETED">COMPLETED</option>
++                    <option value="CANCELLED">CANCELLED</option>
++                  </select>
++                  <Badge tone={STATUS_TONE[session.status] || "neutral"}>
++                    {session.status}
++                  </Badge>
++                  <button
++                    onClick={() => openEdit(session)}
++                    className="text-sm text-blue-600 hover:underline"
++                  >
++                    Edit
++                  </button>
++                </div>
++              </div>
++            </Card>
++          ))}
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default Sessions;
+--- a/Frontend/src/services/sessionTemplateService.js	2026-09-30 14:22:56.421891143 +0000
++++ b/Frontend/src/services/sessionTemplateService.js	2026-09-30 14:23:57.058243938 +0000
+@@ -3,6 +3,9 @@
+ export const getSessionTemplates = (params) =>
+   api.get("/session-templates", { params }).then((r) => r.data.templates);
+ 
++export const getMyMentorSessionTemplates = () =>
++  api.get("/session-templates/mentor/me").then((r) => r.data.templates);
++
+ export const getSessionTemplateById = (id) =>
+   api.get(`/session-templates/${id}`).then((r) => r.data.template);
+ 
+--- a/backend/src/controllers/session.controller.js	2026-09-17 05:22:01.000000000 +0000
++++ b/backend/src/controllers/session.controller.js	2026-09-30 14:24:10.923626181 +0000
+@@ -1,172 +1,259 @@
+-const Session = require("../models/Session");
+-const Student = require("../models/Student");
+-const Mentor = require("../models/Mentor");
+-const MentorshipGroup = require("../models/MentorshipGroup");
+-
+-// Mentor/Admin: create session
+-const createSession = async (req, res) => {
+-  try {
+-    const { group, semester, mentor, sessionNumber, title, description, date, time, location, meetingLink } = req.body;
+-    const session = await Session.create({
+-      group, semester, mentor, sessionNumber, title, description, date, time, location, meetingLink,
+-    });
+-    res.status(201).json({ session });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Get all sessions (optionally filter by group/status)
+-const getSessions = async (req, res) => {
+-  try {
+-    const filter = {};
+-    if (req.query.group) filter.group = req.query.group;
+-    if (req.query.status) filter.status = req.query.status;
+-
+-    const sessions = await Session.find(filter)
+-      .populate("semester", "name")
+-      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
+-      .sort({ date: 1 });
+-
+-    res.json({ sessions });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Get single session
+-const getSessionById = async (req, res) => {
+-  try {
+-    const session = await Session.findById(req.params.id)
+-      .populate("semester", "name")
+-      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
+-      .populate({
+-        path: "group",
+-        populate: { path: "students", populate: { path: "user", select: "name email" } },
+-      });
+-    if (!session) return res.status(404).json({ message: "Session not found" });
+-    res.json({ session });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Mentor/Admin: update session (general info)
+-const updateSession = async (req, res) => {
+-  try {
+-    const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+-    if (!session) return res.status(404).json({ message: "Session not found" });
+-    res.json({ session });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Admin: delete session
+-const deleteSession = async (req, res) => {
+-  try {
+-    const session = await Session.findByIdAndDelete(req.params.id);
+-    if (!session) return res.status(404).json({ message: "Session not found" });
+-    res.json({ message: "Session deleted" });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Mentor/Admin: update session status
+-const updateSessionStatus = async (req, res) => {
+-  try {
+-    const { status } = req.body;
+-    const validStatuses = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
+-    if (!validStatuses.includes(status)) {
+-      return res.status(400).json({ message: "Invalid status value" });
+-    }
+-
+-    const session = await Session.findByIdAndUpdate(req.params.id, { status }, { new: true });
+-    if (!session) return res.status(404).json({ message: "Session not found" });
+-    res.json({ session });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Get next upcoming session
+-const getNextSession = async (req, res) => {
+-  try {
+-    const filter = {
+-      status: "UPCOMING",
+-      date: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }, // was: new Date()
+-    };
+-
+-    if (req.query.group) filter.group = req.query.group;
+-    if (req.query.mentor) filter.mentor = req.query.mentor;
+-    if (req.query.semester) filter.semester = req.query.semester;
+-
+-    const session = await Session.findOne(filter)
+-      .populate("semester", "name")
+-      .populate("group", "name")
+-      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
+-      .sort({ date: 1 });
+-
+-    if (!session) {
+-      return res.status(404).json({ message: "No upcoming session found" });
+-    }
+-
+-    res.status(200).json({ message: "Next session retrieved successfully", session });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Student: only sessions for the group(s) they belong to
+-const getMySessions = async (req, res) => {
+-  try {
+-    const student = await Student.findOne({ user: req.user.id });
+-    if (!student) return res.status(404).json({ message: "Student profile not found" });
+-
+-    const groups = await MentorshipGroup.find({ students: student._id }).select("_id");
+-    const groupIds = groups.map((g) => g._id);
+-
+-    const sessions = await Session.find({ group: { $in: groupIds } })
+-      .populate("semester", "name")
+-      .populate("group", "name")
+-      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
+-      .sort({ date: 1 });
+-
+-    res.json({ sessions });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-// Mentor: only sessions they are running, optionally filtered by status
+-const getMyMentorSessions = async (req, res) => {
+-  try {
+-    const mentor = await Mentor.findOne({ user: req.user.id });
+-    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
+-
+-    const filter = { mentor: mentor._id };
+-    if (req.query.status) filter.status = req.query.status;
+-
+-    const sessions = await Session.find(filter)
+-      .populate("semester", "name")
+-      .populate("group", "name")
+-      .sort({ date: 1 });
+-
+-    res.json({ sessions });
+-  } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
+-  }
+-};
+-
+-module.exports = {
+-  createSession,
+-  getSessions,
+-  getSessionById,
+-  updateSession,
+-  updateSessionStatus,
+-  deleteSession,
+-  getNextSession,
+-  getMySessions,
+-  getMyMentorSessions,
++const Session = require("../models/Session");
++const Student = require("../models/Student");
++const Mentor = require("../models/Mentor");
++const MentorshipGroup = require("../models/MentorshipGroup");
++const SessionTemplate = require("../models/SessionTemplate");
++
++// Mentor/Admin: create session from an admin-created session template
++const createSession = async (req, res) => {
++  try {
++    const { group, template, date, time, location, meetingLink } = req.body;
++
++    if (!group || !template || !date || !time) {
++      return res.status(400).json({
++        message: "Section, session plan, date and time are required",
++      });
++    }
++
++    const selectedGroup = await MentorshipGroup.findById(group);
++    if (!selectedGroup) {
++      return res.status(404).json({ message: "Section not found" });
++    }
++
++    const selectedTemplate = await SessionTemplate.findById(template);
++    if (!selectedTemplate) {
++      return res.status(404).json({ message: "Session plan not found" });
++    }
++
++    if (selectedGroup.semester.toString() !== selectedTemplate.semester.toString()) {
++      return res.status(400).json({
++        message: "This session plan does not belong to the selected section's semester",
++      });
++    }
++
++    if (req.user.role === "MENTOR") {
++      const mentor = await Mentor.findOne({ user: req.user.id });
++      if (!mentor || !selectedGroup.mentor || selectedGroup.mentor.toString() !== mentor._id.toString()) {
++        return res.status(403).json({ message: "You can only schedule sessions for your own sections" });
++      }
++    }
++
++    const existing = await Session.findOne({ group, template });
++    if (existing) {
++      return res.status(400).json({
++        message: `Session ${selectedTemplate.sessionNumber} is already scheduled for this section`,
++      });
++    }
++
++    const mentorId = selectedGroup.mentor;
++    if (!mentorId) {
++      return res.status(400).json({ message: "A mentor must be assigned to the section first" });
++    }
++
++    const session = await Session.create({
++      group,
++      semester: selectedGroup.semester,
++      mentor: mentorId,
++      template,
++      sessionNumber: selectedTemplate.sessionNumber,
++      title: selectedTemplate.title,
++      description: selectedTemplate.description,
++      date,
++      time,
++      location,
++      meetingLink,
++    });
++
++    const populatedSession = await Session.findById(session._id)
++      .populate("semester", "name")
++      .populate("group", "name")
++      .populate("template", "sessionNumber title description questions")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
++
++    res.status(201).json({ session: populatedSession });
++  } catch (err) {
++    if (err.code === 11000) {
++      return res.status(400).json({ message: "This session is already scheduled for this section" });
++    }
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Get all sessions (optionally filter by group/status)
++const getSessions = async (req, res) => {
++  try {
++    const filter = {};
++    if (req.query.group) filter.group = req.query.group;
++    if (req.query.status) filter.status = req.query.status;
++
++    const sessions = await Session.find(filter)
++      .populate("semester", "name")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
++      .sort({ date: 1 });
++
++    res.json({ sessions });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Get single session
++const getSessionById = async (req, res) => {
++  try {
++    const session = await Session.findById(req.params.id)
++      .populate("semester", "name")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
++      .populate({
++        path: "group",
++        populate: { path: "students", populate: { path: "user", select: "name email" } },
++      });
++    if (!session) return res.status(404).json({ message: "Session not found" });
++    res.json({ session });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Mentor/Admin: update session schedule
++const updateSession = async (req, res) => {
++  try {
++    const session = await Session.findById(req.params.id);
++    if (!session) return res.status(404).json({ message: "Session not found" });
++
++    if (req.user.role === "MENTOR") {
++      const mentor = await Mentor.findOne({ user: req.user.id });
++      if (!mentor || session.mentor.toString() !== mentor._id.toString()) {
++        return res.status(403).json({ message: "You can only update your own sessions" });
++      }
++
++      const allowedFields = ["date", "time", "location", "meetingLink"];
++      allowedFields.forEach((field) => {
++        if (req.body[field] !== undefined) session[field] = req.body[field];
++      });
++    } else {
++      Object.assign(session, req.body);
++    }
++
++    await session.save();
++
++    const populatedSession = await Session.findById(session._id)
++      .populate("semester", "name")
++      .populate("group", "name")
++      .populate("template", "sessionNumber title description questions")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
++
++    res.json({ session: populatedSession });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Admin: delete session
++const deleteSession = async (req, res) => {
++  try {
++    const session = await Session.findByIdAndDelete(req.params.id);
++    if (!session) return res.status(404).json({ message: "Session not found" });
++    res.json({ message: "Session deleted" });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Mentor/Admin: update session status
++const updateSessionStatus = async (req, res) => {
++  try {
++    const { status } = req.body;
++    const validStatuses = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
++    if (!validStatuses.includes(status)) {
++      return res.status(400).json({ message: "Invalid status value" });
++    }
++
++    const session = await Session.findByIdAndUpdate(req.params.id, { status }, { new: true });
++    if (!session) return res.status(404).json({ message: "Session not found" });
++    res.json({ session });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Get next upcoming session
++const getNextSession = async (req, res) => {
++  try {
++    const filter = {
++      status: "UPCOMING",
++      date: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }, // was: new Date()
++    };
++
++    if (req.query.group) filter.group = req.query.group;
++    if (req.query.mentor) filter.mentor = req.query.mentor;
++    if (req.query.semester) filter.semester = req.query.semester;
++
++    const session = await Session.findOne(filter)
++      .populate("semester", "name")
++      .populate("group", "name")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
++      .sort({ date: 1 });
++
++    if (!session) {
++      return res.status(404).json({ message: "No upcoming session found" });
++    }
++
++    res.status(200).json({ message: "Next session retrieved successfully", session });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Student: only sessions for the group(s) they belong to
++const getMySessions = async (req, res) => {
++  try {
++    const student = await Student.findOne({ user: req.user.id });
++    if (!student) return res.status(404).json({ message: "Student profile not found" });
++
++    const groups = await MentorshipGroup.find({ students: student._id }).select("_id");
++    const groupIds = groups.map((g) => g._id);
++
++    const sessions = await Session.find({ group: { $in: groupIds } })
++      .populate("semester", "name")
++      .populate("group", "name")
++      .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
++      .sort({ date: 1 });
++
++    res.json({ sessions });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Mentor: only sessions they are running, optionally filtered by status
++const getMyMentorSessions = async (req, res) => {
++  try {
++    const mentor = await Mentor.findOne({ user: req.user.id });
++    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
++
++    const filter = { mentor: mentor._id };
++    if (req.query.status) filter.status = req.query.status;
++
++    const sessions = await Session.find(filter)
++      .populate("semester", "name")
++      .populate("group", "name")
++      .populate("template", "sessionNumber title description questions")
++      .sort({ date: 1 });
++
++    res.json({ sessions });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++module.exports = {
++  createSession,
++  getSessions,
++  getSessionById,
++  updateSession,
++  updateSessionStatus,
++  deleteSession,
++  getNextSession,
++  getMySessions,
++  getMyMentorSessions,
+ };
+\ No newline at end of file
+--- a/backend/src/controllers/sessionTemplate.controller.js	2026-09-30 14:22:56.421811032 +0000
++++ b/backend/src/controllers/sessionTemplate.controller.js	2026-09-30 14:23:57.057948813 +0000
+@@ -49,6 +49,42 @@
+   }
+ };
+ 
++
++const getMyMentorSessionTemplates = async (req, res) => {
++  try {
++    const Mentor = require("../models/Mentor");
++    const MentorshipGroup = require("../models/MentorshipGroup");
++
++    const mentor = await Mentor.findOne({ user: req.user.id });
++    if (!mentor) {
++      return res.status(404).json({ message: "Mentor profile not found" });
++    }
++
++    const groups = await MentorshipGroup.find({
++      mentor: mentor._id,
++      status: "ACTIVE",
++    }).select("semester");
++
++    const semesterIds = [
++      ...new Set(groups.map((group) => group.semester?.toString()).filter(Boolean)),
++    ];
++
++    if (semesterIds.length === 0) {
++      return res.json({ templates: [] });
++    }
++
++    const templates = await SessionTemplate.find({
++      semester: { $in: semesterIds },
++    })
++      .populate("semester", "name academicYear batch startDate endDate status")
++      .sort({ semester: -1, sessionNumber: 1 });
++
++    res.json({ templates });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
+ const getSessionTemplateById = async (req, res) => {
+   try {
+     const template = await SessionTemplate.findById(req.params.id).populate(
+@@ -225,6 +261,7 @@
+ 
+ module.exports = {
+   getSessionTemplates,
++  getMyMentorSessionTemplates,
+   getSessionTemplateById,
+   createSessionTemplate,
+   updateSessionTemplate,
+--- a/backend/src/models/Session.js	2026-09-30 14:22:56.421891143 +0000
++++ b/backend/src/models/Session.js	2026-09-30 14:24:38.509844311 +0000
+@@ -6,6 +6,7 @@
+     group: { type: mongoose.Schema.Types.ObjectId, ref: "MentorshipGroup", required: true },
+     semester: { type: mongoose.Schema.Types.ObjectId, ref: "Semester", required: true },
+     mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", required: true },
++    template: { type: mongoose.Schema.Types.ObjectId, ref: "SessionTemplate", required: true },
+     sessionNumber: { type: Number, required: true },
+     title: { type: String, required: true },
+     description: { type: String },
+@@ -22,4 +23,9 @@
+   { timestamps: true }
+ );
+ 
++sessionSchema.index(
++  { group: 1, template: 1 },
++  { unique: true, partialFilterExpression: { template: { $exists: true } } }
++);
++
+ module.exports = mongoose.model("Session", sessionSchema);
+\ No newline at end of file
+--- a/backend/src/routes/sessionTemplate.routes.js	2026-09-30 14:22:56.421811032 +0000
++++ b/backend/src/routes/sessionTemplate.routes.js	2026-09-30 14:23:57.058187443 +0000
+@@ -4,6 +4,7 @@
+ const authorize = require("../middleware/role.middleware");
+ const {
+   getSessionTemplates,
++  getMyMentorSessionTemplates,
+   getSessionTemplateById,
+   createSessionTemplate,
+   updateSessionTemplate,
+@@ -11,6 +12,8 @@
+ } = require("../controllers/sessionTemplate.controller");
+ 
+ router.use(protect);
++router.get("/mentor/me", authorize("MENTOR"), getMyMentorSessionTemplates);
++
+ router.use(authorize("ADMIN"));
+ 
+ router.get("/", getSessionTemplates);

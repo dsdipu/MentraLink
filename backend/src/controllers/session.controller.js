@@ -2,16 +2,79 @@ const Session = require("../models/Session");
 const Student = require("../models/Student");
 const Mentor = require("../models/Mentor");
 const MentorshipGroup = require("../models/MentorshipGroup");
+const SessionTemplate = require("../models/SessionTemplate");
 
-// Mentor/Admin: create session
+// Mentor/Admin: create session from an admin-created session template
 const createSession = async (req, res) => {
   try {
-    const { group, semester, mentor, sessionNumber, title, description, date, time, location, meetingLink } = req.body;
+    const { group, template, date, time, location, meetingLink } = req.body;
+
+    if (!group || !template || !date || !time) {
+      return res.status(400).json({
+        message: "Section, session plan, date and time are required",
+      });
+    }
+
+    const selectedGroup = await MentorshipGroup.findById(group);
+    if (!selectedGroup) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    const selectedTemplate = await SessionTemplate.findById(template);
+    if (!selectedTemplate) {
+      return res.status(404).json({ message: "Session plan not found" });
+    }
+
+    if (selectedGroup.semester.toString() !== selectedTemplate.semester.toString()) {
+      return res.status(400).json({
+        message: "This session plan does not belong to the selected section's semester",
+      });
+    }
+
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id });
+      if (!mentor || !selectedGroup.mentor || selectedGroup.mentor.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only schedule sessions for your own sections" });
+      }
+    }
+
+    const existing = await Session.findOne({ group, template });
+    if (existing) {
+      return res.status(400).json({
+        message: `Session ${selectedTemplate.sessionNumber} is already scheduled for this section`,
+      });
+    }
+
+    const mentorId = selectedGroup.mentor;
+    if (!mentorId) {
+      return res.status(400).json({ message: "A mentor must be assigned to the section first" });
+    }
+
     const session = await Session.create({
-      group, semester, mentor, sessionNumber, title, description, date, time, location, meetingLink,
+      group,
+      semester: selectedGroup.semester,
+      mentor: mentorId,
+      template,
+      sessionNumber: selectedTemplate.sessionNumber,
+      title: selectedTemplate.title,
+      description: selectedTemplate.description,
+      date,
+      time,
+      location,
+      meetingLink,
     });
-    res.status(201).json({ session });
+
+    const populatedSession = await Session.findById(session._id)
+      .populate("semester", "name")
+      .populate("group", "name")
+      .populate("template", "sessionNumber title description questions")
+      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
+
+    res.status(201).json({ session: populatedSession });
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "This session is already scheduled for this section" });
+    }
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -51,12 +114,35 @@ const getSessionById = async (req, res) => {
   }
 };
 
-// Mentor/Admin: update session (general info)
+// Mentor/Admin: update session schedule
 const updateSession = async (req, res) => {
   try {
-    const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const session = await Session.findById(req.params.id);
     if (!session) return res.status(404).json({ message: "Session not found" });
-    res.json({ session });
+
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id });
+      if (!mentor || session.mentor.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only update your own sessions" });
+      }
+
+      const allowedFields = ["date", "time", "location", "meetingLink"];
+      allowedFields.forEach((field) => {
+        if (req.body[field] !== undefined) session[field] = req.body[field];
+      });
+    } else {
+      Object.assign(session, req.body);
+    }
+
+    await session.save();
+
+    const populatedSession = await Session.findById(session._id)
+      .populate("semester", "name")
+      .populate("group", "name")
+      .populate("template", "sessionNumber title description questions")
+      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
+
+    res.json({ session: populatedSession });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -151,6 +237,7 @@ const getMyMentorSessions = async (req, res) => {
     const sessions = await Session.find(filter)
       .populate("semester", "name")
       .populate("group", "name")
+      .populate("template", "sessionNumber title description questions")
       .sort({ date: 1 });
 
     res.json({ sessions });
