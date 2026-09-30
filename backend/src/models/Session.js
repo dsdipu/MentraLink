@@ -2,9 +2,11 @@ const mongoose = require("mongoose");
 
 const sessionSchema = new mongoose.Schema(
   {
+    template: { type: mongoose.Schema.Types.ObjectId, ref: "SessionTemplate", default: null },
     group: { type: mongoose.Schema.Types.ObjectId, ref: "MentorshipGroup", required: true },
     semester: { type: mongoose.Schema.Types.ObjectId, ref: "Semester", required: true },
     mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", required: true },
+    template: { type: mongoose.Schema.Types.ObjectId, ref: "SessionTemplate", required: true },
     sessionNumber: { type: Number, required: true },
     title: { type: String, required: true },
     description: { type: String },
@@ -19,6 +21,11 @@ const sessionSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+);
+
+sessionSchema.index(
+  { group: 1, template: 1 },
+  { unique: true, partialFilterExpression: { template: { $exists: true } } }
 );
 
 module.exports = mongoose.model("Session", sessionSchema);
