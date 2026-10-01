@@ -126,6 +126,12 @@ const updateSession = async (req, res) => {
         return res.status(403).json({ message: "You can only update your own sessions" });
       }
 
+      if (["COMPLETED", "CANCELLED"].includes(session.status)) {
+        return res.status(400).json({
+          message: "Completed or cancelled sessions cannot be rescheduled",
+        });
+      }
+
       const allowedFields = ["date", "time", "location", "meetingLink"];
       allowedFields.forEach((field) => {
         if (req.body[field] !== undefined) session[field] = req.body[field];
@@ -168,9 +174,39 @@ const updateSessionStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    const session = await Session.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const session = await Session.findById(req.params.id);
     if (!session) return res.status(404).json({ message: "Session not found" });
-    res.json({ session });
+
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id });
+      if (!mentor || session.mentor.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only update your own sessions" });
+      }
+    }
+
+    const allowedTransitions = {
+      UPCOMING: ["ONGOING", "CANCELLED"],
+      ONGOING: ["COMPLETED", "CANCELLED"],
+      COMPLETED: [],
+      CANCELLED: [],
+    };
+
+    if (!allowedTransitions[session.status].includes(status)) {
+      return res.status(400).json({
+        message: `Cannot change session status from ${session.status} to ${status}`,
+      });
+    }
+
+    session.status = status;
+    await session.save();
+
+    const populatedSession = await Session.findById(session._id)
+      .populate("semester", "name")
+      .populate("group", "name")
+      .populate("template", "sessionNumber title description questions")
+      .populate({ path: "mentor", populate: { path: "user", select: "name email" } });
+
+    res.json({ session: populatedSession });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -216,6 +252,7 @@ const getMySessions = async (req, res) => {
     const sessions = await Session.find({ group: { $in: groupIds } })
       .populate("semester", "name")
       .populate("group", "name")
+      .populate("template", "sessionNumber title description questions")
       .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
       .sort({ date: 1 });
 
