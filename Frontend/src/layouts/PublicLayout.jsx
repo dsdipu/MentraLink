@@ -19,7 +19,7 @@ const PublicLayout = () => {
   const navLink = (to, label) => (
     <Link
       to={to}
-      className={`text-sm font-medium transition ${
+      className={`text-sm font-medium px-3 py-2 rounded-full transition-all duration-200 hover:bg-brand-mint hover:-translate-y-0.5 ${
         location.pathname === to
           ? "text-brand-navy"
           : "text-gray-500 hover:text-brand-navy"
@@ -41,8 +41,9 @@ const PublicLayout = () => {
             />
           </Link>
 
-          <nav className="hidden sm:flex items-center gap-8">
+          <nav className="hidden sm:flex items-center gap-2">
             {navLink("/", "Home")}
+            {navLink("/about", "About")}
             {navLink("/blogs", "Blog")}
           </nav>
 
@@ -92,6 +93,9 @@ const PublicLayout = () => {
           </p>
 
           <div className="flex gap-6 text-sm">
+            <Link to="/about" className="hover:text-white">
+              About
+            </Link>
             <Link to="/blogs" className="hover:text-white">
               Blog
             </Link>
