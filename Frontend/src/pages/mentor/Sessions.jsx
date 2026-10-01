@@ -46,7 +46,11 @@ const Sessions = () => {
       getMyMentorSessionTemplates(),
     ])
       .then(([s, g, t]) => {
-        setSessions(s);
+        setSessions([...s].sort((a, b) => {
+          const sessionNumberDiff = (a.sessionNumber || 0) - (b.sessionNumber || 0);
+          if (sessionNumberDiff !== 0) return sessionNumberDiff;
+          return new Date(a.date) - new Date(b.date);
+        }));
         setGroups(g);
         setTemplates(t);
       })
@@ -157,9 +161,10 @@ const Sessions = () => {
   };
 
   const handleStatusChange = async (id, status) => {
+    setError("");
     try {
       await updateSessionStatus(id, status);
-      load();
+      await load();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update session status");
     }
@@ -343,19 +348,41 @@ const Sessions = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <select
-                    value={session.status}
-                    onChange={(e) => handleStatusChange(session._id, e.target.value)}
-                    className="text-xs border rounded-full px-2 py-1"
-                  >
-                    <option value="UPCOMING">UPCOMING</option>
-                    <option value="ONGOING">ONGOING</option>
-                    <option value="COMPLETED">COMPLETED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
                   <Badge tone={STATUS_TONE[session.status] || "neutral"}>
                     {session.status}
                   </Badge>
+                  {session.status === "UPCOMING" && (
+                    <>
+                      <button
+                        onClick={() => handleStatusChange(session._id, "ONGOING")}
+                        className="text-xs font-medium text-amber-600 hover:text-amber-700"
+                      >
+                        Start
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(session._id, "CANCELLED")}
+                        className="text-xs font-medium text-red-600 hover:text-red-700"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                  {session.status === "ONGOING" && (
+                    <>
+                      <button
+                        onClick={() => handleStatusChange(session._id, "COMPLETED")}
+                        className="text-xs font-medium text-green-600 hover:text-green-700"
+                      >
+                        Complete
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(session._id, "CANCELLED")}
+                        className="text-xs font-medium text-red-600 hover:text-red-700"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => openEdit(session)}
                     className="text-sm text-blue-600 hover:underline"

@@ -17,7 +17,11 @@ const Feedback = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      setFeedback(null);
+      return;
+    }
+
     setLoading(true);
     getSessionFeedback(selectedId)
       .then(setFeedback)
@@ -34,7 +38,9 @@ const Feedback = () => {
       >
         <option value="">Select a completed session</option>
         {sessions.map((s) => (
-          <option key={s._id} value={s._id}>{s.title}</option>
+          <option key={s._id} value={s._id}>
+            Session {s.sessionNumber} — {s.title}
+          </option>
         ))}
       </select>
 
@@ -52,24 +58,54 @@ const Feedback = () => {
         <Card>
           <p className="text-sm text-gray-500">Average Rating</p>
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-2xl font-bold text-brand-navy">{feedback.averageRating ?? "-"}/5</p>
-            <StarRating value={Math.round(feedback.averageRating || 0)} onChange={() => {}} size={16} />
+            <p className="text-2xl font-bold text-brand-navy">
+              {feedback.averageRating ?? "-"}/5
+            </p>
+            <StarRating
+              value={Math.round(feedback.averageRating || 0)}
+              onChange={() => {}}
+              size={16}
+            />
           </div>
           <p className="text-xs text-gray-400 mb-3">
             {feedback.totalFeedback ?? 0} response(s)
           </p>
+
           <div className="divide-y">
             {feedback.feedbacks?.map((f) => (
-              <div key={f._id} className="py-3 text-sm">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium">{f.student?.user?.name || "Anonymous"}</span>
+              <div key={f._id} className="py-4 text-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium">
+                    {f.student?.user?.name || "Anonymous"}
+                  </span>
                   <StarRating value={f.rating} onChange={() => {}} size={14} />
                 </div>
-                <p className="text-gray-600">{f.comment || <em className="text-gray-400">No comment</em>}</p>
+
+                {f.answers?.length > 0 && (
+                  <div className="space-y-3 mb-3">
+                    {f.answers.map((answer) => (
+                      <div key={answer.questionId}>
+                        <p className="font-medium text-gray-700">
+                          {answer.question}
+                        </p>
+                        <p className="text-gray-600 mt-0.5">
+                          {answer.answer || "No answer"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-gray-600">
+                  {f.comment || <em className="text-gray-400">No additional comment</em>}
+                </p>
               </div>
             ))}
+
             {(!feedback.feedbacks || feedback.feedbacks.length === 0) && (
-              <p className="py-4 text-gray-500">No feedback submitted for this session yet.</p>
+              <p className="py-4 text-gray-500">
+                No feedback submitted for this session yet.
+              </p>
             )}
           </div>
         </Card>

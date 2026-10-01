@@ -43,6 +43,7 @@ import AdminGroups from "../pages/AdminGroups";
 // Public
 import PublicLayout from "../layouts/PublicLayout";
 import Home from "../pages/public/Home";
+import About from "../pages/public/About";
 import PublicBlogs from "../pages/public/PublicBlogs";
 import PublicBlogDetails from "../pages/public/PublicBlogDetails";
 
@@ -98,6 +99,7 @@ const AppRoutes = () => {
 
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
         <Route path="/blogs" element={<PublicBlogs />} />
         <Route path="/blogs/:id" element={<PublicBlogDetails />} />
       </Route>
