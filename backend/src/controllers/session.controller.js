@@ -187,7 +187,7 @@ const updateSessionStatus = async (req, res) => {
     const allowedTransitions = {
       UPCOMING: ["ONGOING", "CANCELLED"],
       ONGOING: ["COMPLETED", "CANCELLED"],
-      COMPLETED: [],
+      COMPLETED: ["UPCOMING"],
       CANCELLED: [],
     };
 
