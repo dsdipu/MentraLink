@@ -4,6 +4,7 @@ const Mentor = require("../models/Mentor");
 const Session = require("../models/Session");
 const { calculateMentorRating } = require("../services/rating.service");
 const MentorshipGroup=require("../models/MentorshipGroup");
+const mongoose = require("mongoose");
 
 // Anyone permitted: a specific mentor's aggregated rating
 const getMentorRating = async (req, res) => {
@@ -12,7 +13,7 @@ const getMentorRating = async (req, res) => {
     const rating = await calculateMentorRating(mentorId, req.query.semesterId || null);
     res.json(rating);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -25,7 +26,7 @@ const getMyRating = async (req, res) => {
     const rating = await calculateMentorRating(mentor._id, req.query.semesterId || null);
     res.json(rating);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -37,13 +38,16 @@ const getMyMentorEvaluations = async (req, res) => {
 
     const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
       .populate({ path: "student", populate: { path: "user", select: "name" } })
-      .populate("session", "title date")
+      .populate("session", "title date sessionNumber")
       .sort({ createdAt: -1 });
 
+    // students' names are intentionally NOT sent to the mentor, so evaluations stay honest
     res.json({
       evaluations: evaluations.map((e) => ({
         _id: e._id,
-        studentName: e.student?.user?.name || "Anonymous",
+        studentName: "Anonymous student",
+        sessionId: e.session?._id,
+        sessionNumber: e.session?.sessionNumber,
         sessionTitle: e.session?.title,
         sessionDate: e.session?.date,
         ratings: e.ratings,
@@ -52,7 +56,7 @@ const getMyMentorEvaluations = async (req, res) => {
       })),
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -66,7 +70,7 @@ const getAllMentorRatings = async (req, res) => {
       const rating = await calculateMentorRating(mentor._id);
       const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
         .populate({ path: "student", populate: { path: "user", select: "name" } })
-        .populate("session", "title date")
+        .populate("session", "title date sessionNumber")
         .sort({ createdAt: -1 });
 
       const semestersMentored = await MentorshipGroup.find({ mentor: mentor._id }).distinct("semester");
@@ -83,6 +87,8 @@ const getAllMentorRatings = async (req, res) => {
         evaluations: evaluations.map((e) => ({
           _id: e._id,
           studentName: e.student?.user?.name || "Anonymous",
+          sessionId: e.session?._id,
+          sessionNumber: e.session?.sessionNumber,
           sessionTitle: e.session?.title,
           sessionDate: e.session?.date,
           ratings: e.ratings,
@@ -94,7 +100,7 @@ const getAllMentorRatings = async (req, res) => {
 
     res.json({ mentors: results });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -106,16 +112,41 @@ const submitEvaluation = async (req, res) => {
     const student = await Student.findOne({ user: req.user.id });
     if (!student) return res.status(404).json({ message: "Student profile not found" });
 
+    if (!sessionId || !mongoose.isValidObjectId(sessionId)) {
+      return res.status(400).json({ message: "A valid session is required" });
+    }
+
     const session = await Session.findById(sessionId);
     if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (session.status !== "COMPLETED") {
+      return res.status(400).json({ message: "You can only evaluate a completed session" });
+    }
+
+    const group = await MentorshipGroup.findById(session.group).select("students");
+    if (!group || !group.students.some((id) => String(id) === String(student._id))) {
+      return res.status(403).json({ message: "You can only evaluate sessions of your own section" });
+    }
+
+    const categories = ["communication", "guidance", "availability", "knowledgeSharing", "overallExperience"];
+    const cleanRatings = {};
+    for (const key of categories) {
+      const value = Number(ratings?.[key]);
+      if (!Number.isInteger(value) || value < 1 || value > 5) {
+        return res.status(400).json({ message: "Every rating must be a whole number from 1 to 5" });
+      }
+      cleanRatings[key] = value;
+    }
+
+    const cleanComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : "";
 
     const evaluation = await MentorEvaluation.create({
       session: sessionId,
       student: student._id,
       mentor: session.mentor,
       semester: session.semester,
-      ratings,
-      comment,
+      ratings: cleanRatings,
+      comment: cleanComment,
     });
 
     res.status(201).json({ evaluation });
@@ -123,7 +154,7 @@ const submitEvaluation = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "You have already evaluated this session" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -133,10 +164,12 @@ const getMyEvaluations = async (req, res) => {
     const student = await Student.findOne({ user: req.user.id });
     if (!student) return res.status(404).json({ message: "Student profile not found" });
 
-    const evaluations = await MentorEvaluation.find({ student: student._id }).populate("session", "title date");
+    const evaluations = await MentorEvaluation.find({ student: student._id })
+      .populate("session", "title date sessionNumber")
+      .sort({ createdAt: -1 });
     res.json({ evaluations });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -150,7 +183,7 @@ const getEvaluationStatus = async (req, res) => {
     const existing = await MentorEvaluation.findOne({ student: student._id, session: sessionId });
     res.json({ alreadyEvaluated: !!existing });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

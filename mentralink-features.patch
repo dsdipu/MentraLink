@@ -1,0 +1,1553 @@
+diff --git a/Frontend/src/components/AssignedMentorCard.jsx b/Frontend/src/components/AssignedMentorCard.jsx
+new file mode 100644
+index 0000000..e294a43
+--- /dev/null
++++ b/Frontend/src/components/AssignedMentorCard.jsx
+@@ -0,0 +1,149 @@
++import { useState } from "react";
++import PropTypes from "prop-types";
++import { Mail, Phone, Copy, Check, UserRound } from "lucide-react";
++import Card from "./ui/Card";
++import StarDisplay from "./ui/StarDisplay";
++
++function CopyButton({ value, label }) {
++  const [copied, setCopied] = useState(false);
++
++  const copy = async () => {
++    try {
++      await navigator.clipboard.writeText(value);
++      setCopied(true);
++      setTimeout(() => setCopied(false), 1500);
++    } catch {
++      window.prompt(`Copy ${label}:`, value);
++    }
++  };
++
++  return (
++    <button
++      type="button"
++      onClick={copy}
++      className="p-1.5 rounded-md text-gray-400 hover:text-brand-navy hover:bg-gray-100 transition"
++      aria-label={`Copy ${label}`}
++      title={`Copy ${label}`}
++    >
++      {copied ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
++    </button>
++  );
++}
++
++CopyButton.propTypes = { value: PropTypes.string.isRequired, label: PropTypes.string.isRequired };
++
++// Student dashboard card: the mentor of the student's active group + contact details.
++function AssignedMentorCard({ mentor, group }) {
++  if (!mentor) {
++    return (
++      <Card>
++        <h2 className="text-sm font-semibold text-gray-700 mb-2">Your Mentor</h2>
++        <p className="text-sm text-gray-500">
++          No mentor has been assigned to your group yet. Once the admin assigns one, their contact
++          details will appear here.
++        </p>
++      </Card>
++    );
++  }
++
++  const hasRating = mentor.rating?.totalEvaluations > 0;
++
++  return (
++    <Card>
++      <div className="flex items-center justify-between mb-4">
++        <h2 className="text-sm font-semibold text-gray-700">Your Mentor</h2>
++        {group?.name && (
++          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
++            {group.name}
++            {group.semester ? ` · ${group.semester}` : ""}
++          </span>
++        )}
++      </div>
++
++      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
++        {mentor.profileImage ? (
++          <img
++            src={mentor.profileImage}
++            alt={mentor.name}
++            className="h-20 w-20 rounded-full object-cover shrink-0"
++          />
++        ) : (
++          <div className="h-20 w-20 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center shrink-0">
++            <UserRound size={34} />
++          </div>
++        )}
++
++        <div className="min-w-0 flex-1">
++          <p className="text-lg font-semibold text-gray-900">{mentor.name}</p>
++          <p className="text-sm text-gray-500">
++            {[mentor.department, mentor.batch && `Batch ${mentor.batch}`].filter(Boolean).join(" · ") ||
++              "Mentor"}
++          </p>
++          {mentor.expertise && (
++            <p className="text-xs text-gray-500 mt-1">Expertise: {mentor.expertise}</p>
++          )}
++
++          <div className="flex items-center gap-2 mt-2">
++            {hasRating ? (
++              <>
++                <StarDisplay value={mentor.rating.overallRating} />
++                <span className="text-sm font-medium text-gray-800">
++                  {mentor.rating.overallRating}/5
++                </span>
++                <span className="text-xs text-gray-400">
++                  ({mentor.rating.totalEvaluations} rating
++                  {mentor.rating.totalEvaluations === 1 ? "" : "s"})
++                </span>
++              </>
++            ) : (
++              <span className="text-xs text-gray-400">No ratings yet</span>
++            )}
++          </div>
++
++          <div className="mt-4 space-y-1">
++            <div className="flex items-center gap-2 text-sm">
++              <Mail size={15} className="text-gray-400 shrink-0" />
++              <a href={`mailto:${mentor.email}`} className="text-blue-600 hover:underline truncate">
++                {mentor.email}
++              </a>
++              <CopyButton value={mentor.email} label="email" />
++            </div>
++
++            <div className="flex items-center gap-2 text-sm">
++              <Phone size={15} className="text-gray-400 shrink-0" />
++              {mentor.phone ? (
++                <>
++                  <a href={`tel:${mentor.phone}`} className="text-blue-600 hover:underline">
++                    {mentor.phone}
++                  </a>
++                  <CopyButton value={mentor.phone} label="phone number" />
++                </>
++              ) : (
++                <span className="text-gray-400">Phone number not added yet</span>
++              )}
++            </div>
++          </div>
++        </div>
++      </div>
++    </Card>
++  );
++}
++
++AssignedMentorCard.propTypes = {
++  mentor: PropTypes.shape({
++    name: PropTypes.string,
++    email: PropTypes.string,
++    phone: PropTypes.string,
++    department: PropTypes.string,
++    batch: PropTypes.string,
++    expertise: PropTypes.string,
++    profileImage: PropTypes.string,
++    rating: PropTypes.shape({
++      overallRating: PropTypes.number,
++      totalEvaluations: PropTypes.number,
++    }),
++  }),
++  group: PropTypes.shape({ name: PropTypes.string, semester: PropTypes.string }),
++};
++
++export default AssignedMentorCard;
+diff --git a/Frontend/src/components/PieChart.jsx b/Frontend/src/components/PieChart.jsx
+new file mode 100644
+index 0000000..4579aaf
+--- /dev/null
++++ b/Frontend/src/components/PieChart.jsx
+@@ -0,0 +1,109 @@
++import PropTypes from "prop-types";
++
++const point = (center, radius, angle) => [
++  center + radius * Math.cos(angle),
++  center + radius * Math.sin(angle),
++];
++
++// Small dependency-free SVG pie chart.
++// data: [{ label, value, color }]  (zero-value slices are skipped)
++function PieChart({ data, size = 180 }) {
++  const total = data.reduce((sum, item) => sum + item.value, 0);
++  const center = size / 2;
++  const radius = center - 4;
++
++  if (total === 0) {
++    return (
++      <div
++        className="flex items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-xs text-gray-400"
++        style={{ width: size, height: size }}
++      >
++        No answers yet
++      </div>
++    );
++  }
++
++  const slices = data.filter((item) => item.value > 0);
++  const summary = slices
++    .map((item) => `${item.label} ${Math.round((item.value / total) * 100)}%`)
++    .join(", ");
++
++  let startAngle = -Math.PI / 2; // start at 12 o'clock
++
++  return (
++    <svg
++      viewBox={`0 0 ${size} ${size}`}
++      width={size}
++      height={size}
++      role="img"
++      aria-label={`Pie chart: ${summary}`}
++      className="shrink-0"
++    >
++      {slices.length === 1 ? (
++        <circle cx={center} cy={center} r={radius} fill={slices[0].color}>
++          <title>{`${slices[0].label}: 100%`}</title>
++        </circle>
++      ) : (
++        slices.map((item) => {
++          const sweep = (item.value / total) * Math.PI * 2;
++          const endAngle = startAngle + sweep;
++          const [x1, y1] = point(center, radius, startAngle);
++          const [x2, y2] = point(center, radius, endAngle);
++          const path = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${
++            sweep > Math.PI ? 1 : 0
++          } 1 ${x2} ${y2} Z`;
++          const middle = startAngle + sweep / 2;
++          const [lx, ly] = point(center, radius * 0.62, middle);
++          startAngle = endAngle;
++
++          return (
++            <g key={item.label}>
++              <path d={path} fill={item.color} stroke="#fff" strokeWidth="2">
++                <title>{`${item.label}: ${item.value} (${Math.round((item.value / total) * 100)}%)`}</title>
++              </path>
++              {sweep / (Math.PI * 2) >= 0.08 && (
++                <text
++                  x={lx}
++                  y={ly}
++                  textAnchor="middle"
++                  dominantBaseline="middle"
++                  fill="#fff"
++                  fontSize="13"
++                  fontWeight="700"
++                >
++                  {Math.round((item.value / total) * 100)}%
++                </text>
++              )}
++            </g>
++          );
++        })
++      )}
++      {slices.length === 1 && (
++        <text
++          x={center}
++          y={center}
++          textAnchor="middle"
++          dominantBaseline="middle"
++          fill="#fff"
++          fontSize="16"
++          fontWeight="700"
++        >
++          100%
++        </text>
++      )}
++    </svg>
++  );
++}
++
++PieChart.propTypes = {
++  data: PropTypes.arrayOf(
++    PropTypes.shape({
++      label: PropTypes.string.isRequired,
++      value: PropTypes.number.isRequired,
++      color: PropTypes.string.isRequired,
++    })
++  ).isRequired,
++  size: PropTypes.number,
++};
++
++export default PieChart;
+diff --git a/Frontend/src/components/ui/StarDisplay.jsx b/Frontend/src/components/ui/StarDisplay.jsx
+new file mode 100644
+index 0000000..01498e2
+--- /dev/null
++++ b/Frontend/src/components/ui/StarDisplay.jsx
+@@ -0,0 +1,26 @@
++import PropTypes from "prop-types";
++import { Star } from "lucide-react";
++
++// Read-only star row. `value` may be fractional (4.6 shows 5 filled stars rounded to the nearest whole).
++const StarDisplay = ({ value = 0, size = 16 }) => {
++  const filled = Math.round(value);
++  return (
++    <div className="flex gap-0.5" aria-label={`${value} out of 5`}>
++      {[1, 2, 3, 4, 5].map((n) => (
++        <Star
++          key={n}
++          size={size}
++          className={n <= filled ? "text-brand-gold" : "text-gray-300"}
++          fill={n <= filled ? "currentColor" : "none"}
++        />
++      ))}
++    </div>
++  );
++};
++
++StarDisplay.propTypes = {
++  value: PropTypes.number,
++  size: PropTypes.number,
++};
++
++export default StarDisplay;
+diff --git a/Frontend/src/pages/AdminSessions.jsx b/Frontend/src/pages/AdminSessions.jsx
+index 3b85a5e..dc3c744 100644
+--- a/Frontend/src/pages/AdminSessions.jsx
++++ b/Frontend/src/pages/AdminSessions.jsx
+@@ -33,7 +33,7 @@ const emptyForm = {
+   sessionNumber: "",
+   title: "",
+   description: "",
+-  questions: [{ question: "", required: true }],
++  questions: [{ question: "", required: true, type: "TEXT" }],
+ };
+ 
+ const formatFilterName = (filter) => {
+@@ -130,7 +130,7 @@ const AdminSessions = () => {
+       ...emptyForm,
+       semester: selectedSemester,
+       sessionNumber: firstAvailable,
+-      questions: [{ question: "", required: true }],
++      questions: [{ question: "", required: true, type: "TEXT" }],
+     });
+     setShowForm(true);
+   };
+@@ -149,8 +149,9 @@ const AdminSessions = () => {
+               _id: question._id,
+               question: question.question,
+               required: question.required !== false,
++              type: question.type === "YESNO" ? "YESNO" : "TEXT",
+             }))
+-          : [{ question: "", required: true }],
++          : [{ question: "", required: true, type: "TEXT" }],
+     });
+     setShowForm(true);
+   };
+@@ -176,7 +177,7 @@ const AdminSessions = () => {
+       ...current,
+       questions: [
+         ...current.questions,
+-        { question: "", required: true },
++        { question: "", required: true, type: "TEXT" },
+       ],
+     }));
+   };
+@@ -224,6 +225,7 @@ const AdminSessions = () => {
+           _id: question._id,
+           question: question.question.trim(),
+           required: question.required,
++          type: question.type === "YESNO" ? "YESNO" : "TEXT",
+         })),
+       };
+ 
+@@ -504,6 +506,15 @@ const AdminSessions = () => {
+                             />
+                             Required
+                           </label>
++                          <select
++                            value={question.type || "TEXT"}
++                            onChange={(event) => updateQuestion(index, "type", event.target.value)}
++                            className="ml-3 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600"
++                            aria-label="Answer type"
++                          >
++                            <option value="TEXT">Text answer</option>
++                            <option value="YESNO">Yes / No (pie chart)</option>
++                          </select>
+                         </div>
+                         <button
+                           type="button"
+@@ -618,6 +629,11 @@ const AdminSessions = () => {
+                         {question.required !== false && (
+                           <span className="ml-1 text-red-400">*</span>
+                         )}
++                        {question.type === "YESNO" && (
++                          <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
++                            Yes / No
++                          </span>
++                        )}
+                       </p>
+                     ))}
+                   </div>
+diff --git a/Frontend/src/pages/mentor/Blogs.jsx b/Frontend/src/pages/mentor/Blogs.jsx
+index 29634fe..8602925 100644
+--- a/Frontend/src/pages/mentor/Blogs.jsx
++++ b/Frontend/src/pages/mentor/Blogs.jsx
+@@ -12,7 +12,20 @@ import useAuth from "../../hooks/useAuth";
+ import Card from "../../components/ui/Card";
+ import Badge from "../../components/ui/Badge";
+ import EmptyState from "../../components/ui/EmptyState";
+-import { Newspaper, Heart, Share2, Check } from "lucide-react";
++import {
++  Newspaper,
++  Heart,
++  Share2,
++  Check,
++  Bold,
++  Italic,
++  Underline,
++  List,
++  ListOrdered,
++  Link2,
++  ImagePlus,
++  Eraser,
++} from "lucide-react";
+ 
+ const emptyForm = {
+   title: "",
+@@ -459,127 +472,74 @@ const Blogs = () => {
+             </div>
+ 
+             <div>
+-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+-                <label className="block text-sm font-medium">
+-                  Content
+-                </label>
++              <label className="block text-sm font-medium mb-2">
++                Content
++              </label>
+ 
+-                <label className="text-xs text-blue-600 cursor-pointer hover:underline">
+-                  Insert image
++              {/* sticky: stays visible at the top of the screen while you scroll through a long post.
++                  top-16 on mobile leaves room for the layout's own sticky header. */}
++              <div
++                role="toolbar"
++                aria-label="Text formatting"
++                className="sticky top-16 lg:top-0 z-20 flex flex-wrap items-center gap-1 rounded-t-md border border-gray-300 bg-gray-50 p-2 shadow-sm"
++              >
++                {[
++                  { title: "Bold", icon: Bold, run: () => runEditorCommand("bold") },
++                  { title: "Italic", icon: Italic, run: () => runEditorCommand("italic") },
++                  { title: "Underline", icon: Underline, run: () => runEditorCommand("underline") },
++                  "divider",
++                  { title: "Bullet list", icon: List, run: () => runEditorCommand("insertUnorderedList") },
++                  { title: "Numbered list", icon: ListOrdered, run: () => runEditorCommand("insertOrderedList") },
++                  "divider",
++                  { title: "Insert link", icon: Link2, run: handleCreateLink },
++                ].map((item, index) =>
++                  item === "divider" ? (
++                    <span key={`divider-${index}`} className="mx-1 h-6 w-px bg-gray-300" />
++                  ) : (
++                    <button
++                      key={item.title}
++                      type="button"
++                      onMouseDown={(e) => e.preventDefault()}
++                      onClick={item.run}
++                      className="rounded p-2 text-gray-700 hover:bg-gray-200"
++                      title={item.title}
++                      aria-label={item.title}
++                    >
++                      <item.icon size={18} />
++                    </button>
++                  )
++                )}
+ 
++                <label
++                  className="cursor-pointer rounded p-2 text-gray-700 hover:bg-gray-200"
++                  title="Insert image"
++                  aria-label="Insert image"
++                >
++                  <ImagePlus size={18} />
+                   <input
+                     type="file"
+                     accept="image/*"
+                     className="hidden"
+-                    onChange={
+-                      handleInsertImageAtCursor
+-                    }
++                    onChange={handleInsertImageAtCursor}
+                   />
+                 </label>
+-              </div>
+-
+-              <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-gray-300 bg-gray-50 p-2">
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand("bold")
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm font-bold hover:bg-gray-100"
+-                  title="Bold"
+-                >
+-                  B
+-                </button>
+-
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand("italic")
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm italic hover:bg-gray-100"
+-                  title="Italic"
+-                >
+-                  I
+-                </button>
+-
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand("underline")
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm underline hover:bg-gray-100"
+-                  title="Underline"
+-                >
+-                  U
+-                </button>
+-
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand(
+-                      "insertUnorderedList"
+-                    )
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
+-                  title="Bullet list"
+-                >
+-                  • List
+-                </button>
+-
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand(
+-                      "insertOrderedList"
+-                    )
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
+-                  title="Numbered list"
+-                >
+-                  1. List
+-                </button>
+ 
+-                <button
+-                  type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={handleCreateLink}
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
+-                  title="Insert link"
+-                >
+-                  Link
+-                </button>
++                <span className="mx-1 h-6 w-px bg-gray-300" />
+ 
+                 <button
+                   type="button"
+-                  onMouseDown={(e) =>
+-                    e.preventDefault()
+-                  }
+-                  onClick={() =>
+-                    runEditorCommand(
+-                      "removeFormat"
+-                    )
+-                  }
+-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
++                  onMouseDown={(e) => e.preventDefault()}
++                  onClick={() => runEditorCommand("removeFormat")}
++                  className="rounded p-2 text-gray-700 hover:bg-gray-200"
+                   title="Remove formatting"
++                  aria-label="Remove formatting"
+                 >
+-                  Clear
++                  <Eraser size={18} />
+                 </button>
++
++                {uploading && (
++                  <span className="ml-auto text-xs text-blue-500">Uploading image...</span>
++                )}
+               </div>
+ 
+               <div
+diff --git a/Frontend/src/pages/mentor/Feedback.jsx b/Frontend/src/pages/mentor/Feedback.jsx
+index bb8c161..63e5c73 100644
+--- a/Frontend/src/pages/mentor/Feedback.jsx
++++ b/Frontend/src/pages/mentor/Feedback.jsx
+@@ -1,114 +1,303 @@
+ import { useEffect, useState } from "react";
+-import { getMyMentorSessions } from "../../services/sessionService";
+-import { getSessionFeedback } from "../../services/feedbackService";
++import {
++  getMyFeedbackOverview,
++  getSessionFeedbackSummary,
++} from "../../services/feedbackService";
+ import Card from "../../components/ui/Card";
+-import StarRating from "../../components/ui/StarRating";
+ import EmptyState from "../../components/ui/EmptyState";
+-import { MessageSquare } from "lucide-react";
++import StarDisplay from "../../components/ui/StarDisplay";
++import PieChart from "../../components/PieChart";
++import { MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
++
++const YES_COLOR = "#16a34a";
++const NO_COLOR = "#dc2626";
++
++const formatDate = (value) =>
++  value
++    ? new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
++    : "";
++
++// 5★ .. 1★ horizontal bars
++const RatingBars = ({ distribution, total }) => (
++  <div className="space-y-1.5 w-full max-w-sm">
++    {[5, 4, 3, 2, 1].map((star) => {
++      const count = distribution?.[star] || 0;
++      const percent = total ? (count / total) * 100 : 0;
++      return (
++        <div key={star} className="flex items-center gap-2 text-xs text-gray-600">
++          <span className="w-6 text-right">{star}★</span>
++          <div className="h-2 flex-1 rounded-full bg-gray-100 overflow-hidden">
++            <div className="h-full rounded-full bg-brand-gold" style={{ width: `${percent}%` }} />
++          </div>
++          <span className="w-8 text-gray-400">{count}</span>
++        </div>
++      );
++    })}
++  </div>
++);
++
++const QuestionDetail = ({ question }) => {
++  if (question.type === "YESNO") {
++    return (
++      <div className="flex flex-col sm:flex-row items-center gap-6 py-3">
++        <PieChart
++          size={170}
++          data={[
++            { label: "Yes", value: question.yes, color: YES_COLOR },
++            { label: "No", value: question.no, color: NO_COLOR },
++          ]}
++        />
++        <div className="space-y-2 text-sm">
++          <div className="flex items-center gap-2">
++            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: YES_COLOR }} />
++            <span className="font-medium">Yes</span>
++            <span className="text-gray-600">
++              {question.yesPercent}% ({question.yes})
++            </span>
++          </div>
++          <div className="flex items-center gap-2">
++            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: NO_COLOR }} />
++            <span className="font-medium">No</span>
++            <span className="text-gray-600">
++              {question.noPercent}% ({question.no})
++            </span>
++          </div>
++          <p className="text-xs text-gray-400">
++            {question.total} answered
++            {question.skipped > 0 ? ` · ${question.skipped} skipped` : ""}
++          </p>
++        </div>
++      </div>
++    );
++  }
++
++  if (question.answers.length === 0) {
++    return <p className="py-3 text-sm text-gray-400">No written answers yet.</p>;
++  }
++
++  return (
++    <ul className="py-3 space-y-2">
++      {question.answers.map((answer, index) => (
++        <li key={index} className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
++          {answer}
++        </li>
++      ))}
++      <li className="text-xs text-gray-400">Answers are shown anonymously.</li>
++    </ul>
++  );
++};
+ 
+ const Feedback = () => {
+-  const [sessions, setSessions] = useState([]);
+-  const [selectedId, setSelectedId] = useState("");
+-  const [feedback, setFeedback] = useState(null);
+-  const [loading, setLoading] = useState(false);
++  const [overview, setOverview] = useState(null);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState("");
++
++  const [openSessionId, setOpenSessionId] = useState(null);
++  const [openQuestionKey, setOpenQuestionKey] = useState(null);
++  const [summaries, setSummaries] = useState({});
++  const [summaryLoading, setSummaryLoading] = useState(null);
++  const [summaryError, setSummaryError] = useState("");
+ 
+   useEffect(() => {
+-    getMyMentorSessions({ status: "COMPLETED" }).then(setSessions);
++    getMyFeedbackOverview()
++      .then(setOverview)
++      .catch((err) => setError(err.response?.data?.message || "Failed to load feedback"))
++      .finally(() => setLoading(false));
+   }, []);
+ 
+-  useEffect(() => {
+-    if (!selectedId) {
+-      setFeedback(null);
++  const toggleSession = async (sessionId) => {
++    setOpenQuestionKey(null);
++    setSummaryError("");
++
++    if (openSessionId === sessionId) {
++      setOpenSessionId(null);
+       return;
+     }
+ 
+-    setLoading(true);
+-    getSessionFeedback(selectedId)
+-      .then(setFeedback)
+-      .finally(() => setLoading(false));
+-  }, [selectedId]);
++    setOpenSessionId(sessionId);
++    if (summaries[sessionId]) return;
++
++    setSummaryLoading(sessionId);
++    try {
++      const data = await getSessionFeedbackSummary(sessionId);
++      setSummaries((current) => ({ ...current, [sessionId]: data }));
++    } catch (err) {
++      setSummaryError(err.response?.data?.message || "Failed to load this session's feedback");
++    } finally {
++      setSummaryLoading(null);
++    }
++  };
++
++  const toggleQuestion = (key) => setOpenQuestionKey((current) => (current === key ? null : key));
++
++  if (loading) return <p>Loading feedback...</p>;
++  if (error) return <p className="text-red-500">{error}</p>;
++
++  const overall = overview?.overall;
++  const sessions = overview?.sessions || [];
+ 
+   return (
+-    <div>
++    <div className="max-w-4xl">
+       <h1 className="text-2xl font-semibold mb-4">Session Feedback</h1>
+-      <select
+-        value={selectedId}
+-        onChange={(e) => setSelectedId(e.target.value)}
+-        className="border rounded-md px-3 py-2 mb-4"
+-      >
+-        <option value="">Select a completed session</option>
+-        {sessions.map((s) => (
+-          <option key={s._id} value={s._id}>
+-            Session {s.sessionNumber} — {s.title}
+-          </option>
+-        ))}
+-      </select>
+-
+-      {loading && <p className="text-sm text-gray-500">Loading feedback...</p>}
+-
+-      {!selectedId && !loading && (
+-        <EmptyState
+-          icon={MessageSquare}
+-          title="Select a session"
+-          description="Pick a completed session above to see student feedback."
+-        />
+-      )}
+ 
+-      {feedback && (
+-        <Card>
+-          <p className="text-sm text-gray-500">Average Rating</p>
+-          <div className="flex items-center gap-2 mb-1">
+-            <p className="text-2xl font-bold text-brand-navy">
+-              {feedback.averageRating ?? "-"}/5
+-            </p>
+-            <StarRating
+-              value={Math.round(feedback.averageRating || 0)}
+-              onChange={() => {}}
+-              size={16}
+-            />
++      {/* ---------- overall ---------- */}
++      <Card className="mb-6">
++        <p className="text-sm text-gray-500 mb-3">Overall feedback</p>
++        {overall?.totalResponses > 0 ? (
++          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
++            <div>
++              <p className="text-4xl font-bold text-brand-navy">
++                {overall.averageRating}
++                <span className="text-lg font-medium text-gray-400">/5</span>
++              </p>
++              <div className="mt-1">
++                <StarDisplay value={overall.averageRating} size={18} />
++              </div>
++              <p className="text-xs text-gray-400 mt-2">
++                {overall.totalResponses} response{overall.totalResponses === 1 ? "" : "s"} across{" "}
++                {overall.totalSessions} completed session{overall.totalSessions === 1 ? "" : "s"}
++              </p>
++            </div>
++            <RatingBars distribution={overall.distribution} total={overall.totalResponses} />
+           </div>
+-          <p className="text-xs text-gray-400 mb-3">
+-            {feedback.totalFeedback ?? 0} response(s)
++        ) : (
++          <p className="text-sm text-gray-500">
++            No feedback has been submitted yet. It will appear here once students respond to your
++            completed sessions.
+           </p>
++        )}
++      </Card>
++
++      {/* ---------- sessions ---------- */}
++      <h2 className="text-sm font-semibold text-gray-700 mb-2">Sessions</h2>
++
++      {sessions.length === 0 ? (
++        <EmptyState
++          icon={MessageSquare}
++          title="No completed sessions"
++          description="Feedback is collected after a session is marked as completed."
++        />
++      ) : (
++        <div className="space-y-2">
++          {sessions.map((session) => {
++            const isOpen = openSessionId === session._id;
++            const summary = summaries[session._id];
+ 
+-          <div className="divide-y">
+-            {feedback.feedbacks?.map((f) => (
+-              <div key={f._id} className="py-4 text-sm">
+-                <div className="flex justify-between items-center mb-2">
+-                  <span className="font-medium">
+-                    {f.student?.user?.name || "Anonymous"}
+-                  </span>
+-                  <StarRating value={f.rating} onChange={() => {}} size={14} />
+-                </div>
+-
+-                {f.answers?.length > 0 && (
+-                  <div className="space-y-3 mb-3">
+-                    {f.answers.map((answer) => (
+-                      <div key={answer.questionId}>
+-                        <p className="font-medium text-gray-700">
+-                          {answer.question}
+-                        </p>
+-                        <p className="text-gray-600 mt-0.5">
+-                          {answer.answer || "No answer"}
+-                        </p>
+-                      </div>
+-                    ))}
++            return (
++              <Card key={session._id} padded={false} className="overflow-hidden">
++                <button
++                  type="button"
++                  onClick={() => toggleSession(session._id)}
++                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition"
++                  aria-expanded={isOpen}
++                >
++                  {isOpen ? (
++                    <ChevronDown size={18} className="text-gray-400 shrink-0" />
++                  ) : (
++                    <ChevronRight size={18} className="text-gray-400 shrink-0" />
++                  )}
++                  <div className="min-w-0 flex-1">
++                    <p className="text-sm font-medium text-gray-900 truncate">
++                      Session {session.sessionNumber} — {session.title}
++                    </p>
++                    <p className="text-xs text-gray-400">{formatDate(session.date)}</p>
+                   </div>
+-                )}
++                  <div className="text-right shrink-0">
++                    {session.totalResponses > 0 ? (
++                      <p className="text-sm font-semibold text-brand-navy">
++                        {session.averageRating}/5
++                      </p>
++                    ) : (
++                      <p className="text-xs text-gray-400">No feedback yet</p>
++                    )}
++                    <p className="text-xs text-gray-400">
++                      {session.totalResponses}
++                      {session.totalStudents ? ` / ${session.totalStudents}` : ""} responded
++                    </p>
++                  </div>
++                </button>
+ 
+-                <p className="text-gray-600">
+-                  {f.comment || <em className="text-gray-400">No additional comment</em>}
+-                </p>
+-              </div>
+-            ))}
++                {isOpen && (
++                  <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4">
++                    {summaryLoading === session._id && (
++                      <p className="text-sm text-gray-500">Loading...</p>
++                    )}
++                    {summaryError && <p className="text-sm text-red-500">{summaryError}</p>}
+ 
+-            {(!feedback.feedbacks || feedback.feedbacks.length === 0) && (
+-              <p className="py-4 text-gray-500">
+-                No feedback submitted for this session yet.
+-              </p>
+-            )}
+-          </div>
+-        </Card>
++                    {summary && summary.totalResponses === 0 && (
++                      <p className="text-sm text-gray-500">
++                        No feedback has been submitted for this session yet.
++                      </p>
++                    )}
++
++                    {summary && summary.totalResponses > 0 && (
++                      <>
++                        <div className="flex items-center gap-3 mb-4">
++                          <StarDisplay value={summary.averageRating} />
++                          <span className="text-sm font-medium">{summary.averageRating}/5</span>
++                          <span className="text-xs text-gray-400">
++                            {summary.totalResponses} response{summary.totalResponses === 1 ? "" : "s"}
++                          </span>
++                        </div>
++
++                        {summary.questions.length === 0 ? (
++                          <p className="text-sm text-gray-400">
++                            This session has no feedback questions.
++                          </p>
++                        ) : (
++                          <div className="space-y-2">
++                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
++                              Questions — click one to see the results
++                            </p>
++                            {summary.questions.map((question, index) => {
++                              const key = `${session._id}:${question.questionId}`;
++                              const open = openQuestionKey === key;
++                              return (
++                                <div key={key} className="rounded-lg border border-gray-200 bg-white">
++                                  <button
++                                    type="button"
++                                    onClick={() => toggleQuestion(key)}
++                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-50"
++                                    aria-expanded={open}
++                                  >
++                                    {open ? (
++                                      <ChevronDown size={16} className="text-gray-400 shrink-0" />
++                                    ) : (
++                                      <ChevronRight size={16} className="text-gray-400 shrink-0" />
++                                    )}
++                                    <span className="flex-1 text-gray-800">
++                                      {index + 1}. {question.question}
++                                    </span>
++                                    {question.type === "YESNO" ? (
++                                      <span className="shrink-0 text-xs text-gray-500">
++                                        <span className="text-green-600 font-medium">
++                                          {question.yesPercent}% Yes
++                                        </span>
++                                      </span>
++                                    ) : (
++                                      <span className="shrink-0 text-xs text-gray-400">
++                                        {question.total} answer{question.total === 1 ? "" : "s"}
++                                      </span>
++                                    )}
++                                  </button>
++                                  {open && (
++                                    <div className="border-t border-gray-100 px-4">
++                                      <QuestionDetail question={question} />
++                                    </div>
++                                  )}
++                                </div>
++                              );
++                            })}
++                          </div>
++                        )}
++                      </>
++                    )}
++                  </div>
++                )}
++              </Card>
++            );
++          })}
++        </div>
+       )}
+     </div>
+   );
+diff --git a/Frontend/src/pages/student/Dashboard.jsx b/Frontend/src/pages/student/Dashboard.jsx
+index e6e67a7..3c56b14 100644
+--- a/Frontend/src/pages/student/Dashboard.jsx
++++ b/Frontend/src/pages/student/Dashboard.jsx
+@@ -1,10 +1,13 @@
+ import { useEffect, useState } from "react";
+ import api from "../../services/api";
++import { getMyMentor } from "../../services/studentService";
++import AssignedMentorCard from "../../components/AssignedMentorCard";
+ 
+ const StudentDashboard = () => {
+   const [data, setData] = useState(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState("");
++  const [mentorInfo, setMentorInfo] = useState(null);
+ 
+   useEffect(() => {
+     const fetchDashboard = async () => {
+@@ -18,6 +21,8 @@ const StudentDashboard = () => {
+       }
+     };
+     fetchDashboard();
++    // the mentor card is optional: a failure here must not break the rest of the dashboard
++    getMyMentor().then(setMentorInfo).catch(() => setMentorInfo({ mentor: null, group: null }));
+   }, []);
+ 
+   if (loading) return <p>Loading dashboard...</p>;
+@@ -47,6 +52,10 @@ const StudentDashboard = () => {
+           <p className="text-lg font-medium">{data?.pendingFeedback ?? 0}</p>
+         </div>
+       </div>
++
++      <div className="mt-4">
++        {mentorInfo && <AssignedMentorCard mentor={mentorInfo.mentor} group={mentorInfo.group} />}
++      </div>
+     </div>
+   );
+ };
+diff --git a/Frontend/src/pages/student/Feedback.jsx b/Frontend/src/pages/student/Feedback.jsx
+index 23a0887..2883fcd 100644
+--- a/Frontend/src/pages/student/Feedback.jsx
++++ b/Frontend/src/pages/student/Feedback.jsx
+@@ -52,6 +52,15 @@ const Feedback = () => {
+   const handleSubmit = async (e) => {
+     e.preventDefault();
+     setMessage("");
++
++    const missingYesNo = questions.find(
++      (question) => question.type === "YESNO" && question.required && !answers[question._id]
++    );
++    if (missingYesNo) {
++      setMessage(`Please choose Yes or No: ${missingYesNo.question}`);
++      return;
++    }
++
+     setSubmitting(true);
+ 
+     try {
+@@ -142,16 +151,44 @@ const Feedback = () => {
+                       {index + 1}. {question.question}
+                       {question.required && <span className="text-red-500"> *</span>}
+                     </label>
+-                    <textarea
+-                      value={answers[question._id] || ""}
+-                      onChange={(e) =>
+-                        handleAnswerChange(question._id, e.target.value)
+-                      }
+-                      rows={3}
+-                      required={question.required}
+-                      className="w-full border rounded-md px-3 py-2"
+-                      placeholder="Write your answer..."
+-                    />
++                    {question.type === "YESNO" ? (
++                      <div className="flex gap-2" role="radiogroup" aria-label={question.question}>
++                        {["Yes", "No"].map((option) => {
++                          const selected = answers[question._id] === option;
++                          const selectedStyle =
++                            option === "Yes"
++                              ? "bg-green-600 border-green-600 text-white"
++                              : "bg-red-600 border-red-600 text-white";
++                          return (
++                            <button
++                              key={option}
++                              type="button"
++                              role="radio"
++                              aria-checked={selected}
++                              onClick={() => handleAnswerChange(question._id, option)}
++                              className={`px-6 py-2 rounded-md border text-sm font-medium transition ${
++                                selected
++                                  ? selectedStyle
++                                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
++                              }`}
++                            >
++                              {option}
++                            </button>
++                          );
++                        })}
++                      </div>
++                    ) : (
++                      <textarea
++                        value={answers[question._id] || ""}
++                        onChange={(e) =>
++                          handleAnswerChange(question._id, e.target.value)
++                        }
++                        rows={3}
++                        required={question.required}
++                        className="w-full border rounded-md px-3 py-2"
++                        placeholder="Write your answer..."
++                      />
++                    )}
+                   </div>
+                 ))}
+               </div>
+diff --git a/Frontend/src/services/feedbackService.js b/Frontend/src/services/feedbackService.js
+index 053f9ab..6037171 100644
+--- a/Frontend/src/services/feedbackService.js
++++ b/Frontend/src/services/feedbackService.js
+@@ -10,4 +10,12 @@ export const getMyFeedbackHistory = () =>
+ 
+ // Mentor: feedback summary for a specific session
+ export const getSessionFeedback = (sessionId) =>
+-  api.get(`/feedback/session/${sessionId}`).then((r) => r.data);
+\ No newline at end of file
++  api.get(`/feedback/session/${sessionId}`).then((r) => r.data);
++
++// Mentor: overall feedback + one row per completed session
++export const getMyFeedbackOverview = () =>
++  api.get("/feedback/overview").then((r) => r.data);
++
++// Mentor: rating summary + per-question statistics (yes/no percentages) of one session
++export const getSessionFeedbackSummary = (sessionId) =>
++  api.get(`/feedback/session/${sessionId}/summary`).then((r) => r.data);
+diff --git a/Frontend/src/services/studentService.js b/Frontend/src/services/studentService.js
+index b355dfa..bbf8eb2 100644
+--- a/Frontend/src/services/studentService.js
++++ b/Frontend/src/services/studentService.js
+@@ -12,4 +12,7 @@ export const uploadMyPhoto = (file) => {
+ export const removeMyPhoto = () => api.delete("/students/me/photo").then((r) => r.data);
+ 
+ 
+-export const updateStudent = (id, payload) => api.put(`/students/${id}`, payload).then((r) => r.data.student);
+\ No newline at end of file
++export const updateStudent = (id, payload) => api.put(`/students/${id}`, payload).then((r) => r.data.student);
++
++// Student: the mentor of my active group (name, email, phone, rating)
++export const getMyMentor = () => api.get("/mentors/my-mentor").then((r) => r.data);
+diff --git a/backend/src/controllers/feedback.controller.js b/backend/src/controllers/feedback.controller.js
+index a086a89..6ea6e8c 100644
+--- a/backend/src/controllers/feedback.controller.js
++++ b/backend/src/controllers/feedback.controller.js
+@@ -2,6 +2,9 @@ const Feedback = require("../models/Feedback");
+ const Student = require("../models/Student");
+ const Session = require("../models/Session");
+ const MentorshipGroup = require("../models/MentorshipGroup");
++const Mentor = require("../models/Mentor");
++const mongoose = require("mongoose");
++const { normalizeYesNo, summarizeRatings, summarizeQuestions } = require("../services/feedbackStats.service");
+ 
+ // Student: submit feedback for a completed session
+ const submitFeedback = async (req, res) => {
+@@ -34,11 +37,25 @@ const submitFeedback = async (req, res) => {
+       submittedAnswers.map((item) => [String(item.questionId), String(item.answer ?? "").trim()])
+     );
+ 
+-    const questionAnswers = templateQuestions.map((question) => ({
+-      questionId: question._id,
+-      question: question.question,
+-      answer: answersById.get(String(question._id)) || "",
+-    }));
++    const invalidYesNo = templateQuestions.find((question) => {
++      const raw = answersById.get(String(question._id));
++      return question.type === "YESNO" && raw && !normalizeYesNo(raw);
++    });
++    if (invalidYesNo) {
++      return res.status(400).json({
++        message: `Please answer Yes or No for: ${invalidYesNo.question}`,
++      });
++    }
++
++    const questionAnswers = templateQuestions.map((question) => {
++      const raw = answersById.get(String(question._id)) || "";
++      return {
++        questionId: question._id,
++        question: question.question,
++        type: question.type === "YESNO" ? "YESNO" : "TEXT",
++        answer: question.type === "YESNO" ? normalizeYesNo(raw) || "" : raw,
++      };
++    });
+ 
+     const missingRequired = templateQuestions.find(
+       (question) => question.required && !answersById.get(String(question._id))
+@@ -82,10 +99,29 @@ const getMyFeedbackHistory = async (req, res) => {
+   }
+ };
+ 
++// A mentor may only read feedback of their own sessions (admins can read everything).
++// Returns true when access is allowed, otherwise sends the error response and returns false.
++const ensureCanReadSession = async (req, res, session) => {
++  if (req.user.role === "ADMIN") return true;
++  const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
++  if (!mentor || String(session.mentor) !== String(mentor._id)) {
++    res.status(403).json({ message: "You can only view feedback of your own sessions" });
++    return false;
++  }
++  return true;
++};
++
+ // Mentor: a session's full feedback + average rating
+ const getSessionFeedback = async (req, res) => {
+   try {
+     const { sessionId } = req.params;
++    if (!mongoose.isValidObjectId(sessionId)) {
++      return res.status(400).json({ message: "Invalid session id" });
++    }
++    const ownedSession = await Session.findById(sessionId).select("mentor");
++    if (!ownedSession) return res.status(404).json({ message: "Session not found" });
++    if (!(await ensureCanReadSession(req, res, ownedSession))) return;
++
+     const feedbacks = await Feedback.find({ session: sessionId })
+       .populate({ path: "student", populate: { path: "user", select: "name" } });
+ 
+@@ -100,4 +136,80 @@ const getSessionFeedback = async (req, res) => {
+   }
+ };
+ 
+-module.exports = { submitFeedback, getMyFeedbackHistory, getSessionFeedback };
++// Mentor: overall feedback across all of their completed sessions + one line per session
++const getMyFeedbackOverview = async (req, res) => {
++  try {
++    const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
++    if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
++
++    const sessions = await Session.find({ mentor: mentor._id, status: "COMPLETED" })
++      .select("title sessionNumber date group")
++      .sort({ sessionNumber: 1, date: 1 });
++
++    const sessionIds = sessions.map((s) => s._id);
++    const feedbacks = await Feedback.find({ session: { $in: sessionIds } }).select("session rating");
++
++    const groups = await MentorshipGroup.find({
++      _id: { $in: sessions.map((s) => s.group) },
++    }).select("students");
++    const studentCountByGroup = new Map(groups.map((g) => [String(g._id), g.students.length]));
++
++    const overall = summarizeRatings(feedbacks);
++
++    const sessionRows = sessions.map((session) => {
++      const own = feedbacks.filter((f) => String(f.session) === String(session._id));
++      const summary = summarizeRatings(own);
++      return {
++        _id: session._id,
++        sessionNumber: session.sessionNumber,
++        title: session.title,
++        date: session.date,
++        totalStudents: studentCountByGroup.get(String(session.group)) || 0,
++        totalResponses: summary.totalResponses,
++        averageRating: summary.averageRating,
++      };
++    });
++
++    res.json({ overall: { ...overall, totalSessions: sessions.length }, sessions: sessionRows });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++// Mentor/Admin: one session's rating summary + per-question statistics
++// (Yes/No questions => yes/no percentages for the pie chart, text questions => anonymous answers)
++const getSessionFeedbackSummary = async (req, res) => {
++  try {
++    const { sessionId } = req.params;
++    if (!mongoose.isValidObjectId(sessionId)) {
++      return res.status(400).json({ message: "Invalid session id" });
++    }
++
++    const session = await Session.findById(sessionId).populate("template", "questions");
++    if (!session) return res.status(404).json({ message: "Session not found" });
++    if (!(await ensureCanReadSession(req, res, session))) return;
++
++    const feedbacks = await Feedback.find({ session: sessionId }).select("rating answers");
++
++    res.json({
++      session: {
++        _id: session._id,
++        sessionNumber: session.sessionNumber,
++        title: session.title,
++        date: session.date,
++      },
++      ...summarizeRatings(feedbacks),
++      questions: summarizeQuestions(session.template?.questions || [], feedbacks),
++    });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
++module.exports = {
++  submitFeedback,
++  getMyFeedbackHistory,
++  getSessionFeedback,
++  getMyFeedbackOverview,
++  getSessionFeedbackSummary,
++};
+diff --git a/backend/src/controllers/mentor.controller.js b/backend/src/controllers/mentor.controller.js
+index 363577e..509d522 100644
+--- a/backend/src/controllers/mentor.controller.js
++++ b/backend/src/controllers/mentor.controller.js
+@@ -6,6 +6,8 @@ const MentorshipGroup = require("../models/MentorshipGroup");
+ const Attendance = require("../models/Attendance");
+ const Blog = require("../models/Blog");
+ const uploadToCloudinary = require("../utils/cloudinaryUpload");
++const Student = require("../models/Student");
++const { calculateMentorRating } = require("../services/rating.service");
+ 
+ const createMentor = async (req, res) => {
+   try {
+@@ -30,10 +32,64 @@ const getMentors = async (req, res) => {
+   }
+ };
+ 
++// Student: the mentor of the student's active group, with contact details and rating
++const getMyMentor = async (req, res) => {
++  try {
++    const student = await Student.findOne({ user: req.user.id }).select("_id");
++    if (!student) return res.status(404).json({ message: "Student profile not found" });
++
++    const group = await MentorshipGroup.findOne({ students: student._id, status: "ACTIVE" })
++      .populate({ path: "mentor", populate: { path: "user", select: "name email isActive" } })
++      .populate("semester", "name");
++
++    if (!group || !group.mentor || !group.mentor.user) {
++      return res.json({ mentor: null, group: group ? { _id: group._id, name: group.name } : null });
++    }
++
++    const mentor = group.mentor;
++    const rating = await calculateMentorRating(mentor._id);
++
++    res.json({
++      group: { _id: group._id, name: group.name, semester: group.semester?.name || "" },
++      mentor: {
++        _id: mentor._id,
++        name: mentor.user.name,
++        email: mentor.user.email,
++        phone: mentor.phone || "",
++        department: mentor.department || "",
++        expertise: mentor.expertise || "",
++        batch: mentor.batch || "",
++        profileImage: mentor.profileImage || null,
++        rating: {
++          overallRating: rating.overallRating,
++          totalEvaluations: rating.totalEvaluations,
++          categoryAverages: rating.categoryAverages,
++        },
++      },
++    });
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: err.message });
++  }
++};
++
+ const getMentorById = async (req, res) => {
+   try {
+     const mentor = await Mentor.findById(req.params.id).populate("user", "name email isActive");
+     if (!mentor) return res.status(404).json({ message: "Mentor not found" });
++
++    // email/phone are personal: a mentor sees only their own record,
++    // a student only the mentor of their own group
++    if (req.user.role === "MENTOR" && String(mentor.user?._id) !== String(req.user.id)) {
++      return res.status(403).json({ message: "You can only view your own mentor profile" });
++    }
++    if (req.user.role === "STUDENT") {
++      const student = await Student.findOne({ user: req.user.id }).select("_id");
++      const group = student
++        ? await MentorshipGroup.findOne({ students: student._id, mentor: mentor._id })
++        : null;
++      if (!group) return res.status(403).json({ message: "This is not your assigned mentor" });
++    }
++
+     res.json({ mentor });
+   } catch (err) {
+     res.status(500).json({ message: "Server error", error: err.message });
+@@ -249,4 +305,5 @@ module.exports = {
+   uploadMyPhoto,
+   removeMyPhoto,
+   getMyStudents,
++  getMyMentor,
+ };
+\ No newline at end of file
+diff --git a/backend/src/controllers/sessionTemplate.controller.js b/backend/src/controllers/sessionTemplate.controller.js
+index 4bcf50a..b0d1eff 100644
+--- a/backend/src/controllers/sessionTemplate.controller.js
++++ b/backend/src/controllers/sessionTemplate.controller.js
+@@ -149,6 +149,7 @@ const createSessionTemplate = async (req, res) => {
+       questions: questions.map((item) => ({
+         question: item.question.trim(),
+         required: item.required !== false,
++        type: item.type === "YESNO" ? "YESNO" : "TEXT",
+       })),
+     });
+ 
+@@ -213,6 +214,7 @@ const updateSessionTemplate = async (req, res) => {
+       _id: item._id,
+       question: item.question.trim(),
+       required: item.required !== false,
++      type: item.type === "YESNO" ? "YESNO" : "TEXT",
+     }));
+ 
+     await template.save();
+diff --git a/backend/src/models/Feedback.js b/backend/src/models/Feedback.js
+index b41b894..1d24b8b 100644
+--- a/backend/src/models/Feedback.js
++++ b/backend/src/models/Feedback.js
+@@ -5,6 +5,7 @@ const feedbackAnswerSchema = new mongoose.Schema(
+     questionId: { type: mongoose.Schema.Types.ObjectId, required: true },
+     question: { type: String, required: true },
+     answer: { type: String, default: "" },
++    type: { type: String, enum: ["TEXT", "YESNO"], default: "TEXT" },
+   },
+   { _id: false }
+ );
+diff --git a/backend/src/models/SessionTemplate.js b/backend/src/models/SessionTemplate.js
+index 6fc2ce5..f9d4f71 100644
+--- a/backend/src/models/SessionTemplate.js
++++ b/backend/src/models/SessionTemplate.js
+@@ -4,6 +4,8 @@ const sessionQuestionSchema = new mongoose.Schema(
+   {
+     question: { type: String, required: true, trim: true },
+     required: { type: Boolean, default: true },
++    // TEXT = free-text answer, YESNO = Yes/No answer (shown as a pie chart to the mentor)
++    type: { type: String, enum: ["TEXT", "YESNO"], default: "TEXT" },
+   },
+   { _id: true }
+ );
+diff --git a/backend/src/routes/feedback.routes.js b/backend/src/routes/feedback.routes.js
+index dd45fe5..919d274 100644
+--- a/backend/src/routes/feedback.routes.js
++++ b/backend/src/routes/feedback.routes.js
+@@ -6,12 +6,16 @@ const {
+   submitFeedback,
+   getMyFeedbackHistory,
+   getSessionFeedback,
++  getMyFeedbackOverview,
++  getSessionFeedbackSummary,
+ } = require("../controllers/feedback.controller"); // lowercase "f" — matches the actual filename on disk
+ 
+ router.use(protect);
+ 
+ router.post("/", authorize("STUDENT"), submitFeedback);
+ router.get("/me", authorize("STUDENT"), getMyFeedbackHistory);
++router.get("/overview", authorize("MENTOR"), getMyFeedbackOverview);
++router.get("/session/:sessionId/summary", authorize("ADMIN", "MENTOR"), getSessionFeedbackSummary);
+ router.get("/session/:sessionId", authorize("ADMIN", "MENTOR"), getSessionFeedback);
+ 
+ module.exports = router;
+\ No newline at end of file
+diff --git a/backend/src/routes/mentor.routes.js b/backend/src/routes/mentor.routes.js
+index bd091c1..c046cb3 100644
+--- a/backend/src/routes/mentor.routes.js
++++ b/backend/src/routes/mentor.routes.js
+@@ -16,12 +16,13 @@ const {
+   uploadMyPhoto,
+   removeMyPhoto,
+   getMyStudents,
++  getMyMentor,
+ } = require("../controllers/mentor.controller");
+ 
+ router.use(protect);
+ 
+ router.post("/", authorize("ADMIN"), createMentor);
+-router.get("/", authorize("ADMIN", "STUDENT"), getMentors);
++router.get("/", authorize("ADMIN"), getMentors); // full mentor list incl. email/phone is admin-only
+ 
+ router.get("/me", authorize("MENTOR"), getMyProfile);
+ router.put("/me", authorize("MENTOR"), updateMyProfile);
+@@ -29,6 +30,7 @@ router.post("/me/photo", authorize("MENTOR"), handleUpload(profileUpload.single(
+ router.delete("/me/photo", authorize("MENTOR"), removeMyPhoto);
+ router.get("/me/students", authorize("MENTOR"), getMyStudents);
+ 
++router.get("/my-mentor", authorize("STUDENT"), getMyMentor); // must stay above "/:id"
+ router.get("/:id", authorize("ADMIN", "MENTOR", "STUDENT"), getMentorById);
+ router.put("/:id", authorize("ADMIN"), updateMentor);
+ router.patch("/:id/status", authorize("ADMIN"), toggleMentorStatus);
+diff --git a/backend/src/services/feedbackStats.service.js b/backend/src/services/feedbackStats.service.js
+new file mode 100644
+index 0000000..f7c76e7
+--- /dev/null
++++ b/backend/src/services/feedbackStats.service.js
+@@ -0,0 +1,81 @@
++// Pure helpers (no database access) used by the mentor feedback summary endpoints.
++
++const normalizeYesNo = (value) => {
++  const text = String(value ?? "").trim().toLowerCase();
++  if (["yes", "y", "true"].includes(text)) return "Yes";
++  if (["no", "n", "false"].includes(text)) return "No";
++  return null;
++};
++
++const round1 = (value) => Math.round(value * 10) / 10;
++const round2 = (value) => Math.round(value * 100) / 100;
++
++// feedbacks: [{ rating }]
++const summarizeRatings = (feedbacks) => {
++  const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
++  let sum = 0;
++
++  feedbacks.forEach((feedback) => {
++    if (distribution[feedback.rating] !== undefined) distribution[feedback.rating] += 1;
++    sum += feedback.rating;
++  });
++
++  return {
++    totalResponses: feedbacks.length,
++    averageRating: feedbacks.length ? round2(sum / feedbacks.length) : 0,
++    distribution,
++  };
++};
++
++// templateQuestions: [{ _id, question, type }]  feedbacks: [{ answers: [{ questionId, question, answer, type }] }]
++const summarizeQuestions = (templateQuestions, feedbacks) => {
++  const questions = [...templateQuestions];
++
++  // old feedback may reference questions that were removed from the template later
++  feedbacks.forEach((feedback) => {
++    (feedback.answers || []).forEach((answer) => {
++      if (!questions.some((q) => String(q._id) === String(answer.questionId))) {
++        questions.push({ _id: answer.questionId, question: answer.question, type: answer.type });
++      }
++    });
++  });
++
++  return questions.map((question) => {
++    const answers = feedbacks
++      .map((feedback) =>
++        (feedback.answers || []).find((a) => String(a.questionId) === String(question._id))
++      )
++      .filter(Boolean);
++
++    if (question.type === "YESNO") {
++      const yes = answers.filter((a) => normalizeYesNo(a.answer) === "Yes").length;
++      const no = answers.filter((a) => normalizeYesNo(a.answer) === "No").length;
++      const total = yes + no;
++
++      return {
++        questionId: question._id,
++        question: question.question,
++        type: "YESNO",
++        yes,
++        no,
++        total,
++        yesPercent: total ? round1((yes / total) * 100) : 0,
++        noPercent: total ? round1((no / total) * 100) : 0,
++        skipped: feedbacks.length - total,
++      };
++    }
++
++    // text answers are shown without student names
++    const texts = answers.map((a) => String(a.answer || "").trim()).filter(Boolean);
++    return {
++      questionId: question._id,
++      question: question.question,
++      type: "TEXT",
++      total: texts.length,
++      answers: texts,
++      skipped: feedbacks.length - texts.length,
++    };
++  });
++};
++
++module.exports = { normalizeYesNo, summarizeRatings, summarizeQuestions };

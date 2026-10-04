@@ -45,7 +45,7 @@ const getSessionTemplates = async (req, res) => {
 
     res.json({ templates });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -81,7 +81,7 @@ const getMyMentorSessionTemplates = async (req, res) => {
 
     res.json({ templates });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -98,7 +98,7 @@ const getSessionTemplateById = async (req, res) => {
 
     res.json({ template });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -149,6 +149,7 @@ const createSessionTemplate = async (req, res) => {
       questions: questions.map((item) => ({
         question: item.question.trim(),
         required: item.required !== false,
+        type: item.type === "YESNO" ? "YESNO" : "TEXT",
       })),
     });
 
@@ -165,7 +166,7 @@ const createSessionTemplate = async (req, res) => {
       });
     }
 
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -213,6 +214,7 @@ const updateSessionTemplate = async (req, res) => {
       _id: item._id,
       question: item.question.trim(),
       required: item.required !== false,
+      type: item.type === "YESNO" ? "YESNO" : "TEXT",
     }));
 
     await template.save();
@@ -230,7 +232,7 @@ const updateSessionTemplate = async (req, res) => {
       });
     }
 
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -255,7 +257,7 @@ const deleteSessionTemplate = async (req, res) => {
 
     res.json({ message: "Session template deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

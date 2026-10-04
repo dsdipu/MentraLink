@@ -176,7 +176,7 @@ const createGroup = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -249,9 +249,26 @@ const getGroups = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
+};
+
+// A mentor may open only their own groups; a student only the group they belong to.
+const canAccessGroup = async (req, group) => {
+  if (req.user.role === "ADMIN") return true;
+
+  if (req.user.role === "MENTOR") {
+    const mentor = await getMentorModel().findOne({ user: req.user.id }).select("_id");
+    return !!mentor && !!group.mentor && String(group.mentor._id || group.mentor) === String(mentor._id);
+  }
+
+  if (req.user.role === "STUDENT") {
+    const student = await getStudentModel().findOne({ user: req.user.id }).select("_id");
+    return !!student && group.students.some((s) => String(s._id || s) === String(student._id));
+  }
+
+  return false;
 };
 
 const getGroupById = async (req, res) => {
@@ -282,13 +299,19 @@ const getGroupById = async (req, res) => {
       });
     }
 
+    if (!(await canAccessGroup(req, group))) {
+      return res.status(403).json({
+        message: "You can only view your own section",
+      });
+    }
+
     res.json({
       group,
     });
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -422,7 +445,7 @@ const updateGroup = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -491,7 +514,7 @@ const assignMentor = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -594,7 +617,7 @@ const assignStudents = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -657,7 +680,7 @@ const unassignStudent = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -704,7 +727,7 @@ const getMyGroup = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -727,7 +750,7 @@ const deleteGroup = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };

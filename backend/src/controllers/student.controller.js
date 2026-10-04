@@ -1,6 +1,8 @@
 const Student = require("../models/Student");
 const User = require("../models/User");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
+const Mentor = require("../models/Mentor");
+const MentorshipGroup = require("../models/MentorshipGroup");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
 
 const createStudent = async (req, res) => {
@@ -15,7 +17,7 @@ const createStudent = async (req, res) => {
 
     res.status(201).json({ student });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -28,7 +30,7 @@ const getStudents = async (req, res) => {
     const students = await Student.find(filter).populate("user", "name email isActive");
     res.json({ students });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -36,9 +38,23 @@ const getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id).populate("user", "name email isActive");
     if (!student) return res.status(404).json({ message: "Student not found" });
+
+    // contact details are private: a student can open only their own record,
+    // a mentor only the students of their own groups
+    if (req.user.role === "STUDENT" && String(student.user?._id) !== String(req.user.id)) {
+      return res.status(403).json({ message: "You can only view your own profile" });
+    }
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
+      const shared = mentor
+        ? await MentorshipGroup.exists({ mentor: mentor._id, students: student._id })
+        : null;
+      if (!shared) return res.status(403).json({ message: "This student is not in your groups" });
+    }
+
     res.json({ student });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -67,7 +83,7 @@ const updateStudent = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "That email or student ID is already in use" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -84,7 +100,7 @@ const toggleStudentStatus = async (req, res) => {
 
     res.json({ message: `Student ${user.isActive ? "activated" : "deactivated"}` });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -106,7 +122,7 @@ const getMyProfile = async (req, res) => {
       profileImage: student.profileImage || null,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -134,7 +150,7 @@ const updateMyProfile = async (req, res) => {
       profileImage: student.profileImage || null,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -165,7 +181,7 @@ const uploadMyPhoto = async (req, res) => {
     console.error("Student photo upload error:", err);
     res.status(500).json({
       message: "Profile image upload failed",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -180,7 +196,7 @@ const removeMyPhoto = async (req, res) => {
     if (!student) return res.status(404).json({ message: "Student profile not found" });
     res.json({ message: "Photo removed" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

@@ -96,7 +96,7 @@ const createSession = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "This session is already scheduled for this section" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -118,7 +118,7 @@ const getSessions = async (req, res) => {
 
     res.json({ sessions });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -151,7 +151,7 @@ const getSessionById = async (req, res) => {
 
     res.json({ session });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -196,7 +196,7 @@ const updateSession = async (req, res) => {
 
     res.json({ session: populatedSession });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -207,7 +207,7 @@ const deleteSession = async (req, res) => {
     if (!session) return res.status(404).json({ message: "Session not found" });
     res.json({ message: "Session deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -254,7 +254,7 @@ const updateSessionStatus = async (req, res) => {
 
     res.json({ session: populatedSession });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -286,7 +286,7 @@ const getNextSession = async (req, res) => {
 
     res.status(200).json({ message: "Next session retrieved successfully", session });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -308,7 +308,7 @@ const getMySessions = async (req, res) => {
 
     res.json({ sessions });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -329,7 +329,7 @@ const getMyMentorSessions = async (req, res) => {
 
     res.json({ sessions });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

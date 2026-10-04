@@ -24,4 +24,13 @@ const otpVerifyLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginLimiter, otpRequestLimiter, otpVerifyLimiter };
+// Generous safety net for the whole API (normal use is far below this)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  message: { message: "Too many requests. Please slow down and try again shortly." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { loginLimiter, otpRequestLimiter, otpVerifyLimiter, apiLimiter };

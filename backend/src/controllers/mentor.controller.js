@@ -6,6 +6,8 @@ const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
 const Blog = require("../models/Blog");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
+const Student = require("../models/Student");
+const { calculateMentorRating } = require("../services/rating.service");
 
 const createMentor = async (req, res) => {
   try {
@@ -16,7 +18,7 @@ const createMentor = async (req, res) => {
     const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });
     res.status(201).json({ mentor });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -26,7 +28,47 @@ const getMentors = async (req, res) => {
     const validMentors = mentors.filter((m) => m.user); // drop any with a missing/deleted linked User
     res.json({ mentors: validMentors });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+  }
+};
+
+// Student: the mentor of the student's active group, with contact details and rating
+const getMyMentor = async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user.id }).select("_id");
+    if (!student) return res.status(404).json({ message: "Student profile not found" });
+
+    const group = await MentorshipGroup.findOne({ students: student._id, status: "ACTIVE" })
+      .populate({ path: "mentor", populate: { path: "user", select: "name email isActive" } })
+      .populate("semester", "name");
+
+    if (!group || !group.mentor || !group.mentor.user) {
+      return res.json({ mentor: null, group: group ? { _id: group._id, name: group.name } : null });
+    }
+
+    const mentor = group.mentor;
+    const rating = await calculateMentorRating(mentor._id);
+
+    res.json({
+      group: { _id: group._id, name: group.name, semester: group.semester?.name || "" },
+      mentor: {
+        _id: mentor._id,
+        name: mentor.user.name,
+        email: mentor.user.email,
+        phone: mentor.phone || "",
+        department: mentor.department || "",
+        expertise: mentor.expertise || "",
+        batch: mentor.batch || "",
+        profileImage: mentor.profileImage || null,
+        rating: {
+          overallRating: rating.overallRating,
+          totalEvaluations: rating.totalEvaluations,
+          categoryAverages: rating.categoryAverages,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -34,9 +76,23 @@ const getMentorById = async (req, res) => {
   try {
     const mentor = await Mentor.findById(req.params.id).populate("user", "name email isActive");
     if (!mentor) return res.status(404).json({ message: "Mentor not found" });
+
+    // email/phone are personal: a mentor sees only their own record,
+    // a student only the mentor of their own group
+    if (req.user.role === "MENTOR" && String(mentor.user?._id) !== String(req.user.id)) {
+      return res.status(403).json({ message: "You can only view your own mentor profile" });
+    }
+    if (req.user.role === "STUDENT") {
+      const student = await Student.findOne({ user: req.user.id }).select("_id");
+      const group = student
+        ? await MentorshipGroup.findOne({ students: student._id, mentor: mentor._id })
+        : null;
+      if (!group) return res.status(403).json({ message: "This is not your assigned mentor" });
+    }
+
     res.json({ mentor });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -64,7 +120,7 @@ const updateMentor = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "That email is already in use" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -82,7 +138,7 @@ const toggleMentorStatus = async (req, res) => {
 
     res.json({ message: `Mentor ${mentor.status === "ACTIVE" ? "activated" : "deactivated"}` });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -110,7 +166,7 @@ const getMyProfile = async (req, res) => {
       profileImage: mentor.profileImage || null,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -141,7 +197,7 @@ const updateMyProfile = async (req, res) => {
       profileImage: mentor.profileImage || null,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -172,7 +228,7 @@ const uploadMyPhoto = async (req, res) => {
     console.error("Mentor photo upload error:", err);
     res.status(500).json({
       message: "Profile image upload failed",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -189,7 +245,7 @@ const removeMyPhoto = async (req, res) => {
 
     res.json({ message: "Photo removed" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -234,7 +290,7 @@ const getMyStudents = async (req, res) => {
 
     res.json({ students });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -249,4 +305,5 @@ module.exports = {
   uploadMyPhoto,
   removeMyPhoto,
   getMyStudents,
+  getMyMentor,
 };

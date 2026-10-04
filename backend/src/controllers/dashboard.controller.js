@@ -50,7 +50,7 @@ const getAdminDashboard = async (req, res) => {
       recentActivities: recentSessions,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -89,7 +89,7 @@ const getStudentDashboard = async (req, res) => {
       pendingFeedback,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -125,7 +125,7 @@ const getMentorDashboard = async (req, res) => {
 
     res.json({ studentCount, upcomingSessions, averageRating, blogCount });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -137,7 +137,7 @@ const getPublicStats = async (req, res) => {
     const totalSessionsCompleted = await Session.countDocuments({ status: "COMPLETED" });
     res.json({ totalMentors, totalStudents, totalSessionsCompleted });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -186,7 +186,7 @@ const getTopRatedMentors = async (req, res) => {
 
     res.json({ mentors: results.slice(0, limit) });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

@@ -42,7 +42,7 @@ const requestOtp = async (req, res) => {
 
     res.json({ message: "Verification code sent to your email" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to send verification email", error: err.message });
+    res.status(500).json({ message: "Failed to send verification email", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -66,7 +66,7 @@ const verifyOtp = async (req, res) => {
 
     res.json({ verified: true });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

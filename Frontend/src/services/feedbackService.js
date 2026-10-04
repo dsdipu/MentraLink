@@ -11,3 +11,11 @@ export const getMyFeedbackHistory = () =>
 // Mentor: feedback summary for a specific session
 export const getSessionFeedback = (sessionId) =>
   api.get(`/feedback/session/${sessionId}`).then((r) => r.data);
+
+// Mentor: overall feedback + one row per completed session
+export const getMyFeedbackOverview = () =>
+  api.get("/feedback/overview").then((r) => r.data);
+
+// Mentor: rating summary + per-question statistics (yes/no percentages) of one session
+export const getSessionFeedbackSummary = (sessionId) =>
+  api.get(`/feedback/session/${sessionId}/summary`).then((r) => r.data);

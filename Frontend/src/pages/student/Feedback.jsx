@@ -4,7 +4,7 @@ import { submitFeedback, getMyFeedbackHistory } from "../../services/feedbackSer
 import Card from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import StarRating from "../../components/ui/StarRating";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
 
 const Feedback = () => {
   const [completedSessions, setCompletedSessions] = useState([]);
@@ -16,6 +16,7 @@ const Feedback = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [openHistoryId, setOpenHistoryId] = useState(null);
 
   const loadData = () => {
     setLoading(true);
@@ -52,6 +53,15 @@ const Feedback = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+
+    const missingYesNo = questions.find(
+      (question) => question.type === "YESNO" && question.required && !answers[question._id]
+    );
+    if (missingYesNo) {
+      setMessage(`Please choose Yes or No: ${missingYesNo.question}`);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -142,16 +152,44 @@ const Feedback = () => {
                       {index + 1}. {question.question}
                       {question.required && <span className="text-red-500"> *</span>}
                     </label>
-                    <textarea
-                      value={answers[question._id] || ""}
-                      onChange={(e) =>
-                        handleAnswerChange(question._id, e.target.value)
-                      }
-                      rows={3}
-                      required={question.required}
-                      className="w-full border rounded-md px-3 py-2"
-                      placeholder="Write your answer..."
-                    />
+                    {question.type === "YESNO" ? (
+                      <div className="flex gap-2" role="radiogroup" aria-label={question.question}>
+                        {["Yes", "No"].map((option) => {
+                          const selected = answers[question._id] === option;
+                          const selectedStyle =
+                            option === "Yes"
+                              ? "bg-green-600 border-green-600 text-white"
+                              : "bg-red-600 border-red-600 text-white";
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              onClick={() => handleAnswerChange(question._id, option)}
+                              className={`px-6 py-2 rounded-md border text-sm font-medium transition ${
+                                selected
+                                  ? selectedStyle
+                                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <textarea
+                        value={answers[question._id] || ""}
+                        onChange={(e) =>
+                          handleAnswerChange(question._id, e.target.value)
+                        }
+                        rows={3}
+                        required={question.required}
+                        className="w-full border rounded-md px-3 py-2"
+                        placeholder="Write your answer..."
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -192,37 +230,53 @@ const Feedback = () => {
         </div>
       )}
 
-      <h2 className="text-lg font-medium mb-2">Past Feedback</h2>
-      <div className="space-y-3">
-        {history.map((f) => (
-          <Card key={f._id}>
-            <div className="flex justify-between items-start mb-1">
-              <p className="font-medium">
-                Session {f.session?.sessionNumber} — {f.session?.title}
-              </p>
-              <StarRating value={f.rating} onChange={() => {}} size={14} />
-            </div>
+      <h2 className="text-lg font-medium mb-1">Past Feedback</h2>
+      <p className="text-xs text-gray-400 mb-3">Click a session to see your answers.</p>
+      <div className="space-y-2">
+        {[...history]
+          .sort((x, y) => (x.session?.sessionNumber || 0) - (y.session?.sessionNumber || 0))
+          .map((f) => {
+            const isOpen = openHistoryId === f._id;
+            return (
+              <Card key={f._id} padded={false} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpenHistoryId(isOpen ? null : f._id)}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
+                >
+                  {isOpen ? (
+                    <ChevronDown size={18} className="shrink-0 text-gray-400" />
+                  ) : (
+                    <ChevronRight size={18} className="shrink-0 text-gray-400" />
+                  )}
+                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                    Session {f.session?.sessionNumber} — {f.session?.title}
+                  </p>
+                  <StarRating value={f.rating} onChange={() => {}} size={14} />
+                </button>
 
-            {f.answers?.length > 0 && (
-              <div className="mt-3 space-y-3">
-                {f.answers.map((answer) => (
-                  <div key={answer.questionId}>
-                    <p className="text-sm font-medium text-gray-700">
-                      {answer.question}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      {answer.answer || "No answer"}
-                    </p>
+                {isOpen && (
+                  <div className="space-y-3 border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+                    {f.answers?.map((answer) => (
+                      <div key={answer.questionId}>
+                        <p className="text-sm font-medium text-gray-700">{answer.question}</p>
+                        <p className="text-sm text-gray-600 mt-0.5">{answer.answer || "No answer"}</p>
+                      </div>
+                    ))}
+
+                    {f.comment ? (
+                      <p className="text-sm text-gray-600">{f.comment}</p>
+                    ) : (
+                      !f.answers?.length && (
+                        <p className="text-sm text-gray-400">No additional comment.</p>
+                      )
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {f.comment && (
-              <p className="text-gray-600 text-sm mt-3">{f.comment}</p>
-            )}
-          </Card>
-        ))}
+                )}
+              </Card>
+            );
+          })}
         {history.length === 0 && (
           <p className="text-gray-500 text-sm">No feedback submitted yet.</p>
         )}

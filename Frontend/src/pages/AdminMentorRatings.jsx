@@ -3,6 +3,7 @@ import { getAllMentorRatings } from "../services/evaluationService";
 import { updateMentor } from "../services/mentorService";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
+import EvaluationBySession from "../components/EvaluationBySession";
 import {
   GraduationCap,
   BadgeCheck,
@@ -412,44 +413,14 @@ const AdminMentorRatings = () => {
                       </div>
                     )}
 
-                    <div className="space-y-3">
-                      {mentor.evaluations.map(
-                        (evaluation) => (
-                          <div
-                            key={evaluation._id}
-                            className="rounded-md bg-gray-50 p-3 text-sm"
-                          >
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="font-medium">
-                                {
-                                  evaluation.studentName
-                                }
-                              </span>
-
-                              <span className="w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                                {evaluation.sessionTitle ||
-                                  "Session"}
-                              </span>
-                            </div>
-
-                            <p className="mt-1 break-words text-gray-600">
-                              {evaluation.comment || (
-                                <em className="text-gray-400">
-                                  No comment
-                                </em>
-                              )}
-                            </p>
-                          </div>
-                        )
-                      )}
-
-                      {mentor.evaluations.length ===
-                        0 && (
-                        <p className="text-sm text-gray-400">
-                          No evaluations yet.
-                        </p>
-                      )}
-                    </div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+                      Evaluations by session
+                    </p>
+                    <EvaluationBySession
+                      evaluations={mentor.evaluations}
+                      showStudentName
+                      emptyText="No evaluations yet."
+                    />
                   </div>
                 )}
             </Card>

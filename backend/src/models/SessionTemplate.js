@@ -4,6 +4,8 @@ const sessionQuestionSchema = new mongoose.Schema(
   {
     question: { type: String, required: true, trim: true },
     required: { type: Boolean, default: true },
+    // TEXT = free-text answer, YESNO = Yes/No answer (shown as a pie chart to the mentor)
+    type: { type: String, enum: ["TEXT", "YESNO"], default: "TEXT" },
   },
   { _id: true }
 );

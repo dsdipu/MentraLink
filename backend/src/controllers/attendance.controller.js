@@ -50,7 +50,7 @@ const markAttendance = async (req, res) => {
 
     res.status(201).json({ attendance: results });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -70,7 +70,7 @@ const getMyAttendance = async (req, res) => {
 
     res.json({ records });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -87,7 +87,7 @@ const getAttendanceStats = async (req, res) => {
 
     res.json({ present, absent, total, percentage });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -112,7 +112,7 @@ const getSessionAttendance = async (req, res) => {
 
     res.json({ records });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

@@ -13,3 +13,6 @@ export const removeMyPhoto = () => api.delete("/students/me/photo").then((r) => 
 
 
 export const updateStudent = (id, payload) => api.put(`/students/${id}`, payload).then((r) => r.data.student);
+
+// Student: the mentor of my active group (name, email, phone, rating)
+export const getMyMentor = () => api.get("/mentors/my-mentor").then((r) => r.data);

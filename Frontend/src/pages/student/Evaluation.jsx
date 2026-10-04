@@ -4,6 +4,7 @@ import { getMyEvaluations, submitEvaluation } from "../../services/evaluationSer
 import Card from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import StarRating from "../../components/ui/StarRating";
+import EvaluationBySession from "../../components/EvaluationBySession";
 import { Star } from "lucide-react";
 
 const RATING_FIELDS = [
@@ -37,6 +38,17 @@ const Evaluation = () => {
 
   useEffect(() => { load(); }, []);
 
+  // normalise the student's own evaluations into the shape the shared component expects
+  const myEvaluations = history.map((evaluation) => ({
+    _id: evaluation._id,
+    sessionId: evaluation.session?._id,
+    sessionNumber: evaluation.session?.sessionNumber,
+    sessionTitle: evaluation.session?.title,
+    sessionDate: evaluation.session?.date,
+    ratings: evaluation.ratings,
+    comment: evaluation.comment,
+  }));
+
   const alreadyEvaluated = (sessionId) => history.some((e) => e.session?._id === sessionId);
   const availableSessions = sessions.filter((s) => !alreadyEvaluated(s._id));
 
@@ -58,7 +70,7 @@ const Evaluation = () => {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold mb-4">Mentor Evaluation</h1>
       {message && <p className="text-sm mb-4 text-blue-600">{message}</p>}
 
@@ -105,6 +117,13 @@ const Evaluation = () => {
           </form>
         </Card>
       )}
+
+      <h2 className="text-lg font-medium mt-8 mb-1">My Past Evaluations</h2>
+      <p className="text-xs text-gray-400 mb-3">Click a session to see what you submitted.</p>
+      <EvaluationBySession
+        evaluations={myEvaluations}
+        emptyText="You haven't evaluated any session yet."
+      />
     </div>
   );
 };

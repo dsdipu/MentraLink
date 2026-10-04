@@ -1,0 +1,1700 @@
+diff --git a/Frontend/src/components/EvaluationBySession.jsx b/Frontend/src/components/EvaluationBySession.jsx
+new file mode 100644
+index 0000000..0fe992b
+--- /dev/null
++++ b/Frontend/src/components/EvaluationBySession.jsx
+@@ -0,0 +1,136 @@
++import { useState } from "react";
++import PropTypes from "prop-types";
++import { ChevronDown, ChevronRight } from "lucide-react";
++import Card from "./ui/Card";
++import StarDisplay from "./ui/StarDisplay";
++import {
++  CATEGORY_LABELS,
++  evaluationAverage,
++  groupEvaluationsBySession,
++} from "../utils/evaluationGroups";
++
++const formatDate = (value) =>
++  value
++    ? new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
++    : "";
++
++// Evaluations grouped per session. Every session is collapsed by default, so a long
++// history stays compact; click a session to see its category scores and comments.
++function EvaluationBySession({ evaluations, showStudentName = false, emptyText }) {
++  const groups = groupEvaluationsBySession(evaluations);
++  const [openKeys, setOpenKeys] = useState([]);
++
++  if (groups.length === 0) {
++    return <p className="text-sm text-gray-500">{emptyText || "No evaluations yet."}</p>;
++  }
++
++  const allOpen = openKeys.length === groups.length;
++  const toggle = (key) =>
++    setOpenKeys((current) =>
++      current.includes(key) ? current.filter((k) => k !== key) : [...current, key]
++    );
++
++  return (
++    <div>
++      {groups.length > 1 && (
++        <div className="mb-2 flex justify-end">
++          <button
++            type="button"
++            onClick={() => setOpenKeys(allOpen ? [] : groups.map((g) => g.key))}
++            className="text-xs text-blue-600 hover:underline"
++          >
++            {allOpen ? "Collapse all" : "Expand all"}
++          </button>
++        </div>
++      )}
++
++      <div className="space-y-2">
++        {groups.map((group) => {
++          const isOpen = openKeys.includes(group.key);
++          return (
++            <Card key={group.key} padded={false} className="overflow-hidden">
++              <button
++                type="button"
++                onClick={() => toggle(group.key)}
++                aria-expanded={isOpen}
++                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
++              >
++                {isOpen ? (
++                  <ChevronDown size={18} className="shrink-0 text-gray-400" />
++                ) : (
++                  <ChevronRight size={18} className="shrink-0 text-gray-400" />
++                )}
++                <div className="min-w-0 flex-1">
++                  <p className="truncate text-sm font-medium text-gray-900">
++                    {group.sessionNumber ? `Session ${group.sessionNumber} — ` : ""}
++                    {group.title}
++                  </p>
++                  <p className="text-xs text-gray-400">
++                    {[
++                      formatDate(group.date),
++                      `${group.evaluations.length} evaluation${group.evaluations.length === 1 ? "" : "s"}`,
++                      group.commentCount > 0
++                        ? `${group.commentCount} comment${group.commentCount === 1 ? "" : "s"}`
++                        : null,
++                    ]
++                      .filter(Boolean)
++                      .join(" · ")}
++                  </p>
++                </div>
++                <div className="shrink-0 text-right">
++                  <p className="text-sm font-semibold text-brand-navy">{group.averageRating}/5</p>
++                  <StarDisplay value={group.averageRating} size={12} />
++                </div>
++              </button>
++
++              {isOpen && (
++                <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4">
++                  <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
++                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
++                      <div key={key} className="rounded-md bg-white py-2 text-center shadow-sm">
++                        <p className="text-[11px] text-gray-500">{label}</p>
++                        <p className="text-sm font-semibold">{group.categoryAverages[key] || "-"}/5</p>
++                      </div>
++                    ))}
++                  </div>
++
++                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
++                    Comments
++                  </p>
++                  <ul className="space-y-2">
++                    {group.evaluations.map((evaluation) => (
++                      <li key={evaluation._id} className="rounded-md bg-white p-3 text-sm shadow-sm">
++                        <div className="mb-1 flex items-center justify-between gap-2">
++                          <span className="font-medium text-gray-800">
++                            {showStudentName ? evaluation.studentName || "Anonymous" : "Student comment"}
++                          </span>
++                          <span className="flex items-center gap-1 text-xs text-gray-500">
++                            <StarDisplay value={evaluationAverage(evaluation.ratings)} size={12} />
++                            {evaluationAverage(evaluation.ratings)}
++                          </span>
++                        </div>
++                        <p className="break-words text-gray-600">
++                          {evaluation.comment?.trim() || (
++                            <em className="text-gray-400">No comment left</em>
++                          )}
++                        </p>
++                      </li>
++                    ))}
++                  </ul>
++                </div>
++              )}
++            </Card>
++          );
++        })}
++      </div>
++    </div>
++  );
++}
++
++EvaluationBySession.propTypes = {
++  evaluations: PropTypes.arrayOf(PropTypes.object).isRequired,
++  showStudentName: PropTypes.bool,
++  emptyText: PropTypes.string,
++};
++
++export default EvaluationBySession;
+diff --git a/Frontend/src/pages/AdminMentorRatings.jsx b/Frontend/src/pages/AdminMentorRatings.jsx
+index f1ec5a6..c805e41 100644
+--- a/Frontend/src/pages/AdminMentorRatings.jsx
++++ b/Frontend/src/pages/AdminMentorRatings.jsx
+@@ -3,6 +3,7 @@ import { getAllMentorRatings } from "../services/evaluationService";
+ import { updateMentor } from "../services/mentorService";
+ import Card from "../components/ui/Card";
+ import Badge from "../components/ui/Badge";
++import EvaluationBySession from "../components/EvaluationBySession";
+ import {
+   GraduationCap,
+   BadgeCheck,
+@@ -412,44 +413,14 @@ const AdminMentorRatings = () => {
+                       </div>
+                     )}
+ 
+-                    <div className="space-y-3">
+-                      {mentor.evaluations.map(
+-                        (evaluation) => (
+-                          <div
+-                            key={evaluation._id}
+-                            className="rounded-md bg-gray-50 p-3 text-sm"
+-                          >
+-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+-                              <span className="font-medium">
+-                                {
+-                                  evaluation.studentName
+-                                }
+-                              </span>
+-
+-                              <span className="w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+-                                {evaluation.sessionTitle ||
+-                                  "Session"}
+-                              </span>
+-                            </div>
+-
+-                            <p className="mt-1 break-words text-gray-600">
+-                              {evaluation.comment || (
+-                                <em className="text-gray-400">
+-                                  No comment
+-                                </em>
+-                              )}
+-                            </p>
+-                          </div>
+-                        )
+-                      )}
+-
+-                      {mentor.evaluations.length ===
+-                        0 && (
+-                        <p className="text-sm text-gray-400">
+-                          No evaluations yet.
+-                        </p>
+-                      )}
+-                    </div>
++                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
++                      Evaluations by session
++                    </p>
++                    <EvaluationBySession
++                      evaluations={mentor.evaluations}
++                      showStudentName
++                      emptyText="No evaluations yet."
++                    />
+                   </div>
+                 )}
+             </Card>
+diff --git a/Frontend/src/pages/mentor/Evaluation.jsx b/Frontend/src/pages/mentor/Evaluation.jsx
+index d918ca4..ec4a3ba 100644
+--- a/Frontend/src/pages/mentor/Evaluation.jsx
++++ b/Frontend/src/pages/mentor/Evaluation.jsx
+@@ -3,16 +3,10 @@ import { getMentorRating, getMyMentorEvaluations } from "../../services/evaluati
+ import Card from "../../components/ui/Card";
+ import StatCard from "../../components/ui/StatCard";
+ import EmptyState from "../../components/ui/EmptyState";
++import EvaluationBySession from "../../components/EvaluationBySession";
++import { CATEGORY_LABELS } from "../../utils/evaluationGroups";
+ import { Star } from "lucide-react";
+ 
+-const CATEGORY_LABELS = {
+-  communication: "Communication",
+-  guidance: "Guidance",
+-  availability: "Availability",
+-  knowledgeSharing: "Knowledge Sharing",
+-  overallExperience: "Overall Experience",
+-};
+-
+ const Evaluation = () => {
+   const [data, setData] = useState(null);
+   const [evaluations, setEvaluations] = useState([]);
+@@ -51,7 +45,10 @@ const Evaluation = () => {
+         </Card>
+       )}
+ 
+-      <h2 className="text-lg font-medium mb-3">Student Comments</h2>
++      <h2 className="text-lg font-medium mb-1">Student Comments by Session</h2>
++      <p className="text-xs text-gray-400 mb-3">
++        Click a session to see its scores and comments. Students are shown anonymously.
++      </p>
+       {evaluations.length === 0 ? (
+         <EmptyState
+           icon={Star}
+@@ -59,18 +56,8 @@ const Evaluation = () => {
+           description="Student evaluations for your sessions will appear here."
+         />
+       ) : (
+-        <div className="space-y-3 max-w-xl">
+-          {evaluations.map((e) => (
+-            <Card key={e._id}>
+-              <div className="flex justify-between items-center mb-1">
+-                <span className="font-medium">{e.studentName}</span>
+-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+-                  {e.sessionTitle || "Session"}
+-                </span>
+-              </div>
+-              <p className="text-gray-600 text-sm">{e.comment || <em className="text-gray-400">No comment left</em>}</p>
+-            </Card>
+-          ))}
++        <div className="max-w-3xl">
++          <EvaluationBySession evaluations={evaluations} />
+         </div>
+       )}
+     </div>
+diff --git a/Frontend/src/pages/student/Evaluation.jsx b/Frontend/src/pages/student/Evaluation.jsx
+index 1888af4..db4b60e 100644
+--- a/Frontend/src/pages/student/Evaluation.jsx
++++ b/Frontend/src/pages/student/Evaluation.jsx
+@@ -4,6 +4,7 @@ import { getMyEvaluations, submitEvaluation } from "../../services/evaluationSer
+ import Card from "../../components/ui/Card";
+ import EmptyState from "../../components/ui/EmptyState";
+ import StarRating from "../../components/ui/StarRating";
++import EvaluationBySession from "../../components/EvaluationBySession";
+ import { Star } from "lucide-react";
+ 
+ const RATING_FIELDS = [
+@@ -37,6 +38,17 @@ const Evaluation = () => {
+ 
+   useEffect(() => { load(); }, []);
+ 
++  // normalise the student's own evaluations into the shape the shared component expects
++  const myEvaluations = history.map((evaluation) => ({
++    _id: evaluation._id,
++    sessionId: evaluation.session?._id,
++    sessionNumber: evaluation.session?.sessionNumber,
++    sessionTitle: evaluation.session?.title,
++    sessionDate: evaluation.session?.date,
++    ratings: evaluation.ratings,
++    comment: evaluation.comment,
++  }));
++
+   const alreadyEvaluated = (sessionId) => history.some((e) => e.session?._id === sessionId);
+   const availableSessions = sessions.filter((s) => !alreadyEvaluated(s._id));
+ 
+@@ -58,7 +70,7 @@ const Evaluation = () => {
+   if (loading) return <p>Loading...</p>;
+ 
+   return (
+-    <div className="max-w-xl">
++    <div className="max-w-2xl">
+       <h1 className="text-2xl font-semibold mb-4">Mentor Evaluation</h1>
+       {message && <p className="text-sm mb-4 text-blue-600">{message}</p>}
+ 
+@@ -105,6 +117,13 @@ const Evaluation = () => {
+           </form>
+         </Card>
+       )}
++
++      <h2 className="text-lg font-medium mt-8 mb-1">My Past Evaluations</h2>
++      <p className="text-xs text-gray-400 mb-3">Click a session to see what you submitted.</p>
++      <EvaluationBySession
++        evaluations={myEvaluations}
++        emptyText="You haven't evaluated any session yet."
++      />
+     </div>
+   );
+ };
+diff --git a/Frontend/src/pages/student/Feedback.jsx b/Frontend/src/pages/student/Feedback.jsx
+index 2883fcd..53fa77e 100644
+--- a/Frontend/src/pages/student/Feedback.jsx
++++ b/Frontend/src/pages/student/Feedback.jsx
+@@ -4,7 +4,7 @@ import { submitFeedback, getMyFeedbackHistory } from "../../services/feedbackSer
+ import Card from "../../components/ui/Card";
+ import EmptyState from "../../components/ui/EmptyState";
+ import StarRating from "../../components/ui/StarRating";
+-import { MessageSquare } from "lucide-react";
++import { MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
+ 
+ const Feedback = () => {
+   const [completedSessions, setCompletedSessions] = useState([]);
+@@ -16,6 +16,7 @@ const Feedback = () => {
+   const [message, setMessage] = useState("");
+   const [loading, setLoading] = useState(true);
+   const [submitting, setSubmitting] = useState(false);
++  const [openHistoryId, setOpenHistoryId] = useState(null);
+ 
+   const loadData = () => {
+     setLoading(true);
+@@ -229,37 +230,53 @@ const Feedback = () => {
+         </div>
+       )}
+ 
+-      <h2 className="text-lg font-medium mb-2">Past Feedback</h2>
+-      <div className="space-y-3">
+-        {history.map((f) => (
+-          <Card key={f._id}>
+-            <div className="flex justify-between items-start mb-1">
+-              <p className="font-medium">
+-                Session {f.session?.sessionNumber} — {f.session?.title}
+-              </p>
+-              <StarRating value={f.rating} onChange={() => {}} size={14} />
+-            </div>
++      <h2 className="text-lg font-medium mb-1">Past Feedback</h2>
++      <p className="text-xs text-gray-400 mb-3">Click a session to see your answers.</p>
++      <div className="space-y-2">
++        {[...history]
++          .sort((x, y) => (x.session?.sessionNumber || 0) - (y.session?.sessionNumber || 0))
++          .map((f) => {
++            const isOpen = openHistoryId === f._id;
++            return (
++              <Card key={f._id} padded={false} className="overflow-hidden">
++                <button
++                  type="button"
++                  onClick={() => setOpenHistoryId(isOpen ? null : f._id)}
++                  aria-expanded={isOpen}
++                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
++                >
++                  {isOpen ? (
++                    <ChevronDown size={18} className="shrink-0 text-gray-400" />
++                  ) : (
++                    <ChevronRight size={18} className="shrink-0 text-gray-400" />
++                  )}
++                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
++                    Session {f.session?.sessionNumber} — {f.session?.title}
++                  </p>
++                  <StarRating value={f.rating} onChange={() => {}} size={14} />
++                </button>
+ 
+-            {f.answers?.length > 0 && (
+-              <div className="mt-3 space-y-3">
+-                {f.answers.map((answer) => (
+-                  <div key={answer.questionId}>
+-                    <p className="text-sm font-medium text-gray-700">
+-                      {answer.question}
+-                    </p>
+-                    <p className="text-sm text-gray-600 mt-0.5">
+-                      {answer.answer || "No answer"}
+-                    </p>
+-                  </div>
+-                ))}
+-              </div>
+-            )}
++                {isOpen && (
++                  <div className="space-y-3 border-t border-gray-100 bg-gray-50/60 px-4 py-4">
++                    {f.answers?.map((answer) => (
++                      <div key={answer.questionId}>
++                        <p className="text-sm font-medium text-gray-700">{answer.question}</p>
++                        <p className="text-sm text-gray-600 mt-0.5">{answer.answer || "No answer"}</p>
++                      </div>
++                    ))}
+ 
+-            {f.comment && (
+-              <p className="text-gray-600 text-sm mt-3">{f.comment}</p>
+-            )}
+-          </Card>
+-        ))}
++                    {f.comment ? (
++                      <p className="text-sm text-gray-600">{f.comment}</p>
++                    ) : (
++                      !f.answers?.length && (
++                        <p className="text-sm text-gray-400">No additional comment.</p>
++                      )
++                    )}
++                  </div>
++                )}
++              </Card>
++            );
++          })}
+         {history.length === 0 && (
+           <p className="text-gray-500 text-sm">No feedback submitted yet.</p>
+         )}
+diff --git a/Frontend/src/utils/evaluationGroups.js b/Frontend/src/utils/evaluationGroups.js
+new file mode 100644
+index 0000000..ef85cd2
+--- /dev/null
++++ b/Frontend/src/utils/evaluationGroups.js
+@@ -0,0 +1,61 @@
++export const CATEGORY_LABELS = {
++  communication: "Communication",
++  guidance: "Guidance",
++  availability: "Availability",
++  knowledgeSharing: "Knowledge Sharing",
++  overallExperience: "Overall Experience",
++};
++
++const round2 = (value) => Math.round(value * 100) / 100;
++
++// average of the 5 rating categories of one evaluation
++export const evaluationAverage = (ratings = {}) => {
++  const values = Object.keys(CATEGORY_LABELS)
++    .map((key) => Number(ratings[key]))
++    .filter((value) => Number.isFinite(value) && value > 0);
++  return values.length ? round2(values.reduce((sum, v) => sum + v, 0) / values.length) : 0;
++};
++
++// Groups evaluations by session (Session 1, Session 2, ...) with per-session averages.
++export const groupEvaluationsBySession = (evaluations = []) => {
++  const groups = new Map();
++
++  evaluations.forEach((evaluation) => {
++    const key = String(evaluation.sessionId || evaluation.sessionTitle || "unknown");
++    if (!groups.has(key)) {
++      groups.set(key, {
++        key,
++        sessionNumber: evaluation.sessionNumber ?? null,
++        title: evaluation.sessionTitle || "Session",
++        date: evaluation.sessionDate || null,
++        evaluations: [],
++      });
++    }
++    groups.get(key).evaluations.push(evaluation);
++  });
++
++  return [...groups.values()]
++    .map((group) => {
++      const categoryTotals = {};
++      Object.keys(CATEGORY_LABELS).forEach((key) => {
++        const values = group.evaluations.map((e) => Number(e.ratings?.[key])).filter((v) => v > 0);
++        categoryTotals[key] = values.length
++          ? round2(values.reduce((sum, v) => sum + v, 0) / values.length)
++          : 0;
++      });
++
++      const averages = group.evaluations.map((e) => evaluationAverage(e.ratings)).filter(Boolean);
++      return {
++        ...group,
++        averageRating: averages.length
++          ? round2(averages.reduce((sum, v) => sum + v, 0) / averages.length)
++          : 0,
++        categoryAverages: categoryTotals,
++        commentCount: group.evaluations.filter((e) => (e.comment || "").trim()).length,
++      };
++    })
++    .sort((a, b) => {
++      if (a.sessionNumber !== null && b.sessionNumber !== null) return a.sessionNumber - b.sessionNumber;
++      return new Date(a.date || 0) - new Date(b.date || 0);
++    });
++};
+diff --git a/backend/src/app.js b/backend/src/app.js
+index 67442f0..357c6c2 100644
+--- a/backend/src/app.js
++++ b/backend/src/app.js
+@@ -1,6 +1,8 @@
+ const express = require("express");
+ const cors = require("cors");
+ const path = require("path");
++const { securityHeaders, blockOperatorInjection } = require("./middleware/security.middleware");
++const { apiLimiter } = require("./middleware/rateLimit.middleware");
+ 
+ const authRoutes = require("./routes/auth.routes");
+ const studentRoutes = require("./routes/student.routes");
+@@ -20,6 +22,8 @@ const otpRoutes = require("./routes/otp.routes");
+ const app = express();
+ 
+ app.set("trust proxy", 1);
++app.disable("x-powered-by");
++app.use(securityHeaders);
+ 
+ const allowedOrigins = process.env.FRONTEND_URLS
+   ? process.env.FRONTEND_URLS
+@@ -27,10 +31,12 @@ const allowedOrigins = process.env.FRONTEND_URLS
+       .map((origin) => origin.trim().replace(/\/$/, ""))
+   : [];
+ 
+-app.use((req, res, next) => {
+-  console.log(req.method, req.originalUrl);
+-  next();
+-});
++if (process.env.NODE_ENV !== "production") {
++  app.use((req, res, next) => {
++    console.log(req.method, req.originalUrl);
++    next();
++  });
++}
+ 
+ app.use(
+   cors({
+@@ -51,7 +57,9 @@ app.use(
+   })
+ );
+ 
+-app.use(express.json());
++app.use(express.json({ limit: "1mb" }));
++app.use("/api", apiLimiter);
++app.use(blockOperatorInjection);
+ 
+ app.get("/api/health", (req, res) => {
+   res.json({ status: "ok" });
+diff --git a/backend/src/controllers/admin.controller.js b/backend/src/controllers/admin.controller.js
+index 584361e..6d11ec8 100644
+--- a/backend/src/controllers/admin.controller.js
++++ b/backend/src/controllers/admin.controller.js
+@@ -7,7 +7,7 @@ const getAdmins = async (req, res) => {
+     const admins = await User.find({ role: "ADMIN" }).select("-password").sort({ createdAt: 1 });
+     res.json({ admins });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -23,7 +23,7 @@ const createAdmin = async (req, res) => {
+     const admin = await User.create({ name, email, password: hashedPassword, role: "ADMIN", isActive: true });
+     res.status(201).json({ admin: { _id: admin._id, name: admin.name, email: admin.email, isActive: admin.isActive } });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -38,7 +38,7 @@ const updateAdmin = async (req, res) => {
+     if (!admin) return res.status(404).json({ message: "Admin not found" });
+     res.json({ admin });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -63,7 +63,7 @@ const toggleAdminStatus = async (req, res) => {
+     await target.save();
+     res.json({ message: `Admin ${target.isActive ? "activated" : "deactivated"}` });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/attendance.controller.js b/backend/src/controllers/attendance.controller.js
+index 649d704..d6e57b8 100644
+--- a/backend/src/controllers/attendance.controller.js
++++ b/backend/src/controllers/attendance.controller.js
+@@ -50,7 +50,7 @@ const markAttendance = async (req, res) => {
+ 
+     res.status(201).json({ attendance: results });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -70,7 +70,7 @@ const getMyAttendance = async (req, res) => {
+ 
+     res.json({ records });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -87,7 +87,7 @@ const getAttendanceStats = async (req, res) => {
+ 
+     res.json({ present, absent, total, percentage });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -112,7 +112,7 @@ const getSessionAttendance = async (req, res) => {
+ 
+     res.json({ records });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/auth.controller.js b/backend/src/controllers/auth.controller.js
+index 1fa5fc2..3094058 100644
+--- a/backend/src/controllers/auth.controller.js
++++ b/backend/src/controllers/auth.controller.js
+@@ -117,7 +117,7 @@ const register = async (req, res) => {
+       user: { id: user._id, name: user.name, email: user.email, role: user.role, isActive: user.isActive },
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -173,7 +173,7 @@ const approveUser = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "That student ID is already in use by another account" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -192,7 +192,7 @@ const getPendingUsers = async (req, res) => {
+ 
+     res.json({ pendingUsers });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -222,7 +222,7 @@ const rejectUser = async (req, res) => {
+ 
+     res.json({ message: "Registration rejected and removed" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -278,7 +278,7 @@ const login = async (req, res) => {
+     const token = generateToken(user._id, user.role);
+     res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -313,7 +313,7 @@ const forgotPassword = async (req, res) => {
+ 
+     res.json({ message: "If that email is registered, a reset code has been sent." });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -349,7 +349,7 @@ const resetPassword = async (req, res) => {
+ 
+     res.json({ message: "Password updated. You can now log in." });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -358,7 +358,7 @@ const getPendingCount = async (req, res) => {
+     const count = await User.countDocuments(await getPendingFilter());
+     res.json({ count });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -368,7 +368,7 @@ const getMe = async (req, res) => {
+     if (!user) return res.status(404).json({ message: "User not found" });
+     res.json({ user });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -378,7 +378,7 @@ const updateMe = async (req, res) => {
+     const user = await User.findByIdAndUpdate(req.user.id, { name }, { new: true }).select("-password");
+     res.json({ user });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -405,7 +405,7 @@ const changePassword = async (req, res) => {
+     const token = generateToken(user._id, user.role);
+     res.json({ message: "Password changed successfully", token });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/blog.controllers.js b/backend/src/controllers/blog.controllers.js
+index 7502d8f..aad16b1 100644
+--- a/backend/src/controllers/blog.controllers.js
++++ b/backend/src/controllers/blog.controllers.js
+@@ -20,7 +20,7 @@ const uploadBlogImage = async (req, res) => {
+     console.error("Cloudinary blog upload error:", err);
+     res.status(500).json({
+       message: "Image upload failed",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -40,7 +40,7 @@ const createBlog = async (req, res) => {
+     });
+     res.status(201).json({ blog });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -57,7 +57,7 @@ const getBlogs = async (req, res) => {
+ 
+     res.json({ blogs });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -69,7 +69,7 @@ const getBlogById = async (req, res) => {
+     if (!blog) return res.status(404).json({ message: "Blog not found" });
+     res.json({ blog });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -94,7 +94,7 @@ const updateBlog = async (req, res) => {
+     await blog.save();
+     res.json({ blog });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -110,7 +110,7 @@ const deleteBlog = async (req, res) => {
+     await blog.deleteOne();
+     res.json({ message: "Blog deleted" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -133,7 +133,7 @@ const toggleLike = async (req, res) => {
+ 
+     res.json({ likesCount: blog.likes.length, liked: !alreadyLiked });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -144,7 +144,7 @@ const getComments = async (req, res) => {
+       .sort({ createdAt: -1 });
+     res.json({ comments });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -157,7 +157,7 @@ const addComment = async (req, res) => {
+     const populated = await comment.populate("author", "name");
+     res.status(201).json({ comment: populated });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -173,7 +173,7 @@ const deleteComment = async (req, res) => {
+     await comment.deleteOne();
+     res.json({ message: "Comment deleted" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/dashboard.controller.js b/backend/src/controllers/dashboard.controller.js
+index 58f4acb..bd6558d 100644
+--- a/backend/src/controllers/dashboard.controller.js
++++ b/backend/src/controllers/dashboard.controller.js
+@@ -50,7 +50,7 @@ const getAdminDashboard = async (req, res) => {
+       recentActivities: recentSessions,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -89,7 +89,7 @@ const getStudentDashboard = async (req, res) => {
+       pendingFeedback,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -125,7 +125,7 @@ const getMentorDashboard = async (req, res) => {
+ 
+     res.json({ studentCount, upcomingSessions, averageRating, blogCount });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -137,7 +137,7 @@ const getPublicStats = async (req, res) => {
+     const totalSessionsCompleted = await Session.countDocuments({ status: "COMPLETED" });
+     res.json({ totalMentors, totalStudents, totalSessionsCompleted });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -186,7 +186,7 @@ const getTopRatedMentors = async (req, res) => {
+ 
+     res.json({ mentors: results.slice(0, limit) });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/evaluation.controller.js b/backend/src/controllers/evaluation.controller.js
+index 0400312..e51ada8 100644
+--- a/backend/src/controllers/evaluation.controller.js
++++ b/backend/src/controllers/evaluation.controller.js
+@@ -4,6 +4,7 @@ const Mentor = require("../models/Mentor");
+ const Session = require("../models/Session");
+ const { calculateMentorRating } = require("../services/rating.service");
+ const MentorshipGroup=require("../models/MentorshipGroup");
++const mongoose = require("mongoose");
+ 
+ // Anyone permitted: a specific mentor's aggregated rating
+ const getMentorRating = async (req, res) => {
+@@ -12,7 +13,7 @@ const getMentorRating = async (req, res) => {
+     const rating = await calculateMentorRating(mentorId, req.query.semesterId || null);
+     res.json(rating);
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -25,7 +26,7 @@ const getMyRating = async (req, res) => {
+     const rating = await calculateMentorRating(mentor._id, req.query.semesterId || null);
+     res.json(rating);
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -37,13 +38,16 @@ const getMyMentorEvaluations = async (req, res) => {
+ 
+     const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+       .populate({ path: "student", populate: { path: "user", select: "name" } })
+-      .populate("session", "title date")
++      .populate("session", "title date sessionNumber")
+       .sort({ createdAt: -1 });
+ 
++    // students' names are intentionally NOT sent to the mentor, so evaluations stay honest
+     res.json({
+       evaluations: evaluations.map((e) => ({
+         _id: e._id,
+-        studentName: e.student?.user?.name || "Anonymous",
++        studentName: "Anonymous student",
++        sessionId: e.session?._id,
++        sessionNumber: e.session?.sessionNumber,
+         sessionTitle: e.session?.title,
+         sessionDate: e.session?.date,
+         ratings: e.ratings,
+@@ -52,7 +56,7 @@ const getMyMentorEvaluations = async (req, res) => {
+       })),
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -66,7 +70,7 @@ const getAllMentorRatings = async (req, res) => {
+       const rating = await calculateMentorRating(mentor._id);
+       const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+         .populate({ path: "student", populate: { path: "user", select: "name" } })
+-        .populate("session", "title date")
++        .populate("session", "title date sessionNumber")
+         .sort({ createdAt: -1 });
+ 
+       const semestersMentored = await MentorshipGroup.find({ mentor: mentor._id }).distinct("semester");
+@@ -83,6 +87,8 @@ const getAllMentorRatings = async (req, res) => {
+         evaluations: evaluations.map((e) => ({
+           _id: e._id,
+           studentName: e.student?.user?.name || "Anonymous",
++          sessionId: e.session?._id,
++          sessionNumber: e.session?.sessionNumber,
+           sessionTitle: e.session?.title,
+           sessionDate: e.session?.date,
+           ratings: e.ratings,
+@@ -94,7 +100,7 @@ const getAllMentorRatings = async (req, res) => {
+ 
+     res.json({ mentors: results });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -106,16 +112,41 @@ const submitEvaluation = async (req, res) => {
+     const student = await Student.findOne({ user: req.user.id });
+     if (!student) return res.status(404).json({ message: "Student profile not found" });
+ 
++    if (!sessionId || !mongoose.isValidObjectId(sessionId)) {
++      return res.status(400).json({ message: "A valid session is required" });
++    }
++
+     const session = await Session.findById(sessionId);
+     if (!session) return res.status(404).json({ message: "Session not found" });
+ 
++    if (session.status !== "COMPLETED") {
++      return res.status(400).json({ message: "You can only evaluate a completed session" });
++    }
++
++    const group = await MentorshipGroup.findById(session.group).select("students");
++    if (!group || !group.students.some((id) => String(id) === String(student._id))) {
++      return res.status(403).json({ message: "You can only evaluate sessions of your own section" });
++    }
++
++    const categories = ["communication", "guidance", "availability", "knowledgeSharing", "overallExperience"];
++    const cleanRatings = {};
++    for (const key of categories) {
++      const value = Number(ratings?.[key]);
++      if (!Number.isInteger(value) || value < 1 || value > 5) {
++        return res.status(400).json({ message: "Every rating must be a whole number from 1 to 5" });
++      }
++      cleanRatings[key] = value;
++    }
++
++    const cleanComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : "";
++
+     const evaluation = await MentorEvaluation.create({
+       session: sessionId,
+       student: student._id,
+       mentor: session.mentor,
+       semester: session.semester,
+-      ratings,
+-      comment,
++      ratings: cleanRatings,
++      comment: cleanComment,
+     });
+ 
+     res.status(201).json({ evaluation });
+@@ -123,7 +154,7 @@ const submitEvaluation = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "You have already evaluated this session" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -133,10 +164,12 @@ const getMyEvaluations = async (req, res) => {
+     const student = await Student.findOne({ user: req.user.id });
+     if (!student) return res.status(404).json({ message: "Student profile not found" });
+ 
+-    const evaluations = await MentorEvaluation.find({ student: student._id }).populate("session", "title date");
++    const evaluations = await MentorEvaluation.find({ student: student._id })
++      .populate("session", "title date sessionNumber")
++      .sort({ createdAt: -1 });
+     res.json({ evaluations });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -150,7 +183,7 @@ const getEvaluationStatus = async (req, res) => {
+     const existing = await MentorEvaluation.findOne({ student: student._id, session: sessionId });
+     res.json({ alreadyEvaluated: !!existing });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/feedback.controller.js b/backend/src/controllers/feedback.controller.js
+index 6ea6e8c..7ee3655 100644
+--- a/backend/src/controllers/feedback.controller.js
++++ b/backend/src/controllers/feedback.controller.js
+@@ -80,7 +80,7 @@ const submitFeedback = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "You have already submitted feedback for this session" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -95,7 +95,7 @@ const getMyFeedbackHistory = async (req, res) => {
+       .sort({ createdAt: -1 });
+     res.json({ feedbacks });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -132,7 +132,7 @@ const getSessionFeedback = async (req, res) => {
+ 
+     res.json({ feedbacks, averageRating, totalFeedback: feedbacks.length });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -172,7 +172,7 @@ const getMyFeedbackOverview = async (req, res) => {
+ 
+     res.json({ overall: { ...overall, totalSessions: sessions.length }, sessions: sessionRows });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -202,7 +202,7 @@ const getSessionFeedbackSummary = async (req, res) => {
+       questions: summarizeQuestions(session.template?.questions || [], feedbacks),
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/group.controller.js b/backend/src/controllers/group.controller.js
+index 69100ee..90eec7a 100644
+--- a/backend/src/controllers/group.controller.js
++++ b/backend/src/controllers/group.controller.js
+@@ -176,7 +176,7 @@ const createGroup = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -249,11 +249,28 @@ const getGroups = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+ 
++// A mentor may open only their own groups; a student only the group they belong to.
++const canAccessGroup = async (req, group) => {
++  if (req.user.role === "ADMIN") return true;
++
++  if (req.user.role === "MENTOR") {
++    const mentor = await getMentorModel().findOne({ user: req.user.id }).select("_id");
++    return !!mentor && !!group.mentor && String(group.mentor._id || group.mentor) === String(mentor._id);
++  }
++
++  if (req.user.role === "STUDENT") {
++    const student = await getStudentModel().findOne({ user: req.user.id }).select("_id");
++    return !!student && group.students.some((s) => String(s._id || s) === String(student._id));
++  }
++
++  return false;
++};
++
+ const getGroupById = async (req, res) => {
+   try {
+     const group = await MentorshipGroup.findById(req.params.id)
+@@ -282,13 +299,19 @@ const getGroupById = async (req, res) => {
+       });
+     }
+ 
++    if (!(await canAccessGroup(req, group))) {
++      return res.status(403).json({
++        message: "You can only view your own section",
++      });
++    }
++
+     res.json({
+       group,
+     });
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -422,7 +445,7 @@ const updateGroup = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -491,7 +514,7 @@ const assignMentor = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -594,7 +617,7 @@ const assignStudents = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -657,7 +680,7 @@ const unassignStudent = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -704,7 +727,7 @@ const getMyGroup = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -727,7 +750,7 @@ const deleteGroup = async (req, res) => {
+   } catch (err) {
+     res.status(500).json({
+       message: "Server error",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+diff --git a/backend/src/controllers/mentor.controller.js b/backend/src/controllers/mentor.controller.js
+index 509d522..dfa957c 100644
+--- a/backend/src/controllers/mentor.controller.js
++++ b/backend/src/controllers/mentor.controller.js
+@@ -18,7 +18,7 @@ const createMentor = async (req, res) => {
+     const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });
+     res.status(201).json({ mentor });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -28,7 +28,7 @@ const getMentors = async (req, res) => {
+     const validMentors = mentors.filter((m) => m.user); // drop any with a missing/deleted linked User
+     res.json({ mentors: validMentors });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -68,7 +68,7 @@ const getMyMentor = async (req, res) => {
+       },
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -92,7 +92,7 @@ const getMentorById = async (req, res) => {
+ 
+     res.json({ mentor });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -120,7 +120,7 @@ const updateMentor = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "That email is already in use" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -138,7 +138,7 @@ const toggleMentorStatus = async (req, res) => {
+ 
+     res.json({ message: `Mentor ${mentor.status === "ACTIVE" ? "activated" : "deactivated"}` });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -166,7 +166,7 @@ const getMyProfile = async (req, res) => {
+       profileImage: mentor.profileImage || null,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -197,7 +197,7 @@ const updateMyProfile = async (req, res) => {
+       profileImage: mentor.profileImage || null,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -228,7 +228,7 @@ const uploadMyPhoto = async (req, res) => {
+     console.error("Mentor photo upload error:", err);
+     res.status(500).json({
+       message: "Profile image upload failed",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -245,7 +245,7 @@ const removeMyPhoto = async (req, res) => {
+ 
+     res.json({ message: "Photo removed" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -290,7 +290,7 @@ const getMyStudents = async (req, res) => {
+ 
+     res.json({ students });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/otp.controller.js b/backend/src/controllers/otp.controller.js
+index 4152fdd..039b18e 100644
+--- a/backend/src/controllers/otp.controller.js
++++ b/backend/src/controllers/otp.controller.js
+@@ -42,7 +42,7 @@ const requestOtp = async (req, res) => {
+ 
+     res.json({ message: "Verification code sent to your email" });
+   } catch (err) {
+-    res.status(500).json({ message: "Failed to send verification email", error: err.message });
++    res.status(500).json({ message: "Failed to send verification email", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -66,7 +66,7 @@ const verifyOtp = async (req, res) => {
+ 
+     res.json({ verified: true });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/semester.controller.js b/backend/src/controllers/semester.controller.js
+index 2f0e7e7..742e0b2 100644
+--- a/backend/src/controllers/semester.controller.js
++++ b/backend/src/controllers/semester.controller.js
+@@ -7,7 +7,7 @@ const createSemester = async (req, res) => {
+     const semester = await Semester.create({ name, academicYear, startDate, endDate, status });
+     res.status(201).json({ semester });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -17,7 +17,7 @@ const getSemesters = async (req, res) => {
+     const semesters = await Semester.find().sort({ startDate: -1 });
+     res.json({ semesters });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -28,7 +28,7 @@ const getSemesterById = async (req, res) => {
+     if (!semester) return res.status(404).json({ message: "Semester not found" });
+     res.json({ semester });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -39,7 +39,7 @@ const updateSemester = async (req, res) => {
+     if (!semester) return res.status(404).json({ message: "Semester not found" });
+     res.json({ semester });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -50,7 +50,7 @@ const deleteSemester = async (req, res) => {
+     if (!semester) return res.status(404).json({ message: "Semester not found" });
+     res.json({ message: "Semester deleted" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/session.controller.js b/backend/src/controllers/session.controller.js
+index a0afafa..5f1aea4 100644
+--- a/backend/src/controllers/session.controller.js
++++ b/backend/src/controllers/session.controller.js
+@@ -96,7 +96,7 @@ const createSession = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "This session is already scheduled for this section" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -118,7 +118,7 @@ const getSessions = async (req, res) => {
+ 
+     res.json({ sessions });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -151,7 +151,7 @@ const getSessionById = async (req, res) => {
+ 
+     res.json({ session });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -196,7 +196,7 @@ const updateSession = async (req, res) => {
+ 
+     res.json({ session: populatedSession });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -207,7 +207,7 @@ const deleteSession = async (req, res) => {
+     if (!session) return res.status(404).json({ message: "Session not found" });
+     res.json({ message: "Session deleted" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -254,7 +254,7 @@ const updateSessionStatus = async (req, res) => {
+ 
+     res.json({ session: populatedSession });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -286,7 +286,7 @@ const getNextSession = async (req, res) => {
+ 
+     res.status(200).json({ message: "Next session retrieved successfully", session });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -308,7 +308,7 @@ const getMySessions = async (req, res) => {
+ 
+     res.json({ sessions });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -329,7 +329,7 @@ const getMyMentorSessions = async (req, res) => {
+ 
+     res.json({ sessions });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/sessionTemplate.controller.js b/backend/src/controllers/sessionTemplate.controller.js
+index b0d1eff..989b070 100644
+--- a/backend/src/controllers/sessionTemplate.controller.js
++++ b/backend/src/controllers/sessionTemplate.controller.js
+@@ -45,7 +45,7 @@ const getSessionTemplates = async (req, res) => {
+ 
+     res.json({ templates });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -81,7 +81,7 @@ const getMyMentorSessionTemplates = async (req, res) => {
+ 
+     res.json({ templates });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -98,7 +98,7 @@ const getSessionTemplateById = async (req, res) => {
+ 
+     res.json({ template });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -166,7 +166,7 @@ const createSessionTemplate = async (req, res) => {
+       });
+     }
+ 
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -232,7 +232,7 @@ const updateSessionTemplate = async (req, res) => {
+       });
+     }
+ 
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -257,7 +257,7 @@ const deleteSessionTemplate = async (req, res) => {
+ 
+     res.json({ message: "Session template deleted" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/controllers/student.controller.js b/backend/src/controllers/student.controller.js
+index 1f0e2d9..49a0b06 100644
+--- a/backend/src/controllers/student.controller.js
++++ b/backend/src/controllers/student.controller.js
+@@ -1,6 +1,8 @@
+ const Student = require("../models/Student");
+ const User = require("../models/User");
+ const uploadToCloudinary = require("../utils/cloudinaryUpload");
++const Mentor = require("../models/Mentor");
++const MentorshipGroup = require("../models/MentorshipGroup");
+ const { rejectWeakPassword } = require("../utils/passwordPolicy");
+ 
+ const createStudent = async (req, res) => {
+@@ -15,7 +17,7 @@ const createStudent = async (req, res) => {
+ 
+     res.status(201).json({ student });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -28,7 +30,7 @@ const getStudents = async (req, res) => {
+     const students = await Student.find(filter).populate("user", "name email isActive");
+     res.json({ students });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -36,9 +38,23 @@ const getStudentById = async (req, res) => {
+   try {
+     const student = await Student.findById(req.params.id).populate("user", "name email isActive");
+     if (!student) return res.status(404).json({ message: "Student not found" });
++
++    // contact details are private: a student can open only their own record,
++    // a mentor only the students of their own groups
++    if (req.user.role === "STUDENT" && String(student.user?._id) !== String(req.user.id)) {
++      return res.status(403).json({ message: "You can only view your own profile" });
++    }
++    if (req.user.role === "MENTOR") {
++      const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
++      const shared = mentor
++        ? await MentorshipGroup.exists({ mentor: mentor._id, students: student._id })
++        : null;
++      if (!shared) return res.status(403).json({ message: "This student is not in your groups" });
++    }
++
+     res.json({ student });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -67,7 +83,7 @@ const updateStudent = async (req, res) => {
+     if (err.code === 11000) {
+       return res.status(400).json({ message: "That email or student ID is already in use" });
+     }
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -84,7 +100,7 @@ const toggleStudentStatus = async (req, res) => {
+ 
+     res.json({ message: `Student ${user.isActive ? "activated" : "deactivated"}` });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -106,7 +122,7 @@ const getMyProfile = async (req, res) => {
+       profileImage: student.profileImage || null,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -134,7 +150,7 @@ const updateMyProfile = async (req, res) => {
+       profileImage: student.profileImage || null,
+     });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+@@ -165,7 +181,7 @@ const uploadMyPhoto = async (req, res) => {
+     console.error("Student photo upload error:", err);
+     res.status(500).json({
+       message: "Profile image upload failed",
+-      error: err.message,
++      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+     });
+   }
+ };
+@@ -180,7 +196,7 @@ const removeMyPhoto = async (req, res) => {
+     if (!student) return res.status(404).json({ message: "Student profile not found" });
+     res.json({ message: "Photo removed" });
+   } catch (err) {
+-    res.status(500).json({ message: "Server error", error: err.message });
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+ };
+ 
+diff --git a/backend/src/middleware/rateLimit.middleware.js b/backend/src/middleware/rateLimit.middleware.js
+index 5e843d4..21f11be 100644
+--- a/backend/src/middleware/rateLimit.middleware.js
++++ b/backend/src/middleware/rateLimit.middleware.js
+@@ -24,4 +24,13 @@ const otpVerifyLimiter = rateLimit({
+   legacyHeaders: false,
+ });
+ 
+-module.exports = { loginLimiter, otpRequestLimiter, otpVerifyLimiter };
+\ No newline at end of file
++// Generous safety net for the whole API (normal use is far below this)
++const apiLimiter = rateLimit({
++  windowMs: 15 * 60 * 1000,
++  max: 600,
++  message: { message: "Too many requests. Please slow down and try again shortly." },
++  standardHeaders: true,
++  legacyHeaders: false,
++});
++
++module.exports = { loginLimiter, otpRequestLimiter, otpVerifyLimiter, apiLimiter };
+\ No newline at end of file
+diff --git a/backend/src/middleware/security.middleware.js b/backend/src/middleware/security.middleware.js
+new file mode 100644
+index 0000000..b1ff05b
+--- /dev/null
++++ b/backend/src/middleware/security.middleware.js
+@@ -0,0 +1,35 @@
++// Lightweight security middleware (no extra npm packages needed).
++
++// Basic hardening headers, the most useful subset of what `helmet` sets.
++const securityHeaders = (req, res, next) => {
++  res.setHeader("X-Content-Type-Options", "nosniff");
++  res.setHeader("X-Frame-Options", "DENY");
++  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
++  res.setHeader("X-DNS-Prefetch-Control", "off");
++  res.setHeader("Cross-Origin-Resource-Policy", "same-site");
++  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
++  if (process.env.NODE_ENV === "production") {
++    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
++  }
++  next();
++};
++
++// Looks for MongoDB operator injection such as { "email": { "$ne": null } } or keys like "a.b".
++const containsOperatorKeys = (value, depth = 0) => {
++  if (value === null || typeof value !== "object" || depth > 10) return false;
++  if (Array.isArray(value)) return value.some((item) => containsOperatorKeys(item, depth + 1));
++
++  return Object.keys(value).some(
++    (key) => key.startsWith("$") || key.includes(".") || containsOperatorKeys(value[key], depth + 1)
++  );
++};
++
++// Rejects (instead of silently rewriting) requests that try to smuggle query operators.
++const blockOperatorInjection = (req, res, next) => {
++  if (containsOperatorKeys(req.body) || containsOperatorKeys(req.query) || containsOperatorKeys(req.params)) {
++    return res.status(400).json({ message: "Invalid characters in request" });
++  }
++  next();
++};
++
++module.exports = { securityHeaders, blockOperatorInjection, containsOperatorKeys };
+diff --git a/backend/src/server.js b/backend/src/server.js
+index 88998fb..f68162d 100644
+--- a/backend/src/server.js
++++ b/backend/src/server.js
+@@ -5,6 +5,14 @@ const connectDB = require("./config/db");
+ 
+ const PORT = process.env.PORT || 5000;
+ 
++if (!process.env.JWT_SECRET) {
++  console.error("JWT_SECRET is missing in .env, refusing to start.");
++  process.exit(1);
++}
++if (process.env.JWT_SECRET.length < 32) {
++  console.warn("WARNING: JWT_SECRET is shorter than 32 characters. Use a long random value.");
++}
++
+ process.on("unhandledRejection", (reason) => {
+   console.error("Unhandled Rejection:", reason);
+ });

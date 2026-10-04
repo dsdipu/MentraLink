@@ -5,6 +5,7 @@ const feedbackAnswerSchema = new mongoose.Schema(
     questionId: { type: mongoose.Schema.Types.ObjectId, required: true },
     question: { type: String, required: true },
     answer: { type: String, default: "" },
+    type: { type: String, enum: ["TEXT", "YESNO"], default: "TEXT" },
   },
   { _id: false }
 );

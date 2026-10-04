@@ -7,7 +7,7 @@ const getAdmins = async (req, res) => {
     const admins = await User.find({ role: "ADMIN" }).select("-password").sort({ createdAt: 1 });
     res.json({ admins });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -23,7 +23,7 @@ const createAdmin = async (req, res) => {
     const admin = await User.create({ name, email, password: hashedPassword, role: "ADMIN", isActive: true });
     res.status(201).json({ admin: { _id: admin._id, name: admin.name, email: admin.email, isActive: admin.isActive } });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -38,7 +38,7 @@ const updateAdmin = async (req, res) => {
     if (!admin) return res.status(404).json({ message: "Admin not found" });
     res.json({ admin });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -63,7 +63,7 @@ const toggleAdminStatus = async (req, res) => {
     await target.save();
     res.json({ message: `Admin ${target.isActive ? "activated" : "deactivated"}` });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

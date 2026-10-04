@@ -20,7 +20,7 @@ const uploadBlogImage = async (req, res) => {
     console.error("Cloudinary blog upload error:", err);
     res.status(500).json({
       message: "Image upload failed",
-      error: err.message,
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
     });
   }
 };
@@ -40,7 +40,7 @@ const createBlog = async (req, res) => {
     });
     res.status(201).json({ blog });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -57,7 +57,7 @@ const getBlogs = async (req, res) => {
 
     res.json({ blogs });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -69,7 +69,7 @@ const getBlogById = async (req, res) => {
     if (!blog) return res.status(404).json({ message: "Blog not found" });
     res.json({ blog });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -94,7 +94,7 @@ const updateBlog = async (req, res) => {
     await blog.save();
     res.json({ blog });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -110,7 +110,7 @@ const deleteBlog = async (req, res) => {
     await blog.deleteOne();
     res.json({ message: "Blog deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -133,7 +133,7 @@ const toggleLike = async (req, res) => {
 
     res.json({ likesCount: blog.likes.length, liked: !alreadyLiked });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -144,7 +144,7 @@ const getComments = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json({ comments });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -157,7 +157,7 @@ const addComment = async (req, res) => {
     const populated = await comment.populate("author", "name");
     res.status(201).json({ comment: populated });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -173,7 +173,7 @@ const deleteComment = async (req, res) => {
     await comment.deleteOne();
     res.json({ message: "Comment deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

@@ -7,7 +7,7 @@ const createSemester = async (req, res) => {
     const semester = await Semester.create({ name, academicYear, startDate, endDate, status });
     res.status(201).json({ semester });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -17,7 +17,7 @@ const getSemesters = async (req, res) => {
     const semesters = await Semester.find().sort({ startDate: -1 });
     res.json({ semesters });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -28,7 +28,7 @@ const getSemesterById = async (req, res) => {
     if (!semester) return res.status(404).json({ message: "Semester not found" });
     res.json({ semester });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -39,7 +39,7 @@ const updateSemester = async (req, res) => {
     if (!semester) return res.status(404).json({ message: "Semester not found" });
     res.json({ semester });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -50,7 +50,7 @@ const deleteSemester = async (req, res) => {
     if (!semester) return res.status(404).json({ message: "Semester not found" });
     res.json({ message: "Semester deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

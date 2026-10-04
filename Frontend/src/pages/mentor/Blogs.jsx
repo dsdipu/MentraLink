@@ -12,7 +12,20 @@ import useAuth from "../../hooks/useAuth";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import EmptyState from "../../components/ui/EmptyState";
-import { Newspaper, Heart, Share2, Check } from "lucide-react";
+import {
+  Newspaper,
+  Heart,
+  Share2,
+  Check,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Link2,
+  ImagePlus,
+  Eraser,
+} from "lucide-react";
 
 const emptyForm = {
   title: "",
@@ -459,127 +472,74 @@ const Blogs = () => {
             </div>
 
             <div>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <label className="block text-sm font-medium">
-                  Content
-                </label>
+              <label className="block text-sm font-medium mb-2">
+                Content
+              </label>
 
-                <label className="text-xs text-blue-600 cursor-pointer hover:underline">
-                  Insert image
+              {/* sticky: stays visible at the top of the screen while you scroll through a long post.
+                  top-16 on mobile leaves room for the layout's own sticky header. */}
+              <div
+                role="toolbar"
+                aria-label="Text formatting"
+                className="sticky top-16 lg:top-0 z-20 flex flex-wrap items-center gap-1 rounded-t-md border border-gray-300 bg-gray-50 p-2 shadow-sm"
+              >
+                {[
+                  { title: "Bold", icon: Bold, run: () => runEditorCommand("bold") },
+                  { title: "Italic", icon: Italic, run: () => runEditorCommand("italic") },
+                  { title: "Underline", icon: Underline, run: () => runEditorCommand("underline") },
+                  "divider",
+                  { title: "Bullet list", icon: List, run: () => runEditorCommand("insertUnorderedList") },
+                  { title: "Numbered list", icon: ListOrdered, run: () => runEditorCommand("insertOrderedList") },
+                  "divider",
+                  { title: "Insert link", icon: Link2, run: handleCreateLink },
+                ].map((item, index) =>
+                  item === "divider" ? (
+                    <span key={`divider-${index}`} className="mx-1 h-6 w-px bg-gray-300" />
+                  ) : (
+                    <button
+                      key={item.title}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={item.run}
+                      className="rounded p-2 text-gray-700 hover:bg-gray-200"
+                      title={item.title}
+                      aria-label={item.title}
+                    >
+                      <item.icon size={18} />
+                    </button>
+                  )
+                )}
 
+                <label
+                  className="cursor-pointer rounded p-2 text-gray-700 hover:bg-gray-200"
+                  title="Insert image"
+                  aria-label="Insert image"
+                >
+                  <ImagePlus size={18} />
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={
-                      handleInsertImageAtCursor
-                    }
+                    onChange={handleInsertImageAtCursor}
                   />
                 </label>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-gray-300 bg-gray-50 p-2">
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand("bold")
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm font-bold hover:bg-gray-100"
-                  title="Bold"
-                >
-                  B
-                </button>
+                <span className="mx-1 h-6 w-px bg-gray-300" />
 
                 <button
                   type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand("italic")
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm italic hover:bg-gray-100"
-                  title="Italic"
-                >
-                  I
-                </button>
-
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand("underline")
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm underline hover:bg-gray-100"
-                  title="Underline"
-                >
-                  U
-                </button>
-
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand(
-                      "insertUnorderedList"
-                    )
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
-                  title="Bullet list"
-                >
-                  • List
-                </button>
-
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand(
-                      "insertOrderedList"
-                    )
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
-                  title="Numbered list"
-                >
-                  1. List
-                </button>
-
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={handleCreateLink}
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
-                  title="Insert link"
-                >
-                  Link
-                </button>
-
-                <button
-                  type="button"
-                  onMouseDown={(e) =>
-                    e.preventDefault()
-                  }
-                  onClick={() =>
-                    runEditorCommand(
-                      "removeFormat"
-                    )
-                  }
-                  className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-100"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => runEditorCommand("removeFormat")}
+                  className="rounded p-2 text-gray-700 hover:bg-gray-200"
                   title="Remove formatting"
+                  aria-label="Remove formatting"
                 >
-                  Clear
+                  <Eraser size={18} />
                 </button>
+
+                {uploading && (
+                  <span className="ml-auto text-xs text-blue-500">Uploading image...</span>
+                )}
               </div>
 
               <div

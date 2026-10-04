@@ -3,15 +3,9 @@ import { getMentorRating, getMyMentorEvaluations } from "../../services/evaluati
 import Card from "../../components/ui/Card";
 import StatCard from "../../components/ui/StatCard";
 import EmptyState from "../../components/ui/EmptyState";
+import EvaluationBySession from "../../components/EvaluationBySession";
+import { CATEGORY_LABELS } from "../../utils/evaluationGroups";
 import { Star } from "lucide-react";
-
-const CATEGORY_LABELS = {
-  communication: "Communication",
-  guidance: "Guidance",
-  availability: "Availability",
-  knowledgeSharing: "Knowledge Sharing",
-  overallExperience: "Overall Experience",
-};
 
 const Evaluation = () => {
   const [data, setData] = useState(null);
@@ -51,7 +45,10 @@ const Evaluation = () => {
         </Card>
       )}
 
-      <h2 className="text-lg font-medium mb-3">Student Comments</h2>
+      <h2 className="text-lg font-medium mb-1">Student Comments by Session</h2>
+      <p className="text-xs text-gray-400 mb-3">
+        Click a session to see its scores and comments. Students are shown anonymously.
+      </p>
       {evaluations.length === 0 ? (
         <EmptyState
           icon={Star}
@@ -59,18 +56,8 @@ const Evaluation = () => {
           description="Student evaluations for your sessions will appear here."
         />
       ) : (
-        <div className="space-y-3 max-w-xl">
-          {evaluations.map((e) => (
-            <Card key={e._id}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-medium">{e.studentName}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                  {e.sessionTitle || "Session"}
-                </span>
-              </div>
-              <p className="text-gray-600 text-sm">{e.comment || <em className="text-gray-400">No comment left</em>}</p>
-            </Card>
-          ))}
+        <div className="max-w-3xl">
+          <EvaluationBySession evaluations={evaluations} />
         </div>
       )}
     </div>

@@ -33,7 +33,7 @@ const emptyForm = {
   sessionNumber: "",
   title: "",
   description: "",
-  questions: [{ question: "", required: true }],
+  questions: [{ question: "", required: true, type: "TEXT" }],
 };
 
 const formatFilterName = (filter) => {
@@ -130,7 +130,7 @@ const AdminSessions = () => {
       ...emptyForm,
       semester: selectedSemester,
       sessionNumber: firstAvailable,
-      questions: [{ question: "", required: true }],
+      questions: [{ question: "", required: true, type: "TEXT" }],
     });
     setShowForm(true);
   };
@@ -149,8 +149,9 @@ const AdminSessions = () => {
               _id: question._id,
               question: question.question,
               required: question.required !== false,
+              type: question.type === "YESNO" ? "YESNO" : "TEXT",
             }))
-          : [{ question: "", required: true }],
+          : [{ question: "", required: true, type: "TEXT" }],
     });
     setShowForm(true);
   };
@@ -176,7 +177,7 @@ const AdminSessions = () => {
       ...current,
       questions: [
         ...current.questions,
-        { question: "", required: true },
+        { question: "", required: true, type: "TEXT" },
       ],
     }));
   };
@@ -224,6 +225,7 @@ const AdminSessions = () => {
           _id: question._id,
           question: question.question.trim(),
           required: question.required,
+          type: question.type === "YESNO" ? "YESNO" : "TEXT",
         })),
       };
 
@@ -504,6 +506,15 @@ const AdminSessions = () => {
                             />
                             Required
                           </label>
+                          <select
+                            value={question.type || "TEXT"}
+                            onChange={(event) => updateQuestion(index, "type", event.target.value)}
+                            className="ml-3 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600"
+                            aria-label="Answer type"
+                          >
+                            <option value="TEXT">Text answer</option>
+                            <option value="YESNO">Yes / No (pie chart)</option>
+                          </select>
                         </div>
                         <button
                           type="button"
@@ -617,6 +628,11 @@ const AdminSessions = () => {
                         {question.question}
                         {question.required !== false && (
                           <span className="ml-1 text-red-400">*</span>
+                        )}
+                        {question.type === "YESNO" && (
+                          <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                            Yes / No
+                          </span>
                         )}
                       </p>
                     ))}

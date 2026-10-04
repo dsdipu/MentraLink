@@ -117,7 +117,7 @@ const register = async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role, isActive: user.isActive },
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -173,7 +173,7 @@ const approveUser = async (req, res) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "That student ID is already in use by another account" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -192,7 +192,7 @@ const getPendingUsers = async (req, res) => {
 
     res.json({ pendingUsers });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -222,7 +222,7 @@ const rejectUser = async (req, res) => {
 
     res.json({ message: "Registration rejected and removed" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -278,7 +278,7 @@ const login = async (req, res) => {
     const token = generateToken(user._id, user.role);
     res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -313,7 +313,7 @@ const forgotPassword = async (req, res) => {
 
     res.json({ message: "If that email is registered, a reset code has been sent." });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -349,7 +349,7 @@ const resetPassword = async (req, res) => {
 
     res.json({ message: "Password updated. You can now log in." });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -358,7 +358,7 @@ const getPendingCount = async (req, res) => {
     const count = await User.countDocuments(await getPendingFilter());
     res.json({ count });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -368,7 +368,7 @@ const getMe = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ user });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -378,7 +378,7 @@ const updateMe = async (req, res) => {
     const user = await User.findByIdAndUpdate(req.user.id, { name }, { new: true }).select("-password");
     res.json({ user });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 
@@ -405,7 +405,7 @@ const changePassword = async (req, res) => {
     const token = generateToken(user._id, user.role);
     res.json({ message: "Password changed successfully", token });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
 };
 

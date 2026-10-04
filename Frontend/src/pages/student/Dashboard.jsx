@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+import { getMyMentor } from "../../services/studentService";
+import AssignedMentorCard from "../../components/AssignedMentorCard";
 
 const StudentDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mentorInfo, setMentorInfo] = useState(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -18,6 +21,8 @@ const StudentDashboard = () => {
       }
     };
     fetchDashboard();
+    // the mentor card is optional: a failure here must not break the rest of the dashboard
+    getMyMentor().then(setMentorInfo).catch(() => setMentorInfo({ mentor: null, group: null }));
   }, []);
 
   if (loading) return <p>Loading dashboard...</p>;
@@ -46,6 +51,10 @@ const StudentDashboard = () => {
           <p className="text-sm text-gray-500">Pending Feedback</p>
           <p className="text-lg font-medium">{data?.pendingFeedback ?? 0}</p>
         </div>
+      </div>
+
+      <div className="mt-4">
+        {mentorInfo && <AssignedMentorCard mentor={mentorInfo.mentor} group={mentorInfo.group} />}
       </div>
     </div>
   );
