@@ -14,4 +14,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// token expired / account deactivated -> clear the session and go back to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = error.config?.url || "";
+    const isAuthAttempt = url.includes("/auth/login") || url.includes("/auth/register");
+    if (error.response?.status === 401 && !isAuthAttempt && localStorage.getItem("token")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

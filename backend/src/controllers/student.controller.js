@@ -1,10 +1,12 @@
 const Student = require("../models/Student");
 const User = require("../models/User");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
+const { rejectWeakPassword } = require("../utils/passwordPolicy");
 
 const createStudent = async (req, res) => {
   try {
     const { name, email, password, studentId, department, batch } = req.body;
+    if (rejectWeakPassword(res, password, { email, name })) return;
     const { hashPassword } = require("../utils/hashPassword");
     const hashedPassword = await hashPassword(password);
 

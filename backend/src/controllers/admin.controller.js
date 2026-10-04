@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
+const { rejectWeakPassword } = require("../utils/passwordPolicy");
 
 const getAdmins = async (req, res) => {
   try {
@@ -13,6 +14,8 @@ const getAdmins = async (req, res) => {
 const createAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
+    if (rejectWeakPassword(res, password, { email, name })) return;
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: "Email already registered" });
 

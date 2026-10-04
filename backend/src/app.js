@@ -27,12 +27,6 @@ const allowedOrigins = process.env.FRONTEND_URLS
       .map((origin) => origin.trim().replace(/\/$/, ""))
   : [];
 
-
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Server error", error: err.message });
-});
-
 app.use((req, res, next) => {
   console.log(req.method, req.originalUrl);
   next();
@@ -77,5 +71,16 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/otp", otpRoutes);
+
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// must be registered AFTER the routes, otherwise it never receives their errors
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  const status = err.message === "Not allowed by CORS" ? 403 : err.status || 500;
+  res.status(status).json({ message: status === 500 ? "Server error" : err.message });
+});
 
 module.exports = app;

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { registerUser } from "../../services/authService";
 import { requestOtp, verifyOtp } from "../../services/otpService";
+import PasswordStrength from "../../components/PasswordStrength";
+import { FIRST_ISSUE_MESSAGE } from "../../utils/passwordPolicy";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -96,6 +98,11 @@ const Register = () => {
 
     if (!otpVerified) {
       setError("Please verify your email before registering");
+      return;
+    }
+    const passwordProblem = FIRST_ISSUE_MESSAGE(form.password, { email: form.email, name: form.name });
+    if (passwordProblem) {
+      setError(passwordProblem);
       return;
     }
     if (!idCardImage) {
@@ -245,9 +252,12 @@ const Register = () => {
           value={form.password}
           onChange={handleChange}
           required
-          minLength={6}
-          className="w-full border rounded-md px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          minLength={10}
+          maxLength={64}
+          autoComplete="new-password"
+          className="w-full border rounded-md px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <PasswordStrength password={form.password} email={form.email} name={form.name} />
 
         <label className="block text-sm mb-1">Student ID Card Photo</label>
         <input

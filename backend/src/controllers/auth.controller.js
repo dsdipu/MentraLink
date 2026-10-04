@@ -4,11 +4,41 @@ const Mentor = require("../models/Mentor");
 const Otp = require("../models/Otp");
 const { comparePassword, hashPassword } = require("../utils/hashPassword");
 const generateToken = require("../utils/generateToken");
+const { uploadIdCard, getIdCardUrl, deleteIdCard } = require("../utils/idCard");
+const { rejectWeakPassword } = require("../utils/passwordPolicy");
+
+// A "pending registration" is an inactive STUDENT/MENTOR account that has not been
+// approved yet (so it has no Student/Mentor profile). Deactivated, already-approved
+// users and admins must never show up in (or be rejected from) the pending list.
+const getPendingFilter = async () => {
+  const [students, mentors] = await Promise.all([
+    Student.find().select("user"),
+    Mentor.find().select("user"),
+  ]);
+  const approvedIds = [...students, ...mentors].map((p) => p.user);
+  return {
+    isActive: false,
+    role: { $in: ["STUDENT", "MENTOR"] },
+    _id: { $nin: approvedIds },
+  };
+};
 
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+
+    // Public registration is only for students and mentors. Admin accounts are
+    // created by the seed script or by an existing admin.
+    if (!["STUDENT", "MENTOR"].includes(role)) {
+      return res.status(400).json({ message: "Role must be STUDENT or MENTOR" });
+    }
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password are required" });
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (rejectWeakPassword(res, password, { email: normalizedEmail, name })) return;
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -57,18 +87,28 @@ const register = async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
-    const isActive = role === "ADMIN" ? true : false;
+    const isActive = false; // every public registration waits for admin approval
 
-    const user = await User.create({
-      name,
-      email: normalizedEmail,
-      password: hashedPassword,
-      role,
-      isActive,
-      submittedStudentId: derivedStudentId,
-      batch,
-      idCardImage: role === "STUDENT" || role === "MENTOR" ? req.file?.path : undefined,
-    });
+    // memoryStorage gives us a buffer (there is no req.file.path), so upload it ourselves
+    const uploadedCard = await uploadIdCard(req.file.buffer);
+
+    let user;
+    try {
+      user = await User.create({
+        name,
+        email: normalizedEmail,
+        password: hashedPassword,
+        role,
+        isActive,
+        submittedStudentId: derivedStudentId,
+        batch,
+        idCardPublicId: uploadedCard.public_id,
+      });
+    } catch (createErr) {
+      // don't leave an orphaned ID card in Cloudinary if the account could not be saved
+      await deleteIdCard(uploadedCard.public_id);
+      throw createErr;
+    }
 
     await Otp.deleteMany({ email: normalizedEmail });
 
@@ -113,7 +153,22 @@ const approveUser = async (req, res) => {
       }
     }
 
-    res.json({ message: "User approved", user });
+    // the ID card was only needed for verification: delete it now that the request is decided
+    if (user.idCardPublicId) {
+      const removed = await deleteIdCard(user.idCardPublicId);
+      if (removed) {
+        await User.updateOne(
+          { _id: user._id },
+          { $unset: { idCardPublicId: "", idCardImage: "" } }
+        );
+        user.idCardPublicId = undefined;
+        user.idCardImage = undefined;
+      }
+    }
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+    res.json({ message: "User approved", user: safeUser });
   } catch (err) {
     if (err.code === 11000) {
       return res.status(400).json({ message: "That student ID is already in use by another account" });
@@ -124,7 +179,17 @@ const approveUser = async (req, res) => {
 
 const getPendingUsers = async (req, res) => {
   try {
-    const pendingUsers = await User.find({ isActive: false }).select("-password");
+    const filter = await getPendingFilter();
+    const users = await User.find(filter).select("-password").sort({ createdAt: 1 });
+
+    // expose a short-lived-by-design signed URL under the same `idCardImage` key the UI already uses
+    const pendingUsers = users.map((u) => {
+      const obj = u.toObject();
+      obj.idCardImage = getIdCardUrl(obj.idCardPublicId) || undefined;
+      delete obj.idCardPublicId;
+      return obj;
+    });
+
     res.json({ pendingUsers });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -138,7 +203,23 @@ const rejectUser = async (req, res) => {
     if (user.isActive) {
       return res.status(400).json({ message: "Cannot reject an already active user" });
     }
+
+    const [hasStudent, hasMentor] = await Promise.all([
+      Student.exists({ user: user._id }),
+      Mentor.exists({ user: user._id }),
+    ]);
+    if (user.role === "ADMIN" || hasStudent || hasMentor) {
+      return res.status(400).json({ message: "Only pending registrations can be rejected" });
+    }
+
     await User.findByIdAndDelete(req.params.id);
+
+    // remove the ID card image together with the rejected registration
+    const removed = await deleteIdCard(user.idCardPublicId);
+    if (!removed) {
+      console.error(`ID card ${user.idCardPublicId} of rejected user ${user._id} was not deleted from Cloudinary`);
+    }
+
     res.json({ message: "Registration rejected and removed" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -241,6 +322,8 @@ const resetPassword = async (req, res) => {
     const { email, code, newPassword } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
+    if (rejectWeakPassword(res, newPassword, { email: normalizedEmail })) return;
+
     const otp = await Otp.findOne({
       email: normalizedEmail,
       code,
@@ -254,7 +337,12 @@ const resetPassword = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(404).json({ message: "Account not found" });
 
+    if (await comparePassword(newPassword, user.password)) {
+      return res.status(400).json({ message: "New password must be different from your current password" });
+    }
+
     user.password = await hashPassword(newPassword);
+    user.passwordChangedAt = new Date();
     await user.save();
 
     await Otp.deleteMany({ email: normalizedEmail });
@@ -267,7 +355,7 @@ const resetPassword = async (req, res) => {
 
 const getPendingCount = async (req, res) => {
   try {
-    const count = await User.countDocuments({ isActive: false });
+    const count = await User.countDocuments(await getPendingFilter());
     res.json({ count });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -303,10 +391,19 @@ const changePassword = async (req, res) => {
     const isMatch = await comparePassword(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ message: "Current password is incorrect" });
 
+    if (rejectWeakPassword(res, newPassword, { email: user.email, name: user.name })) return;
+
+    if (await comparePassword(newPassword, user.password)) {
+      return res.status(400).json({ message: "New password must be different from your current password" });
+    }
+
     user.password = await hashPassword(newPassword);
+    user.passwordChangedAt = new Date();
     await user.save();
 
-    res.json({ message: "Password changed successfully" });
+    // other devices are logged out; hand back a fresh token so this session continues
+    const token = generateToken(user._id, user.role);
+    res.json({ message: "Password changed successfully", token });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

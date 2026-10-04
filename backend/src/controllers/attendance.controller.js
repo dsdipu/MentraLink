@@ -1,10 +1,42 @@
 const Attendance = require("../models/Attendance");
+const Mentor = require("../models/Mentor");
+const MentorshipGroup = require("../models/MentorshipGroup");
 
 // Mentor: mark attendance for multiple students in a session
 const markAttendance = async (req, res) => {
   try {
     const { sessionId, records } = req.body;
     // records = [{ student: "<id>", status: "PRESENT" }, ...]
+
+    if (!sessionId || !Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ message: "Session and attendance records are required" });
+    }
+
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
+      if (!mentor || session.mentor.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only mark attendance for your own sessions" });
+      }
+    }
+
+    if (session.status !== "COMPLETED") {
+      return res.status(400).json({ message: "Attendance can only be marked for completed sessions" });
+    }
+
+    // only students that really belong to this session's section, with a valid status
+    const group = await MentorshipGroup.findById(session.group).select("students");
+    const groupStudentIds = new Set((group?.students || []).map((id) => id.toString()));
+    for (const record of records) {
+      if (!record || !groupStudentIds.has(String(record.student))) {
+        return res.status(400).json({ message: "Attendance contains a student who is not in this section" });
+      }
+      if (!["PRESENT", "ABSENT"].includes(record.status)) {
+        return res.status(400).json({ message: "Attendance status must be PRESENT or ABSENT" });
+      }
+    }
 
     const results = [];
     for (const record of records) {
@@ -63,6 +95,18 @@ const getAttendanceStats = async (req, res) => {
 const getSessionAttendance = async (req, res) => {
   try {
     const { sessionId } = req.params;
+
+    if (req.user.role === "MENTOR") {
+      const [session, mentor] = await Promise.all([
+        Session.findById(sessionId).select("mentor"),
+        Mentor.findOne({ user: req.user.id }).select("_id"),
+      ]);
+      if (!session) return res.status(404).json({ message: "Session not found" });
+      if (!mentor || session.mentor.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only view attendance of your own sessions" });
+      }
+    }
+
     const records = await Attendance.find({ session: sessionId })
       .populate({ path: "student", populate: { path: "user", select: "name email" } });
 

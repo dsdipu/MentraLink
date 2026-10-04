@@ -4,6 +4,27 @@ const Mentor = require("../models/Mentor");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const SessionTemplate = require("../models/SessionTemplate");
 
+// Which sessions the logged-in user is allowed to see.
+// ADMIN: everything, MENTOR: their own sessions, STUDENT: sessions of their groups.
+// Returns null when the user has no matching profile (=> nothing is visible).
+const getAccessScope = async (req) => {
+  if (req.user.role === "ADMIN") return {};
+
+  if (req.user.role === "MENTOR") {
+    const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
+    return mentor ? { mentor: mentor._id } : null;
+  }
+
+  if (req.user.role === "STUDENT") {
+    const student = await Student.findOne({ user: req.user.id }).select("_id");
+    if (!student) return null;
+    const groups = await MentorshipGroup.find({ students: student._id }).select("_id");
+    return { group: { $in: groups.map((g) => g._id) } };
+  }
+
+  return null;
+};
+
 // Mentor/Admin: create session from an admin-created session template
 const createSession = async (req, res) => {
   try {
@@ -82,9 +103,13 @@ const createSession = async (req, res) => {
 // Get all sessions (optionally filter by group/status)
 const getSessions = async (req, res) => {
   try {
+    const scope = await getAccessScope(req);
+    if (!scope) return res.json({ sessions: [] });
+
     const filter = {};
     if (req.query.group) filter.group = req.query.group;
     if (req.query.status) filter.status = req.query.status;
+    Object.assign(filter, scope); // the user's own scope always wins over query params
 
     const sessions = await Session.find(filter)
       .populate("semester", "name")
@@ -108,6 +133,22 @@ const getSessionById = async (req, res) => {
         populate: { path: "students", populate: { path: "user", select: "name email" } },
       });
     if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (req.user.role === "MENTOR") {
+      const mentor = await Mentor.findOne({ user: req.user.id }).select("_id");
+      const sessionMentorId = session.mentor?._id || session.mentor;
+      if (!mentor || !sessionMentorId || sessionMentorId.toString() !== mentor._id.toString()) {
+        return res.status(403).json({ message: "You can only view your own sessions" });
+      }
+    } else if (req.user.role === "STUDENT") {
+      const student = await Student.findOne({ user: req.user.id }).select("_id");
+      const inGroup =
+        student && session.group?.students?.some((s) => (s._id || s).toString() === student._id.toString());
+      if (!inGroup) {
+        return res.status(403).json({ message: "You can only view sessions of your own section" });
+      }
+    }
+
     res.json({ session });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -137,7 +178,12 @@ const updateSession = async (req, res) => {
         if (req.body[field] !== undefined) session[field] = req.body[field];
       });
     } else {
-      Object.assign(session, req.body);
+      // admin: only schedule/detail fields. Status has its own endpoint with transition rules,
+      // and group/mentor/template/semester must never be changed from here.
+      const adminFields = ["title", "description", "date", "time", "location", "meetingLink"];
+      adminFields.forEach((field) => {
+        if (req.body[field] !== undefined) session[field] = req.body[field];
+      });
     }
 
     await session.save();
@@ -223,6 +269,10 @@ const getNextSession = async (req, res) => {
     if (req.query.group) filter.group = req.query.group;
     if (req.query.mentor) filter.mentor = req.query.mentor;
     if (req.query.semester) filter.semester = req.query.semester;
+
+    const scope = await getAccessScope(req);
+    if (!scope) return res.status(404).json({ message: "No upcoming session found" });
+    Object.assign(filter, scope);
 
     const session = await Session.findOne(filter)
       .populate("semester", "name")

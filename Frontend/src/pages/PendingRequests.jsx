@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 function PendingRequests() {
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -7,14 +7,11 @@ function PendingRequests() {
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const token = localStorage.getItem("token");
 
   const fetchPending = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/auth/pending");
       setPendingUsers(res.data.pendingUsers ?? []);
       setError("");
     } catch (err) {
@@ -33,11 +30,7 @@ function PendingRequests() {
   const handleApprove = async (userId) => {
     setActionLoading(userId);
     try {
-      await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/approve/${userId}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.patch(`/auth/approve/${userId}`);
       setPendingUsers((prev) => prev.filter((u) => u._id !== userId));
       window.dispatchEvent(new Event("pendingRequestsUpdated"));
     } catch (err) {
@@ -52,13 +45,11 @@ function PendingRequests() {
     if (!window.confirm("Are you sure you want to reject this registration?")) return;
     setActionLoading(userId);
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/auth/reject/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/auth/reject/${userId}`);
       setPendingUsers((prev) => prev.filter((u) => u._id !== userId));
       window.dispatchEvent(new Event("pendingRequestsUpdated"));
     } catch (err) {
-      alert("Failed to reject user");
+      alert(err.response?.data?.message || "Failed to reject user");
       console.error(err);
     } finally {
       setActionLoading(null);
@@ -83,7 +74,7 @@ function PendingRequests() {
         <div className="space-y-3">
           {pendingUsers.map((user) => (
             <div key={user._id} className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
-              {user.role === "STUDENT" && user.idCardImage && (
+              {user.idCardImage && (
                 <img
                   src={user.idCardImage}
                   alt="ID card"
@@ -97,11 +88,11 @@ function PendingRequests() {
                 <p className="text-sm text-gray-500">{user.email}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {user.role}
-                  {user.role === "STUDENT" && user.submittedStudentId && (
+                  {user.submittedStudentId && (
                     <span> · Student ID: <span className="font-medium text-gray-600">{user.submittedStudentId}</span></span>
                   )}
                 </p>
-                {user.role === "STUDENT" && !user.idCardImage && (
+                {!user.idCardImage && (
                   <p className="text-xs text-red-500 mt-1">⚠ No ID card photo submitted</p>
                 )}
               </div>

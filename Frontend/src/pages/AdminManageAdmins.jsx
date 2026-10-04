@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getAdmins, createAdmin, updateAdmin, toggleAdminStatus } from "../services/adminService";
 import useAuth from "../hooks/useAuth";
+import PasswordStrength from "../components/PasswordStrength";
+import { FIRST_ISSUE_MESSAGE } from "../utils/passwordPolicy";
 
 const emptyForm = { name: "", email: "", password: "" };
 
@@ -32,6 +34,13 @@ const AdminManageAdmins = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!editingId) {
+      const passwordProblem = FIRST_ISSUE_MESSAGE(form.password, { email: form.email, name: form.name });
+      if (passwordProblem) {
+        setError(passwordProblem);
+        return;
+      }
+    }
     try {
       if (editingId) {
         await updateAdmin(editingId, { name: form.name, email: form.email });
@@ -83,11 +92,15 @@ const AdminManageAdmins = () => {
             className="w-full border rounded-md px-3 py-2"
           />
           {!editingId && (
-            <input
-              required type="password" placeholder="Password" minLength={6} value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full border rounded-md px-3 py-2"
-            />
+            <>
+              <input
+                required type="password" placeholder="Password" minLength={10} maxLength={64}
+                autoComplete="new-password" value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full border rounded-md px-3 py-2"
+              />
+              <PasswordStrength password={form.password} email={form.email} name={form.name} />
+            </>
           )}
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
             {editingId ? "Update Admin" : "Create Admin"}

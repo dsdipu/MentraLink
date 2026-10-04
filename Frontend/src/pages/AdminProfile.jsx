@@ -3,6 +3,8 @@ import { getMe, updateMe, changePassword } from "../services/authService";
 import useAuth from "../hooks/useAuth";
 import Card from "../components/ui/Card";
 import { KeyRound } from "lucide-react";
+import PasswordStrength from "../components/PasswordStrength";
+import { FIRST_ISSUE_MESSAGE } from "../utils/passwordPolicy";
 
 const AdminProfile = () => {
   const { updateUser } = useAuth();
@@ -46,8 +48,13 @@ const AdminProfile = () => {
     setPwError("");
     setPwMessage("");
 
-    if (newPassword.length < 6) {
-      setPwError("New password must be at least 6 characters");
+    const passwordProblem = FIRST_ISSUE_MESSAGE(newPassword, { email: me?.email, name: me?.name });
+    if (passwordProblem) {
+      setPwError(passwordProblem);
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPwError("New password must be different from your current password");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -58,6 +65,8 @@ const AdminProfile = () => {
     setChangingPw(true);
     try {
       const res = await changePassword(currentPassword, newPassword);
+      // the server logs out other devices and returns a fresh token for this one
+      if (res.token) localStorage.setItem("token", res.token);
       setPwMessage(res.message);
       setCurrentPassword("");
       setNewPassword("");
@@ -140,9 +149,14 @@ const AdminProfile = () => {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={10}
+              maxLength={64}
+              autoComplete="new-password"
               className="w-full border rounded-md px-3 py-2"
             />
+            <div className="mt-2">
+              <PasswordStrength password={newPassword} email={me?.email} name={me?.name} />
+            </div>
           </div>
           <div>
             <label className="block text-sm mb-1">Confirm New Password</label>

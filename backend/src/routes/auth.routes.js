@@ -16,9 +16,10 @@ const {
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 const verificationUpload = require("../middleware/verificationUpload.middleware");
+const handleUpload = require("../middleware/handleUpload");
 const { loginLimiter, otpRequestLimiter, otpVerifyLimiter } = require("../middleware/rateLimit.middleware");
 
-router.post("/register", verificationUpload.single("idCardImage"), register);
+router.post("/register", handleUpload(verificationUpload.single("idCardImage")), register);
 router.post("/login", loginLimiter, login);
 router.post("/forgot-password", otpRequestLimiter, forgotPassword);
 router.post("/reset-password", otpVerifyLimiter, resetPassword);
