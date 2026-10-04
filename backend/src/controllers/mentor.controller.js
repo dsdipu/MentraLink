@@ -1,6 +1,7 @@
 const Mentor = require("../models/Mentor");
 const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
+const { rejectWeakPassword } = require("../utils/passwordPolicy");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
 const Blog = require("../models/Blog");
@@ -9,6 +10,7 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
 const createMentor = async (req, res) => {
   try {
     const { name, email, password, mentorStudentId, department } = req.body;
+    if (rejectWeakPassword(res, password, { email, name })) return;
     const hashedPassword = await hashPassword(password);
     const user = await User.create({ name, email, password: hashedPassword, role: "MENTOR" });
     const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });

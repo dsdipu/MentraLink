@@ -6,6 +6,7 @@ require("dotenv").config({
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const { hashPassword } = require("./hashPassword");
+const { getPasswordIssues } = require("./passwordPolicy");
 
 const seedAdmin = async () => {
   try {
@@ -19,6 +20,11 @@ const seedAdmin = async () => {
       throw new Error(
         "ADMIN_EMAIL and ADMIN_PASSWORD must be set in the .env file"
       );
+    }
+
+    const passwordIssues = getPasswordIssues(adminPassword, { email: adminEmail });
+    if (passwordIssues.length > 0) {
+      throw new Error(`ADMIN_PASSWORD is too weak: ${passwordIssues.join("; ")}`);
     }
 
     const existingAdmin = await User.findOne({ email: adminEmail });

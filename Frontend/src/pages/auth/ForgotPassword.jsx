@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { forgotPassword, resetPassword } from "../../services/authService";
 import logo from "../../assets/mentraLink.png";
+import PasswordStrength from "../../components/PasswordStrength";
+import { FIRST_ISSUE_MESSAGE } from "../../utils/passwordPolicy";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -62,8 +64,9 @@ const ForgotPassword = () => {
     e.preventDefault();
     setError("");
 
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+    const passwordProblem = FIRST_ISSUE_MESSAGE(newPassword, { email });
+    if (passwordProblem) {
+      setError(passwordProblem);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -165,9 +168,12 @@ const ForgotPassword = () => {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={6}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+                minLength={10}
+                maxLength={64}
+                autoComplete="new-password"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
               />
+              <PasswordStrength password={newPassword} email={email} />
 
               <label className="block text-sm mb-1.5 text-gray-700 font-medium">Confirm New Password</label>
               <input

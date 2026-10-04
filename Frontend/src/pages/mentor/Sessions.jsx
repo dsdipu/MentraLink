@@ -170,6 +170,16 @@ const Sessions = () => {
     }
   };
 
+  // Mentor marked a session as completed by mistake -> move it back to UPCOMING
+  const handleRevertToUpcoming = async (session) => {
+    const confirmed = window.confirm(
+      `Mark "Session ${session.sessionNumber} — ${session.title}" as Upcoming again?\n\n` +
+        "Use this only if it was marked Completed by mistake."
+    );
+    if (!confirmed) return;
+    await handleStatusChange(session._id, "UPCOMING");
+  };
+
   if (loading) return <p>Loading sessions...</p>;
 
   return (
@@ -382,6 +392,15 @@ const Sessions = () => {
                         Cancel
                       </button>
                     </>
+                  )}
+                  {session.status === "COMPLETED" && (
+                    <button
+                      onClick={() => handleRevertToUpcoming(session)}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                      title="Marked as completed by mistake? Move it back to Upcoming"
+                    >
+                      Mark as Upcoming
+                    </button>
                   )}
                   <button
                     onClick={() => openEdit(session)}
