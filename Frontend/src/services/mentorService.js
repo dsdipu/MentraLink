@@ -15,3 +15,6 @@ export const removeMyPhoto = () => api.delete("/mentors/me/photo").then((r) => r
 
 
 export const updateMentor = (id, payload) => api.put(`/mentors/${id}`, payload).then((r) => r.data.mentor);
+
+// Admin: create one mentor (temporary credentials unless a password is given)
+export const createMentor = (payload) => api.post("/mentors", payload).then((r) => r.data);

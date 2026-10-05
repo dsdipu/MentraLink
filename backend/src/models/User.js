@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["ADMIN", "MENTOR", "STUDENT"], required: true },
     isActive: { type: Boolean, default: true },
     passwordChangedAt: { type: Date }, // tokens issued before this moment are rejected
+    // true for accounts an admin created with a temporary password (= student ID):
+    // the user must choose their own password before using anything else
+    mustChangePassword: { type: Boolean, default: false },
 
     submittedStudentId: { type: String }, // derived from email, e.g. "242034037"
     batch: { type: String }, // first 3 digits, e.g. "242"

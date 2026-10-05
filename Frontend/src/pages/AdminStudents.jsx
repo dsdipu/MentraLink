@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { getAllStudents, updateStudent } from "../services/studentService";
 import Badge from "../components/ui/Badge";
-import { Search, Pencil, Check, X } from "lucide-react";
+import { Search, Pencil, Check, X, UserPlus, Users } from "lucide-react";
+import { AddStudentPanel, BulkStudentsPanel } from "../components/StudentCreation";
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -16,6 +17,7 @@ const AdminStudents = () => {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [panel, setPanel] = useState(null); // null | "add" | "bulk"
 
   const load = () => {
     setLoading(true);
@@ -103,6 +105,26 @@ const AdminStudents = () => {
           View and manage student information.
         </p>
       </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setPanel(panel === "add" ? null : "add")}
+          className="inline-flex items-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-sm text-white hover:bg-gray-900"
+        >
+          <UserPlus size={15} /> Add student
+        </button>
+        <button
+          type="button"
+          onClick={() => setPanel(panel === "bulk" ? null : "bulk")}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
+        >
+          <Users size={15} /> Create from ID range
+        </button>
+      </div>
+
+      {panel === "add" && <AddStudentPanel onClose={() => setPanel(null)} onDone={load} />}
+      {panel === "bulk" && <BulkStudentsPanel onClose={() => setPanel(null)} onDone={load} />}
 
       <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
         <form

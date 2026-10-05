@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// While a temporary password is still active, only these endpoints may be used
+const ALLOWED_WHILE_TEMPORARY = ["/api/auth/change-password", "/api/auth/me"];
+
 const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -16,7 +19,7 @@ const protect = async (req, res, next) => {
 
   try {
     // always trust the database for role / active state, not only the token
-    const user = await User.findById(decoded.id).select("role isActive passwordChangedAt");
+    const user = await User.findById(decoded.id).select("role isActive passwordChangedAt mustChangePassword");
     if (!user || !user.isActive) {
       return res.status(401).json({ message: "Account is not active" });
     }
@@ -24,6 +27,16 @@ const protect = async (req, res, next) => {
     // a password change/reset logs out every older session
     if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
       return res.status(401).json({ message: "Password was changed, please log in again" });
+    }
+
+    if (user.mustChangePassword) {
+      const path = req.originalUrl.split("?")[0].replace(/\/+$/, "");
+      if (!ALLOWED_WHILE_TEMPORARY.includes(path)) {
+        return res.status(403).json({
+          code: "PASSWORD_CHANGE_REQUIRED",
+          message: "Please change your temporary password first",
+        });
+      }
     }
 
     req.user = { id: user._id.toString(), role: user.role };

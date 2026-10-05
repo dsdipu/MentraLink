@@ -39,6 +39,8 @@ import AdminSessions from "../pages/AdminSessions";
 import AdminManageAdmins from "../pages/AdminManageAdmins";
 import AdminProfile from "../pages/AdminProfile";
 import AdminGroups from "../pages/AdminGroups";
+import ChangePassword from "../pages/ChangePassword";
+import AdminMentorAccounts from "../pages/AdminMentorAccounts";
 
 // Public
 import PublicLayout from "../layouts/PublicLayout";
@@ -59,6 +61,7 @@ const AppRoutes = () => {
         <Route element={<StudentLayout />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/profile" element={<StudentProfile />} />
+          <Route path="/student/change-password" element={<ChangePassword />} />
           <Route path="/student/sessions" element={<StudentSessions />} />
           <Route path="/student/attendance" element={<StudentAttendance />} />
           <Route path="/student/feedback" element={<StudentFeedback />} />
@@ -72,6 +75,7 @@ const AppRoutes = () => {
         <Route element={<MentorLayout />}>
           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
           <Route path="/mentor/profile" element={<MentorProfile />} />
+          <Route path="/mentor/change-password" element={<ChangePassword />} />
           <Route path="/mentor/students" element={<MentorStudents />} />
           <Route path="/mentor/sessions" element={<MentorSessions />} />
           <Route path="/mentor/attendance" element={<MentorAttendance />} />
@@ -89,6 +93,7 @@ const AppRoutes = () => {
           <Route path="/admin/semesters" element={<Semesters />} />
           <Route path="/admin/mentors" element={<Mentors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/mentor-accounts" element={<AdminMentorAccounts />} />
           <Route path="/admin/sessions" element={<AdminSessions />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />

@@ -276,7 +276,16 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     const token = generateToken(user._id, user.role);
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        mustChangePassword: !!user.mustChangePassword,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
@@ -343,6 +352,7 @@ const resetPassword = async (req, res) => {
 
     user.password = await hashPassword(newPassword);
     user.passwordChangedAt = new Date();
+    user.mustChangePassword = false;
     await user.save();
 
     await Otp.deleteMany({ email: normalizedEmail });
@@ -399,11 +409,12 @@ const changePassword = async (req, res) => {
 
     user.password = await hashPassword(newPassword);
     user.passwordChangedAt = new Date();
+    user.mustChangePassword = false; // the temporary password is gone for good
     await user.save();
 
     // other devices are logged out; hand back a fresh token so this session continues
     const token = generateToken(user._id, user.role);
-    res.json({ message: "Password changed successfully", token });
+    res.json({ message: "Password changed successfully", token, mustChangePassword: false });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }

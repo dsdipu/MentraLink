@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  KeyRound,
 } from "lucide-react";
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { to: "/student/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/student/evaluation", label: "Evaluation", icon: Star },
   { to: "/student/blogs", label: "Blogs", icon: Newspaper },
+  { to: "/student/change-password", label: "Change Password", icon: KeyRound },
 ];
 
 const StudentLayout = () => {

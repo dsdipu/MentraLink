@@ -4,21 +4,104 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
 const Mentor = require("../models/Mentor");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
+const {
+  MAX_BULK,
+  isValidStudentId,
+  normalizeDomain,
+  getDefaultDomain,
+  buildEmail,
+  findTakenIds,
+  createTemporaryStudent,
+  bulkCreateStudents: runBulkCreate,
+} = require("../services/accountCreation.service");
 
+// Admin: create ONE student.
+// - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
+// - with a password: that password, which has to satisfy the strong password policy
 const createStudent = async (req, res) => {
   try {
-    const { name, email, password, studentId, department, batch } = req.body;
+    const { name, password, studentId, department, batch } = req.body;
+    let { email } = req.body;
+
+    if (!name || !String(name).trim()) return res.status(400).json({ message: "Name is required" });
+    if (!isValidStudentId(studentId)) {
+      return res.status(400).json({ message: "Student ID must be 9 digits" });
+    }
+    const cleanId = String(studentId).trim();
+
+    if (!email) {
+      const domain = getDefaultDomain();
+      if (!domain) return res.status(400).json({ message: "Email is required" });
+      email = buildEmail(cleanId, domain);
+    }
+    email = String(email).toLowerCase().trim();
+
+    const taken = await findTakenIds([cleanId], normalizeDomain(email.split("@")[1]) || getDefaultDomain() || "@x.invalid");
+    const emailUsed = await User.exists({ email });
+    if (taken.has(cleanId) || emailUsed) {
+      return res.status(409).json({ message: "This student ID or email is already registered" });
+    }
+
+    if (!password) {
+      const user = await createTemporaryStudent({
+        studentId: cleanId,
+        name: String(name).trim(),
+        email,
+        department: department || "",
+      });
+      const student = await Student.findOne({ user: user._id }).populate("user", "name email isActive");
+      return res.status(201).json({
+        student,
+        temporaryCredentials: { email, password: cleanId },
+      });
+    }
+
     if (rejectWeakPassword(res, password, { email, name })) return;
     const { hashPassword } = require("../utils/hashPassword");
     const hashedPassword = await hashPassword(password);
 
-    const user = await User.create({ name, email, password: hashedPassword, role: "STUDENT" });
-    const student = await Student.create({ user: user._id, studentId, department, batch });
+    const user = await User.create({
+      name: String(name).trim(),
+      email,
+      password: hashedPassword,
+      role: "STUDENT",
+      submittedStudentId: cleanId,
+      batch: batch || cleanId.slice(0, 3),
+    });
+    let student;
+    try {
+      student = await Student.create({
+        user: user._id,
+        studentId: cleanId,
+        department,
+        batch: batch || cleanId.slice(0, 3),
+      });
+    } catch (err) {
+      await User.deleteOne({ _id: user._id });
+      throw err;
+    }
 
     res.status(201).json({ student });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
+};
+
+// Admin: create many students from an ID range (e.g. 262034001 .. 262034035).
+// IDs that are already registered are skipped, the rest get temporary credentials.
+const bulkCreateStudents = async (req, res) => {
+  try {
+    const { startId, endId, department, emailDomain } = req.body;
+    const result = await runBulkCreate({ startId, endId, department, emailDomain });
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+  }
+};
+
+// Admin: default email domain + limits for the bulk form
+const getBulkConfig = (req, res) => {
+  res.json({ emailDomain: getDefaultDomain() || "", maxPerRequest: MAX_BULK });
 };
 
 const getStudents = async (req, res) => {
@@ -210,4 +293,6 @@ module.exports = {
   updateMyProfile,
   uploadMyPhoto,
   removeMyPhoto,
+  bulkCreateStudents,
+  getBulkConfig,
 };

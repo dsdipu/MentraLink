@@ -1,0 +1,1583 @@
+diff --git a/Frontend/src/components/ChangePasswordCard.jsx b/Frontend/src/components/ChangePasswordCard.jsx
+new file mode 100644
+index 0000000..2230f05
+--- /dev/null
++++ b/Frontend/src/components/ChangePasswordCard.jsx
+@@ -0,0 +1,185 @@
++import { useState } from "react";
++import PropTypes from "prop-types";
++import { useNavigate } from "react-router-dom";
++import { KeyRound } from "lucide-react";
++import Card from "./ui/Card";
++import PasswordStrength from "./PasswordStrength";
++import useAuth from "../hooks/useAuth";
++import { changePassword, updateMe } from "../services/authService";
++import { FIRST_ISSUE_MESSAGE } from "../utils/passwordPolicy";
++
++const inputClass =
++  "w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
++
++// Used on the student and mentor "Change Password" page.
++// `forced` = the account still has a temporary password (admin-created account).
++function ChangePasswordCard({ forced = false }) {
++  const { user, updateUser } = useAuth();
++  const navigate = useNavigate();
++
++  const needsName = forced && /^\d{9}$/.test(String(user?.name || "").trim());
++
++  const [currentPassword, setCurrentPassword] = useState("");
++  const [newPassword, setNewPassword] = useState("");
++  const [confirmPassword, setConfirmPassword] = useState("");
++  const [fullName, setFullName] = useState("");
++  const [error, setError] = useState("");
++  const [success, setSuccess] = useState("");
++  const [saving, setSaving] = useState(false);
++
++  const handleSubmit = async (event) => {
++    event.preventDefault();
++    setError("");
++    setSuccess("");
++
++    if (newPassword !== confirmPassword) {
++      setError("New password and confirmation do not match");
++      return;
++    }
++    if (newPassword === currentPassword) {
++      setError("New password must be different from your current password");
++      return;
++    }
++    const problem = FIRST_ISSUE_MESSAGE(newPassword, {
++      email: user?.email,
++      name: needsName ? fullName : user?.name,
++    });
++    if (problem) {
++      setError(problem);
++      return;
++    }
++    if (needsName && fullName.trim().length < 2) {
++      setError("Please enter your full name");
++      return;
++    }
++
++    setSaving(true);
++    try {
++      const result = await changePassword(currentPassword, newPassword);
++      // the server logs out other devices and returns a fresh token for this one
++      if (result.token) localStorage.setItem("token", result.token);
++      updateUser({ mustChangePassword: false });
++
++      if (needsName) {
++        try {
++          const updated = await updateMe(fullName.trim());
++          updateUser({ name: updated?.name || fullName.trim() });
++        } catch {
++          // the name can still be completed later from the profile page
++        }
++      }
++
++      if (forced) {
++        navigate(`/${String(user?.role || "student").toLowerCase()}/dashboard`, { replace: true });
++        return;
++      }
++
++      setCurrentPassword("");
++      setNewPassword("");
++      setConfirmPassword("");
++      setSuccess("Password changed successfully. Other devices have been logged out.");
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to change password");
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  return (
++    <Card>
++      <div className="mb-4 flex items-center gap-2">
++        <KeyRound size={18} className="text-brand-navy" />
++        <h2 className="text-lg font-semibold">{forced ? "Set your password" : "Change password"}</h2>
++      </div>
++
++      {forced && (
++        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
++          Your account was created by an admin with a temporary password (your student ID). Please
++          choose your own password to continue.
++        </div>
++      )}
++
++      <form onSubmit={handleSubmit} className="space-y-4">
++        {needsName && (
++          <div>
++            <label className="mb-1 block text-sm font-medium">Your full name</label>
++            <input
++              value={fullName}
++              onChange={(e) => setFullName(e.target.value)}
++              className={inputClass}
++              placeholder="e.g. Rahim Uddin"
++              autoComplete="name"
++              maxLength={80}
++              required
++            />
++          </div>
++        )}
++
++        <div>
++          <label className="mb-1 block text-sm font-medium">
++            {forced ? "Temporary password (your student ID)" : "Current password"}
++          </label>
++          <input
++            type="password"
++            value={currentPassword}
++            onChange={(e) => setCurrentPassword(e.target.value)}
++            className={inputClass}
++            autoComplete="current-password"
++            required
++          />
++        </div>
++
++        <div>
++          <label className="mb-1 block text-sm font-medium">New password</label>
++          <input
++            type="password"
++            value={newPassword}
++            onChange={(e) => setNewPassword(e.target.value)}
++            className={inputClass}
++            autoComplete="new-password"
++            minLength={10}
++            maxLength={64}
++            required
++          />
++          <div className="mt-2">
++            <PasswordStrength
++              password={newPassword}
++              email={user?.email}
++              name={needsName ? fullName : user?.name}
++            />
++          </div>
++        </div>
++
++        <div>
++          <label className="mb-1 block text-sm font-medium">Confirm new password</label>
++          <input
++            type="password"
++            value={confirmPassword}
++            onChange={(e) => setConfirmPassword(e.target.value)}
++            className={inputClass}
++            autoComplete="new-password"
++            required
++          />
++          {confirmPassword && newPassword !== confirmPassword && (
++            <p className="mt-1 text-xs text-red-500">Passwords do not match yet</p>
++          )}
++        </div>
++
++        {error && <p className="text-sm text-red-500">{error}</p>}
++        {success && <p className="text-sm text-green-600">{success}</p>}
++
++        <button
++          type="submit"
++          disabled={saving}
++          className="rounded-md bg-brand-navy px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
++        >
++          {saving ? "Saving..." : forced ? "Save and continue" : "Change password"}
++        </button>
++      </form>
++    </Card>
++  );
++}
++
++ChangePasswordCard.propTypes = { forced: PropTypes.bool };
++
++export default ChangePasswordCard;
+diff --git a/Frontend/src/components/StudentCreation.jsx b/Frontend/src/components/StudentCreation.jsx
+new file mode 100644
+index 0000000..5abfd2f
+--- /dev/null
++++ b/Frontend/src/components/StudentCreation.jsx
+@@ -0,0 +1,358 @@
++import { useEffect, useState } from "react";
++import PropTypes from "prop-types";
++import { Download, X } from "lucide-react";
++import {
++  bulkCreateStudents,
++  createStudent,
++  getBulkConfig,
++} from "../services/studentService";
++import {
++  MAX_BULK,
++  STUDENT_ID_PATTERN,
++  countRange,
++  credentialsToCsv,
++  downloadTextFile,
++} from "../utils/credentials";
++
++const inputClass =
++  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
++
++const PanelShell = ({ title, onClose, children }) => (
++  <div className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
++    <div className="mb-4 flex items-center justify-between">
++      <h2 className="text-base font-semibold text-gray-900">{title}</h2>
++      <button
++        type="button"
++        onClick={onClose}
++        className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
++        aria-label="Close"
++      >
++        <X size={18} />
++      </button>
++    </div>
++    {children}
++  </div>
++);
++
++PanelShell.propTypes = {
++  title: PropTypes.string.isRequired,
++  onClose: PropTypes.func.isRequired,
++  children: PropTypes.node,
++};
++
++const TempPasswordNote = () => (
++  <p className="rounded-md bg-blue-50 p-3 text-xs text-blue-800">
++    Login email is the student ID plus the university domain, and the temporary password is the
++    student ID. Students are asked to choose their own strong password the first time they log in.
++  </p>
++);
++
++// ---------------- one student ----------------
++export function AddStudentPanel({ onClose, onDone }) {
++  const [form, setForm] = useState({ name: "", studentId: "", email: "", department: "" });
++  const [domain, setDomain] = useState("");
++  const [saving, setSaving] = useState(false);
++  const [error, setError] = useState("");
++  const [created, setCreated] = useState(null);
++
++  useEffect(() => {
++    getBulkConfig().then((c) => setDomain(c.emailDomain || "")).catch(() => {});
++  }, []);
++
++  const suggestedEmail =
++    STUDENT_ID_PATTERN.test(form.studentId) && domain ? `${form.studentId}${domain}` : "";
++
++  const handleSubmit = async (event) => {
++    event.preventDefault();
++    setError("");
++
++    if (!STUDENT_ID_PATTERN.test(form.studentId)) {
++      setError("Student ID must be exactly 9 digits");
++      return;
++    }
++
++    setSaving(true);
++    try {
++      const result = await createStudent({
++        name: form.name.trim(),
++        studentId: form.studentId,
++        email: form.email.trim() || undefined,
++        department: form.department.trim(),
++      });
++      setCreated(result.temporaryCredentials);
++      onDone();
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to create student");
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  if (created) {
++    return (
++      <PanelShell title="Student created" onClose={onClose}>
++        <div className="space-y-1 rounded-md bg-green-50 p-3 text-sm text-green-800">
++          <p>
++            <span className="font-medium">Login email:</span> {created.email}
++          </p>
++          <p>
++            <span className="font-medium">Temporary password:</span> {created.password}
++          </p>
++        </div>
++        <button
++          type="button"
++          onClick={() => {
++            setCreated(null);
++            setForm({ name: "", studentId: "", email: "", department: "" });
++          }}
++          className="mt-3 text-sm text-blue-600 hover:underline"
++        >
++          Add another student
++        </button>
++      </PanelShell>
++    );
++  }
++
++  return (
++    <PanelShell title="Add a student" onClose={onClose}>
++      <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
++        <input
++          required
++          value={form.name}
++          onChange={(e) => setForm({ ...form, name: e.target.value })}
++          placeholder="Full name"
++          maxLength={80}
++          className={inputClass}
++        />
++        <input
++          required
++          inputMode="numeric"
++          value={form.studentId}
++          onChange={(e) => setForm({ ...form, studentId: e.target.value.replace(/\D/g, "").slice(0, 9) })}
++          placeholder="Student ID (9 digits)"
++          className={inputClass}
++        />
++        <input
++          type="email"
++          value={form.email}
++          onChange={(e) => setForm({ ...form, email: e.target.value })}
++          placeholder={suggestedEmail ? `Email (default: ${suggestedEmail})` : "Email (optional)"}
++          className={inputClass}
++        />
++        <input
++          value={form.department}
++          onChange={(e) => setForm({ ...form, department: e.target.value })}
++          placeholder="Department (optional)"
++          maxLength={100}
++          className={inputClass}
++        />
++        <div className="sm:col-span-2">
++          <TempPasswordNote />
++        </div>
++        {error && <p className="text-sm text-red-500 sm:col-span-2">{error}</p>}
++        <div className="sm:col-span-2">
++          <button
++            type="submit"
++            disabled={saving}
++            className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900 disabled:opacity-60"
++          >
++            {saving ? "Creating..." : "Create student"}
++          </button>
++        </div>
++      </form>
++    </PanelShell>
++  );
++}
++
++AddStudentPanel.propTypes = { onClose: PropTypes.func.isRequired, onDone: PropTypes.func.isRequired };
++
++// ---------------- many students from an ID range ----------------
++const ResultList = ({ title, rows, tone }) =>
++  rows.length > 0 && (
++    <details className="rounded-md border border-gray-200 bg-white">
++      <summary className={`cursor-pointer px-3 py-2 text-sm font-medium ${tone}`}>
++        {title} ({rows.length})
++      </summary>
++      <div className="max-h-48 overflow-y-auto border-t border-gray-100 px-3 py-2 text-xs text-gray-600">
++        {rows.map((row) => (
++          <div key={row.studentId} className="flex justify-between gap-3 py-0.5">
++            <span>{row.studentId}</span>
++            <span className="truncate text-gray-400">{row.email || row.reason}</span>
++          </div>
++        ))}
++      </div>
++    </details>
++  );
++
++ResultList.propTypes = {
++  title: PropTypes.string.isRequired,
++  rows: PropTypes.arrayOf(PropTypes.object).isRequired,
++  tone: PropTypes.string,
++};
++
++export function BulkStudentsPanel({ onClose, onDone }) {
++  const [startId, setStartId] = useState("");
++  const [endId, setEndId] = useState("");
++  const [department, setDepartment] = useState("");
++  const [domain, setDomain] = useState("");
++  const [saving, setSaving] = useState(false);
++  const [error, setError] = useState("");
++  const [result, setResult] = useState(null);
++
++  useEffect(() => {
++    getBulkConfig().then((c) => setDomain(c.emailDomain || "")).catch(() => {});
++  }, []);
++
++  const count = countRange(startId, endId);
++  const rangeProblem =
++    startId.length === 9 && endId.length === 9
++      ? count === null
++        ? "Start ID must not be greater than end ID"
++        : count > MAX_BULK
++          ? `A single request can create at most ${MAX_BULK} accounts`
++          : ""
++      : "";
++
++  const handleSubmit = async (event) => {
++    event.preventDefault();
++    setError("");
++
++    if (count === null || count > MAX_BULK) {
++      setError(rangeProblem || "Enter a valid start and end ID (9 digits each)");
++      return;
++    }
++    if (!domain.trim()) {
++      setError("Email domain is required (for example @diu.edu.bd)");
++      return;
++    }
++
++    setSaving(true);
++    try {
++      const data = await bulkCreateStudents({
++        startId,
++        endId,
++        department: department.trim(),
++        emailDomain: domain.trim(),
++      });
++      setResult(data);
++      onDone();
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to create accounts");
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  if (result) {
++    const { summary } = result;
++    return (
++      <PanelShell title="Bulk creation finished" onClose={onClose}>
++        <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
++          {[
++            ["Requested", summary.requested, "text-gray-800"],
++            ["Created", summary.created, "text-green-700"],
++            ["Skipped (already exist)", summary.skipped, "text-amber-700"],
++            ["Failed", summary.failed, "text-red-600"],
++          ].map(([label, value, tone]) => (
++            <div key={label} className="rounded-md bg-gray-50 p-3 text-center">
++              <p className={`text-xl font-semibold ${tone}`}>{value}</p>
++              <p className="text-xs text-gray-500">{label}</p>
++            </div>
++          ))}
++        </div>
++
++        <div className="space-y-2">
++          <ResultList title="Created accounts" rows={result.created} tone="text-green-700" />
++          <ResultList title="Skipped, already registered" rows={result.skipped} tone="text-amber-700" />
++          <ResultList title="Failed" rows={result.failed} tone="text-red-600" />
++        </div>
++
++        <div className="mt-4 flex flex-wrap items-center gap-3">
++          {result.created.length > 0 && (
++            <button
++              type="button"
++              onClick={() =>
++                downloadTextFile(`student-credentials-${startId}-${endId}.csv`, credentialsToCsv(result.created))
++              }
++              className="inline-flex items-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-sm text-white hover:bg-gray-900"
++            >
++              <Download size={15} /> Download credentials (CSV)
++            </button>
++          )}
++          <button
++            type="button"
++            onClick={() => {
++              setResult(null);
++              setStartId("");
++              setEndId("");
++            }}
++            className="text-sm text-blue-600 hover:underline"
++          >
++            Create another range
++          </button>
++        </div>
++        <p className="mt-3 text-xs text-gray-400">{result.note}</p>
++      </PanelShell>
++    );
++  }
++
++  return (
++    <PanelShell title="Create students from an ID range" onClose={onClose}>
++      <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
++        <input
++          required
++          inputMode="numeric"
++          value={startId}
++          onChange={(e) => setStartId(e.target.value.replace(/\D/g, "").slice(0, 9))}
++          placeholder="From ID, e.g. 262034001"
++          className={inputClass}
++        />
++        <input
++          required
++          inputMode="numeric"
++          value={endId}
++          onChange={(e) => setEndId(e.target.value.replace(/\D/g, "").slice(0, 9))}
++          placeholder="To ID, e.g. 262034035"
++          className={inputClass}
++        />
++        <input
++          value={domain}
++          onChange={(e) => setDomain(e.target.value)}
++          placeholder="Email domain, e.g. @diu.edu.bd"
++          className={inputClass}
++        />
++        <input
++          value={department}
++          onChange={(e) => setDepartment(e.target.value)}
++          placeholder="Department (optional)"
++          maxLength={100}
++          className={inputClass}
++        />
++
++        <div className="space-y-2 sm:col-span-2">
++          {count !== null && !rangeProblem && (
++            <p className="text-sm text-gray-700">
++              Up to <span className="font-semibold">{count}</span> account{count === 1 ? "" : "s"} will be
++              created. IDs that are already registered are skipped automatically.
++            </p>
++          )}
++          {rangeProblem && <p className="text-sm text-red-500">{rangeProblem}</p>}
++          <TempPasswordNote />
++        </div>
++
++        {error && <p className="text-sm text-red-500 sm:col-span-2">{error}</p>}
++        <div className="sm:col-span-2">
++          <button
++            type="submit"
++            disabled={saving || !!rangeProblem}
++            className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900 disabled:opacity-60"
++          >
++            {saving ? "Creating accounts..." : count ? `Create ${count} account${count === 1 ? "" : "s"}` : "Create accounts"}
++          </button>
++        </div>
++      </form>
++    </PanelShell>
++  );
++}
++
++BulkStudentsPanel.propTypes = { onClose: PropTypes.func.isRequired, onDone: PropTypes.func.isRequired };
+diff --git a/Frontend/src/layouts/AdminLayout.jsx b/Frontend/src/layouts/AdminLayout.jsx
+index f13bc53..e2a02a4 100644
+--- a/Frontend/src/layouts/AdminLayout.jsx
++++ b/Frontend/src/layouts/AdminLayout.jsx
+@@ -16,6 +16,7 @@ import {
+   Star,
+   ShieldCheck,
+   UserSquare2,
++  UserPlus,
+   Layers,
+   X,
+   Menu,
+@@ -32,6 +33,7 @@ const navItems = [
+   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
+   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
+   { to: "/admin/students", label: "Students", icon: UserSquare2 },
++  { to: "/admin/mentor-accounts", label: "Mentor Accounts", icon: UserPlus },
+   { to: "/admin/groups", label: "Groups", icon: Layers },
+ ];
+ 
+diff --git a/Frontend/src/layouts/MentorLayout.jsx b/Frontend/src/layouts/MentorLayout.jsx
+index b8f3f00..ef53163 100644
+--- a/Frontend/src/layouts/MentorLayout.jsx
++++ b/Frontend/src/layouts/MentorLayout.jsx
+@@ -15,6 +15,7 @@ import {
+   Menu,
+   X,
+   LogOut,
++  KeyRound,
+ } from "lucide-react";
+ 
+ const navItems = [
+@@ -27,6 +28,7 @@ const navItems = [
+   { to: "/mentor/feedback", label: "Feedback", icon: MessageSquare },
+   { to: "/mentor/evaluation", label: "Evaluation", icon: Star },
+   { to: "/mentor/blogs", label: "Blogs", icon: Newspaper },
++  { to: "/mentor/change-password", label: "Change Password", icon: KeyRound },
+ ];
+ 
+ const MentorLayout = () => {
+diff --git a/Frontend/src/layouts/StudentLayout.jsx b/Frontend/src/layouts/StudentLayout.jsx
+index 6e34b16..0efd630 100644
+--- a/Frontend/src/layouts/StudentLayout.jsx
++++ b/Frontend/src/layouts/StudentLayout.jsx
+@@ -14,6 +14,7 @@ import {
+   Menu,
+   X,
+   LogOut,
++  KeyRound,
+ } from "lucide-react";
+ 
+ const navItems = [
+@@ -25,6 +26,7 @@ const navItems = [
+   { to: "/student/feedback", label: "Feedback", icon: MessageSquare },
+   { to: "/student/evaluation", label: "Evaluation", icon: Star },
+   { to: "/student/blogs", label: "Blogs", icon: Newspaper },
++  { to: "/student/change-password", label: "Change Password", icon: KeyRound },
+ ];
+ 
+ const StudentLayout = () => {
+diff --git a/Frontend/src/pages/AdminMentorAccounts.jsx b/Frontend/src/pages/AdminMentorAccounts.jsx
+new file mode 100644
+index 0000000..4d28cda
+--- /dev/null
++++ b/Frontend/src/pages/AdminMentorAccounts.jsx
+@@ -0,0 +1,206 @@
++import { useEffect, useState } from "react";
++import { UserPlus, X } from "lucide-react";
++import { createMentor, getAllMentors } from "../services/mentorService";
++import { getBulkConfig } from "../services/studentService";
++import Badge from "../components/ui/Badge";
++import { STUDENT_ID_PATTERN } from "../utils/credentials";
++
++const inputClass =
++  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
++
++const emptyForm = { name: "", mentorStudentId: "", email: "", department: "", expertise: "" };
++
++const AdminMentorAccounts = () => {
++  const [mentors, setMentors] = useState([]);
++  const [loading, setLoading] = useState(true);
++  const [showForm, setShowForm] = useState(false);
++  const [form, setForm] = useState(emptyForm);
++  const [domain, setDomain] = useState("");
++  const [saving, setSaving] = useState(false);
++  const [error, setError] = useState("");
++  const [created, setCreated] = useState(null);
++
++  const load = () =>
++    getAllMentors()
++      .then(setMentors)
++      .catch((err) => setError(err.response?.data?.message || "Failed to load mentors"))
++      .finally(() => setLoading(false));
++
++  useEffect(() => {
++    load();
++    getBulkConfig().then((c) => setDomain(c.emailDomain || "")).catch(() => {});
++  }, []);
++
++  const suggestedEmail =
++    STUDENT_ID_PATTERN.test(form.mentorStudentId) && domain ? `${form.mentorStudentId}${domain}` : "";
++
++  const handleSubmit = async (event) => {
++    event.preventDefault();
++    setError("");
++
++    if (!STUDENT_ID_PATTERN.test(form.mentorStudentId)) {
++      setError("Student ID must be exactly 9 digits");
++      return;
++    }
++
++    setSaving(true);
++    try {
++      const result = await createMentor({
++        name: form.name.trim(),
++        mentorStudentId: form.mentorStudentId,
++        email: form.email.trim() || undefined,
++        department: form.department.trim(),
++        expertise: form.expertise.trim() || undefined,
++      });
++      setCreated(result.temporaryCredentials);
++      setForm(emptyForm);
++      load();
++    } catch (err) {
++      setError(err.response?.data?.message || "Failed to create mentor");
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  return (
++    <div className="w-full min-w-0">
++      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
++        <div>
++          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Mentor Accounts</h1>
++          <p className="mt-1 text-sm text-gray-500">Create mentor accounts and see who is registered.</p>
++        </div>
++        <button
++          type="button"
++          onClick={() => {
++            setShowForm((v) => !v);
++            setCreated(null);
++            setError("");
++          }}
++          className="inline-flex items-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-sm text-white hover:bg-gray-900"
++        >
++          <UserPlus size={15} /> Add mentor
++        </button>
++      </div>
++
++      {showForm && (
++        <div className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
++          <div className="mb-4 flex items-center justify-between">
++            <h2 className="text-base font-semibold">Add a mentor</h2>
++            <button
++              type="button"
++              onClick={() => setShowForm(false)}
++              className="rounded-md p-1 text-gray-400 hover:bg-gray-100"
++              aria-label="Close"
++            >
++              <X size={18} />
++            </button>
++          </div>
++
++          {created && (
++            <div className="mb-4 space-y-1 rounded-md bg-green-50 p-3 text-sm text-green-800">
++              <p className="font-medium">Mentor created</p>
++              <p>Login email: {created.email}</p>
++              <p>Temporary password: {created.password}</p>
++            </div>
++          )}
++
++          <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
++            <input
++              required
++              value={form.name}
++              onChange={(e) => setForm({ ...form, name: e.target.value })}
++              placeholder="Full name"
++              maxLength={80}
++              className={inputClass}
++            />
++            <input
++              required
++              inputMode="numeric"
++              value={form.mentorStudentId}
++              onChange={(e) =>
++                setForm({ ...form, mentorStudentId: e.target.value.replace(/\D/g, "").slice(0, 9) })
++              }
++              placeholder="Student ID (9 digits)"
++              className={inputClass}
++            />
++            <input
++              required
++              value={form.department}
++              onChange={(e) => setForm({ ...form, department: e.target.value })}
++              placeholder="Department"
++              maxLength={100}
++              className={inputClass}
++            />
++            <input
++              value={form.expertise}
++              onChange={(e) => setForm({ ...form, expertise: e.target.value })}
++              placeholder="Expertise (optional)"
++              maxLength={150}
++              className={inputClass}
++            />
++            <input
++              type="email"
++              value={form.email}
++              onChange={(e) => setForm({ ...form, email: e.target.value })}
++              placeholder={suggestedEmail ? `Email (default: ${suggestedEmail})` : "Email (optional)"}
++              className={`${inputClass} sm:col-span-2`}
++            />
++            <p className="rounded-md bg-blue-50 p-3 text-xs text-blue-800 sm:col-span-2">
++              The temporary password is the student ID. The mentor must choose their own strong
++              password at first login.
++            </p>
++            {error && <p className="text-sm text-red-500 sm:col-span-2">{error}</p>}
++            <div className="sm:col-span-2">
++              <button
++                type="submit"
++                disabled={saving}
++                className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900 disabled:opacity-60"
++              >
++                {saving ? "Creating..." : "Create mentor"}
++              </button>
++            </div>
++          </form>
++        </div>
++      )}
++
++      {!showForm && error && <p className="mb-3 text-sm text-red-500">{error}</p>}
++
++      {loading ? (
++        <p className="text-sm text-gray-500">Loading mentors...</p>
++      ) : mentors.length === 0 ? (
++        <p className="text-sm text-gray-500">No mentors yet.</p>
++      ) : (
++        <div className="overflow-x-auto rounded-lg bg-white shadow">
++          <table className="w-full text-sm">
++            <thead className="bg-gray-100 text-left">
++              <tr>
++                <th className="p-3">Name</th>
++                <th className="p-3">Student ID</th>
++                <th className="p-3">Email</th>
++                <th className="p-3">Department</th>
++                <th className="p-3">Status</th>
++              </tr>
++            </thead>
++            <tbody>
++              {mentors.map((mentor) => (
++                <tr key={mentor._id} className="border-t">
++                  <td className="p-3 font-medium">{mentor.user?.name}</td>
++                  <td className="p-3">{mentor.mentorStudentId || "-"}</td>
++                  <td className="p-3 text-gray-600">{mentor.user?.email}</td>
++                  <td className="p-3">{mentor.department}</td>
++                  <td className="p-3">
++                    <Badge tone={mentor.user?.isActive && mentor.status === "ACTIVE" ? "success" : "neutral"}>
++                      {mentor.user?.isActive && mentor.status === "ACTIVE" ? "Active" : "Inactive"}
++                    </Badge>
++                  </td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default AdminMentorAccounts;
+diff --git a/Frontend/src/pages/AdminStudents.jsx b/Frontend/src/pages/AdminStudents.jsx
+index 80e8ae1..4bd38b0 100644
+--- a/Frontend/src/pages/AdminStudents.jsx
++++ b/Frontend/src/pages/AdminStudents.jsx
+@@ -1,7 +1,8 @@
+ import { useEffect, useState } from "react";
+ import { getAllStudents, updateStudent } from "../services/studentService";
+ import Badge from "../components/ui/Badge";
+-import { Search, Pencil, Check, X } from "lucide-react";
++import { Search, Pencil, Check, X, UserPlus, Users } from "lucide-react";
++import { AddStudentPanel, BulkStudentsPanel } from "../components/StudentCreation";
+ 
+ const AdminStudents = () => {
+   const [students, setStudents] = useState([]);
+@@ -16,6 +17,7 @@ const AdminStudents = () => {
+   });
+   const [saving, setSaving] = useState(false);
+   const [error, setError] = useState("");
++  const [panel, setPanel] = useState(null); // null | "add" | "bulk"
+ 
+   const load = () => {
+     setLoading(true);
+@@ -104,6 +106,26 @@ const AdminStudents = () => {
+         </p>
+       </div>
+ 
++      <div className="mb-4 flex flex-wrap gap-2">
++        <button
++          type="button"
++          onClick={() => setPanel(panel === "add" ? null : "add")}
++          className="inline-flex items-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-sm text-white hover:bg-gray-900"
++        >
++          <UserPlus size={15} /> Add student
++        </button>
++        <button
++          type="button"
++          onClick={() => setPanel(panel === "bulk" ? null : "bulk")}
++          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
++        >
++          <Users size={15} /> Create from ID range
++        </button>
++      </div>
++
++      {panel === "add" && <AddStudentPanel onClose={() => setPanel(null)} onDone={load} />}
++      {panel === "bulk" && <BulkStudentsPanel onClose={() => setPanel(null)} onDone={load} />}
++
+       <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
+         <form
+           onSubmit={handleSearchSubmit}
+diff --git a/Frontend/src/pages/ChangePassword.jsx b/Frontend/src/pages/ChangePassword.jsx
+new file mode 100644
+index 0000000..29ff9fd
+--- /dev/null
++++ b/Frontend/src/pages/ChangePassword.jsx
+@@ -0,0 +1,17 @@
++import ChangePasswordCard from "../components/ChangePasswordCard";
++import useAuth from "../hooks/useAuth";
++
++// Shared by /student/change-password and /mentor/change-password
++const ChangePassword = () => {
++  const { user } = useAuth();
++  const forced = !!user?.mustChangePassword;
++
++  return (
++    <div className="max-w-xl">
++      <h1 className="mb-4 text-2xl font-semibold">{forced ? "Welcome!" : "Security"}</h1>
++      <ChangePasswordCard forced={forced} />
++    </div>
++  );
++};
++
++export default ChangePassword;
+diff --git a/Frontend/src/routes/AppRoutes.jsx b/Frontend/src/routes/AppRoutes.jsx
+index a25c49f..a0eeaa2 100644
+--- a/Frontend/src/routes/AppRoutes.jsx
++++ b/Frontend/src/routes/AppRoutes.jsx
+@@ -39,6 +39,8 @@ import AdminSessions from "../pages/AdminSessions";
+ import AdminManageAdmins from "../pages/AdminManageAdmins";
+ import AdminProfile from "../pages/AdminProfile";
+ import AdminGroups from "../pages/AdminGroups";
++import ChangePassword from "../pages/ChangePassword";
++import AdminMentorAccounts from "../pages/AdminMentorAccounts";
+ 
+ // Public
+ import PublicLayout from "../layouts/PublicLayout";
+@@ -59,6 +61,7 @@ const AppRoutes = () => {
+         <Route element={<StudentLayout />}>
+           <Route path="/student/dashboard" element={<StudentDashboard />} />
+           <Route path="/student/profile" element={<StudentProfile />} />
++          <Route path="/student/change-password" element={<ChangePassword />} />
+           <Route path="/student/sessions" element={<StudentSessions />} />
+           <Route path="/student/attendance" element={<StudentAttendance />} />
+           <Route path="/student/feedback" element={<StudentFeedback />} />
+@@ -72,6 +75,7 @@ const AppRoutes = () => {
+         <Route element={<MentorLayout />}>
+           <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+           <Route path="/mentor/profile" element={<MentorProfile />} />
++          <Route path="/mentor/change-password" element={<ChangePassword />} />
+           <Route path="/mentor/students" element={<MentorStudents />} />
+           <Route path="/mentor/sessions" element={<MentorSessions />} />
+           <Route path="/mentor/attendance" element={<MentorAttendance />} />
+@@ -89,6 +93,7 @@ const AppRoutes = () => {
+           <Route path="/admin/semesters" element={<Semesters />} />
+           <Route path="/admin/mentors" element={<Mentors />} />
+           <Route path="/admin/students" element={<AdminStudents />} />
++          <Route path="/admin/mentor-accounts" element={<AdminMentorAccounts />} />
+           <Route path="/admin/sessions" element={<AdminSessions />} />
+           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
+           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
+diff --git a/Frontend/src/routes/ProtectedRoute.jsx b/Frontend/src/routes/ProtectedRoute.jsx
+index 14c942d..e67a2e4 100644
+--- a/Frontend/src/routes/ProtectedRoute.jsx
++++ b/Frontend/src/routes/ProtectedRoute.jsx
+@@ -1,8 +1,9 @@
+-import { Navigate, Outlet } from "react-router-dom";
++import { Navigate, Outlet, useLocation } from "react-router-dom";
+ import useAuth from "../hooks/useAuth";
+ 
+ const ProtectedRoute = ({ allowedRoles }) => {
+   const { user, loading } = useAuth();
++  const location = useLocation();
+ 
+   if (loading) return <div>Loading...</div>;
+ 
+@@ -17,6 +18,12 @@ const ProtectedRoute = ({ allowedRoles }) => {
+     return <Navigate to="/unauthorized" replace />;
+   }
+ 
++  // accounts created by an admin must replace their temporary password before anything else
++  const changePath = `/${userRole.toLowerCase()}/change-password`;
++  if (user.mustChangePassword && userRole !== "ADMIN" && location.pathname !== changePath) {
++    return <Navigate to={changePath} replace />;
++  }
++
+   return <Outlet />;
+ };
+ 
+diff --git a/Frontend/src/services/api.js b/Frontend/src/services/api.js
+index 6ec0e98..0f2d483 100644
+--- a/Frontend/src/services/api.js
++++ b/Frontend/src/services/api.js
+@@ -19,6 +19,20 @@ api.interceptors.response.use(
+   (response) => response,
+   (error) => {
+     const url = error.config?.url || "";
++    // temporary password still active -> send the user to the change-password page
++    if (error.response?.status === 403 && error.response?.data?.code === "PASSWORD_CHANGE_REQUIRED") {
++      try {
++        const stored = JSON.parse(localStorage.getItem("user") || "{}");
++        stored.mustChangePassword = true;
++        localStorage.setItem("user", JSON.stringify(stored));
++        const target = `/${String(stored.role || "student").toLowerCase()}/change-password`;
++        if (window.location.pathname !== target) window.location.href = target;
++      } catch {
++        window.location.href = "/login";
++      }
++      return Promise.reject(error);
++    }
++
+     const isAuthAttempt = url.includes("/auth/login") || url.includes("/auth/register");
+     if (error.response?.status === 401 && !isAuthAttempt && localStorage.getItem("token")) {
+       localStorage.removeItem("token");
+diff --git a/Frontend/src/services/mentorService.js b/Frontend/src/services/mentorService.js
+index 186a6e1..2f6275f 100644
+--- a/Frontend/src/services/mentorService.js
++++ b/Frontend/src/services/mentorService.js
+@@ -14,4 +14,7 @@ export const uploadMyPhoto = (file) => {
+ export const removeMyPhoto = () => api.delete("/mentors/me/photo").then((r) => r.data);
+ 
+ 
+-export const updateMentor = (id, payload) => api.put(`/mentors/${id}`, payload).then((r) => r.data.mentor);
+\ No newline at end of file
++export const updateMentor = (id, payload) => api.put(`/mentors/${id}`, payload).then((r) => r.data.mentor);
++
++// Admin: create one mentor (temporary credentials unless a password is given)
++export const createMentor = (payload) => api.post("/mentors", payload).then((r) => r.data);
+diff --git a/Frontend/src/services/studentService.js b/Frontend/src/services/studentService.js
+index bbf8eb2..ce4e555 100644
+--- a/Frontend/src/services/studentService.js
++++ b/Frontend/src/services/studentService.js
+@@ -16,3 +16,9 @@ export const updateStudent = (id, payload) => api.put(`/students/${id}`, payload
+ 
+ // Student: the mentor of my active group (name, email, phone, rating)
+ export const getMyMentor = () => api.get("/mentors/my-mentor").then((r) => r.data);
++
++// Admin: create one student (temporary credentials unless a password is given)
++export const createStudent = (payload) => api.post("/students", payload).then((r) => r.data);
++// Admin: create many students from an ID range, e.g. 262034001 .. 262034035
++export const bulkCreateStudents = (payload) => api.post("/students/bulk", payload).then((r) => r.data);
++export const getBulkConfig = () => api.get("/students/bulk/config").then((r) => r.data);
+diff --git a/Frontend/src/utils/credentials.js b/Frontend/src/utils/credentials.js
+new file mode 100644
+index 0000000..4c62a15
+--- /dev/null
++++ b/Frontend/src/utils/credentials.js
+@@ -0,0 +1,26 @@
++export const STUDENT_ID_PATTERN = /^\d{9}$/;
++export const MAX_BULK = 200;
++
++// how many IDs a range contains; null when the range is not valid yet
++export const countRange = (startId, endId) => {
++  if (!STUDENT_ID_PATTERN.test(startId) || !STUDENT_ID_PATTERN.test(endId)) return null;
++  const count = Number(endId) - Number(startId) + 1;
++  return count >= 1 ? count : null;
++};
++
++// CSV that the admin can hand out; the temporary password is the student ID itself
++export const credentialsToCsv = (rows) =>
++  ["Student ID,Login email,Temporary password"]
++    .concat(rows.map((row) => `${row.studentId},${row.email},${row.studentId}`))
++    .join("\r\n");
++
++export const downloadTextFile = (filename, text) => {
++  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
++  const link = document.createElement("a");
++  link.href = url;
++  link.download = filename;
++  document.body.appendChild(link);
++  link.click();
++  link.remove();
++  URL.revokeObjectURL(url);
++};
+diff --git a/backend/src/controllers/auth.controller.js b/backend/src/controllers/auth.controller.js
+index 3094058..419c747 100644
+--- a/backend/src/controllers/auth.controller.js
++++ b/backend/src/controllers/auth.controller.js
+@@ -276,7 +276,16 @@ const login = async (req, res) => {
+       return res.status(401).json({ message: "Invalid credentials" });
+     }
+     const token = generateToken(user._id, user.role);
+-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
++    res.json({
++      token,
++      user: {
++        id: user._id,
++        name: user.name,
++        email: user.email,
++        role: user.role,
++        mustChangePassword: !!user.mustChangePassword,
++      },
++    });
+   } catch (err) {
+     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+@@ -343,6 +352,7 @@ const resetPassword = async (req, res) => {
+ 
+     user.password = await hashPassword(newPassword);
+     user.passwordChangedAt = new Date();
++    user.mustChangePassword = false;
+     await user.save();
+ 
+     await Otp.deleteMany({ email: normalizedEmail });
+@@ -399,11 +409,12 @@ const changePassword = async (req, res) => {
+ 
+     user.password = await hashPassword(newPassword);
+     user.passwordChangedAt = new Date();
++    user.mustChangePassword = false; // the temporary password is gone for good
+     await user.save();
+ 
+     // other devices are logged out; hand back a fresh token so this session continues
+     const token = generateToken(user._id, user.role);
+-    res.json({ message: "Password changed successfully", token });
++    res.json({ message: "Password changed successfully", token, mustChangePassword: false });
+   } catch (err) {
+     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+diff --git a/backend/src/controllers/mentor.controller.js b/backend/src/controllers/mentor.controller.js
+index dfa957c..76c1278 100644
+--- a/backend/src/controllers/mentor.controller.js
++++ b/backend/src/controllers/mentor.controller.js
+@@ -2,6 +2,11 @@ const Mentor = require("../models/Mentor");
+ const User = require("../models/User");
+ const { hashPassword } = require("../utils/hashPassword");
+ const { rejectWeakPassword } = require("../utils/passwordPolicy");
++const {
++  isValidStudentId,
++  getDefaultDomain,
++  buildEmail,
++} = require("../services/accountCreation.service");
+ const MentorshipGroup = require("../models/MentorshipGroup");
+ const Attendance = require("../models/Attendance");
+ const Blog = require("../models/Blog");
+@@ -9,14 +14,83 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
+ const Student = require("../models/Student");
+ const { calculateMentorRating } = require("../services/rating.service");
+ 
++// Admin: create ONE mentor.
++// - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
++// - with a password: that password, which has to satisfy the strong password policy
+ const createMentor = async (req, res) => {
+   try {
+-    const { name, email, password, mentorStudentId, department } = req.body;
+-    if (rejectWeakPassword(res, password, { email, name })) return;
+-    const hashedPassword = await hashPassword(password);
+-    const user = await User.create({ name, email, password: hashedPassword, role: "MENTOR" });
+-    const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });
+-    res.status(201).json({ mentor });
++    const { name, password, mentorStudentId, department, expertise } = req.body;
++    let { email } = req.body;
++
++    if (!name || !String(name).trim()) return res.status(400).json({ message: "Name is required" });
++    if (!department || !String(department).trim()) {
++      return res.status(400).json({ message: "Department is required" });
++    }
++
++    const cleanId = String(mentorStudentId ?? "").trim();
++    if (!password && !isValidStudentId(cleanId)) {
++      return res.status(400).json({ message: "A 9-digit student ID is required to create temporary credentials" });
++    }
++    if (cleanId && !isValidStudentId(cleanId)) {
++      return res.status(400).json({ message: "Student ID must be 9 digits" });
++    }
++
++    if (!email) {
++      const domain = getDefaultDomain();
++      if (!domain || !cleanId) return res.status(400).json({ message: "Email is required" });
++      email = buildEmail(cleanId, domain);
++    }
++    email = String(email).toLowerCase().trim();
++
++    const [emailUsed, idUsed] = await Promise.all([
++      User.exists({ email }),
++      cleanId
++        ? Promise.all([
++            User.exists({ submittedStudentId: cleanId }),
++            Mentor.exists({ mentorStudentId: cleanId }),
++            Student.exists({ studentId: cleanId }),
++          ]).then((found) => found.some(Boolean))
++        : false,
++    ]);
++    if (emailUsed || idUsed) {
++      return res.status(409).json({ message: "This student ID or email is already registered" });
++    }
++
++    const temporary = !password;
++    if (!temporary && rejectWeakPassword(res, password, { email, name })) return;
++
++    const hashedPassword = temporary
++      ? await hashPassword(cleanId, 10)
++      : await hashPassword(password);
++
++    const user = await User.create({
++      name: String(name).trim(),
++      email,
++      password: hashedPassword,
++      role: "MENTOR",
++      submittedStudentId: cleanId || undefined,
++      batch: cleanId ? cleanId.slice(0, 3) : undefined,
++      mustChangePassword: temporary,
++    });
++
++    let mentor;
++    try {
++      mentor = await Mentor.create({
++        user: user._id,
++        mentorStudentId: cleanId || undefined,
++        batch: cleanId ? cleanId.slice(0, 3) : "",
++        department: String(department).trim(),
++        expertise: expertise ? String(expertise).trim() : undefined,
++      });
++    } catch (err) {
++      await User.deleteOne({ _id: user._id });
++      throw err;
++    }
++
++    res.status(201).json({
++      mentor,
++      ...(temporary ? { temporaryCredentials: { email, password: cleanId } } : {}),
++    });
+   } catch (err) {
+     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
+   }
+diff --git a/backend/src/controllers/student.controller.js b/backend/src/controllers/student.controller.js
+index 49a0b06..761405b 100644
+--- a/backend/src/controllers/student.controller.js
++++ b/backend/src/controllers/student.controller.js
+@@ -4,16 +4,82 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
+ const Mentor = require("../models/Mentor");
+ const MentorshipGroup = require("../models/MentorshipGroup");
+ const { rejectWeakPassword } = require("../utils/passwordPolicy");
++const {
++  MAX_BULK,
++  isValidStudentId,
++  normalizeDomain,
++  getDefaultDomain,
++  buildEmail,
++  findTakenIds,
++  createTemporaryStudent,
++  bulkCreateStudents: runBulkCreate,
++} = require("../services/accountCreation.service");
+ 
++// Admin: create ONE student.
++// - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
++// - with a password: that password, which has to satisfy the strong password policy
+ const createStudent = async (req, res) => {
+   try {
+-    const { name, email, password, studentId, department, batch } = req.body;
++    const { name, password, studentId, department, batch } = req.body;
++    let { email } = req.body;
++
++    if (!name || !String(name).trim()) return res.status(400).json({ message: "Name is required" });
++    if (!isValidStudentId(studentId)) {
++      return res.status(400).json({ message: "Student ID must be 9 digits" });
++    }
++    const cleanId = String(studentId).trim();
++
++    if (!email) {
++      const domain = getDefaultDomain();
++      if (!domain) return res.status(400).json({ message: "Email is required" });
++      email = buildEmail(cleanId, domain);
++    }
++    email = String(email).toLowerCase().trim();
++
++    const taken = await findTakenIds([cleanId], normalizeDomain(email.split("@")[1]) || getDefaultDomain() || "@x.invalid");
++    const emailUsed = await User.exists({ email });
++    if (taken.has(cleanId) || emailUsed) {
++      return res.status(409).json({ message: "This student ID or email is already registered" });
++    }
++
++    if (!password) {
++      const user = await createTemporaryStudent({
++        studentId: cleanId,
++        name: String(name).trim(),
++        email,
++        department: department || "",
++      });
++      const student = await Student.findOne({ user: user._id }).populate("user", "name email isActive");
++      return res.status(201).json({
++        student,
++        temporaryCredentials: { email, password: cleanId },
++      });
++    }
++
+     if (rejectWeakPassword(res, password, { email, name })) return;
+     const { hashPassword } = require("../utils/hashPassword");
+     const hashedPassword = await hashPassword(password);
+ 
+-    const user = await User.create({ name, email, password: hashedPassword, role: "STUDENT" });
+-    const student = await Student.create({ user: user._id, studentId, department, batch });
++    const user = await User.create({
++      name: String(name).trim(),
++      email,
++      password: hashedPassword,
++      role: "STUDENT",
++      submittedStudentId: cleanId,
++      batch: batch || cleanId.slice(0, 3),
++    });
++    let student;
++    try {
++      student = await Student.create({
++        user: user._id,
++        studentId: cleanId,
++        department,
++        batch: batch || cleanId.slice(0, 3),
++      });
++    } catch (err) {
++      await User.deleteOne({ _id: user._id });
++      throw err;
++    }
+ 
+     res.status(201).json({ student });
+   } catch (err) {
+@@ -21,6 +87,23 @@ const createStudent = async (req, res) => {
+   }
+ };
+ 
++// Admin: create many students from an ID range (e.g. 262034001 .. 262034035).
++// IDs that are already registered are skipped, the rest get temporary credentials.
++const bulkCreateStudents = async (req, res) => {
++  try {
++    const { startId, endId, department, emailDomain } = req.body;
++    const result = await runBulkCreate({ startId, endId, department, emailDomain });
++    res.status(result.status).json(result.body);
++  } catch (err) {
++    res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
++  }
++};
++
++// Admin: default email domain + limits for the bulk form
++const getBulkConfig = (req, res) => {
++  res.json({ emailDomain: getDefaultDomain() || "", maxPerRequest: MAX_BULK });
++};
++
+ const getStudents = async (req, res) => {
+   try {
+     const filter = {};
+@@ -210,4 +293,6 @@ module.exports = {
+   updateMyProfile,
+   uploadMyPhoto,
+   removeMyPhoto,
++  bulkCreateStudents,
++  getBulkConfig,
+ };
+\ No newline at end of file
+diff --git a/backend/src/middleware/auth.middleware.js b/backend/src/middleware/auth.middleware.js
+index 487976c..7c192b4 100644
+--- a/backend/src/middleware/auth.middleware.js
++++ b/backend/src/middleware/auth.middleware.js
+@@ -1,6 +1,9 @@
+ const jwt = require("jsonwebtoken");
+ const User = require("../models/User");
+ 
++// While a temporary password is still active, only these endpoints may be used
++const ALLOWED_WHILE_TEMPORARY = ["/api/auth/change-password", "/api/auth/me"];
++
+ const protect = async (req, res, next) => {
+   const authHeader = req.headers.authorization;
+   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+@@ -16,7 +19,7 @@ const protect = async (req, res, next) => {
+ 
+   try {
+     // always trust the database for role / active state, not only the token
+-    const user = await User.findById(decoded.id).select("role isActive passwordChangedAt");
++    const user = await User.findById(decoded.id).select("role isActive passwordChangedAt mustChangePassword");
+     if (!user || !user.isActive) {
+       return res.status(401).json({ message: "Account is not active" });
+     }
+@@ -26,6 +29,16 @@ const protect = async (req, res, next) => {
+       return res.status(401).json({ message: "Password was changed, please log in again" });
+     }
+ 
++    if (user.mustChangePassword) {
++      const path = req.originalUrl.split("?")[0].replace(/\/+$/, "");
++      if (!ALLOWED_WHILE_TEMPORARY.includes(path)) {
++        return res.status(403).json({
++          code: "PASSWORD_CHANGE_REQUIRED",
++          message: "Please change your temporary password first",
++        });
++      }
++    }
++
+     req.user = { id: user._id.toString(), role: user.role };
+     next();
+   } catch (err) {
+diff --git a/backend/src/models/User.js b/backend/src/models/User.js
+index 0d27ffb..3708809 100644
+--- a/backend/src/models/User.js
++++ b/backend/src/models/User.js
+@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema(
+     role: { type: String, enum: ["ADMIN", "MENTOR", "STUDENT"], required: true },
+     isActive: { type: Boolean, default: true },
+     passwordChangedAt: { type: Date }, // tokens issued before this moment are rejected
++    // true for accounts an admin created with a temporary password (= student ID):
++    // the user must choose their own password before using anything else
++    mustChangePassword: { type: Boolean, default: false },
+ 
+     submittedStudentId: { type: String }, // derived from email, e.g. "242034037"
+     batch: { type: String }, // first 3 digits, e.g. "242"
+diff --git a/backend/src/routes/student.routes.js b/backend/src/routes/student.routes.js
+index 2aafc20..d9c559e 100644
+--- a/backend/src/routes/student.routes.js
++++ b/backend/src/routes/student.routes.js
+@@ -15,11 +15,15 @@ const {
+   updateMyProfile,
+   uploadMyPhoto,
+   removeMyPhoto,
++  bulkCreateStudents,
++  getBulkConfig,
+ } = require("../controllers/student.controller");
+ 
+ router.use(protect);
+ 
+ router.post("/", authorize("ADMIN"), createStudent);
++router.post("/bulk", authorize("ADMIN"), bulkCreateStudents); // must stay above "/:id"
++router.get("/bulk/config", authorize("ADMIN"), getBulkConfig);
+ router.get("/", authorize("ADMIN", "MENTOR"), getStudents);
+ 
+ router.get("/me", authorize("STUDENT"), getMyProfile);
+diff --git a/backend/src/services/accountCreation.service.js b/backend/src/services/accountCreation.service.js
+new file mode 100644
+index 0000000..e333f99
+--- /dev/null
++++ b/backend/src/services/accountCreation.service.js
+@@ -0,0 +1,168 @@
++// Shared helpers for admin-created student / mentor accounts.
++// Temporary credentials: login email = <studentId>@<university domain>, password = <studentId>.
++// Such accounts are flagged mustChangePassword, so the temporary password only works
++// for the very first login (the user is forced to choose a strong one right after).
++
++const User = require("../models/User");
++const Student = require("../models/Student");
++const Mentor = require("../models/Mentor");
++const { hashPassword } = require("../utils/hashPassword");
++
++const ID_PATTERN = /^\d{9}$/;
++const MAX_BULK = 200; // one request creates at most this many accounts
++const TEMP_PASSWORD_ROUNDS = 10; // cheaper hash: the temporary password is replaced on first login
++const CHUNK_SIZE = 8;
++
++const isValidStudentId = (value) => ID_PATTERN.test(String(value ?? "").trim());
++
++// "@diu.edu.bd" / "diu.edu.bd" -> "@diu.edu.bd"; returns null when it is not a plausible domain
++const normalizeDomain = (value) => {
++  const text = String(value ?? "").trim().toLowerCase().replace(/^@/, "");
++  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(text) ? `@${text}` : null;
++};
++
++const getDefaultDomain = () => normalizeDomain(process.env.ALLOWED_STUDENT_EMAIL_DOMAIN);
++
++const buildEmail = (studentId, domain) => `${studentId}${domain}`;
++
++// Returns { ids } or { error }
++const expandIdRange = (startId, endId) => {
++  const start = String(startId ?? "").trim();
++  const end = String(endId ?? "").trim();
++
++  if (!isValidStudentId(start) || !isValidStudentId(end)) {
++    return { error: "Start ID and end ID must both be 9-digit student IDs" };
++  }
++  const from = Number(start);
++  const to = Number(end);
++  if (from > to) return { error: "Start ID must not be greater than end ID" };
++
++  const count = to - from + 1;
++  if (count > MAX_BULK) {
++    return { error: `You can create at most ${MAX_BULK} accounts at a time (this range has ${count})` };
++  }
++
++  const ids = [];
++  for (let n = from; n <= to; n++) ids.push(String(n).padStart(9, "0"));
++  return { ids };
++};
++
++// Which of these student IDs are already in use (as a user, a student or a mentor)?
++const findTakenIds = async (ids, domain) => {
++  const emails = ids.map((id) => buildEmail(id, domain));
++  const [users, students, mentors] = await Promise.all([
++    User.find({ $or: [{ email: { $in: emails } }, { submittedStudentId: { $in: ids } }] }).select(
++      "email submittedStudentId"
++    ),
++    Student.find({ studentId: { $in: ids } }).select("studentId"),
++    Mentor.find({ mentorStudentId: { $in: ids } }).select("mentorStudentId"),
++  ]);
++
++  const taken = new Set();
++  users.forEach((u) => {
++    if (u.submittedStudentId) taken.add(u.submittedStudentId);
++    const local = String(u.email || "").split("@")[0];
++    if (ID_PATTERN.test(local)) taken.add(local);
++  });
++  students.forEach((s) => taken.add(s.studentId));
++  mentors.forEach((m) => m.mentorStudentId && taken.add(m.mentorStudentId));
++  return taken;
++};
++
++// Creates one student account (user + student profile). Rolls the user back if the profile fails.
++const createTemporaryStudent = async ({ studentId, name, email, department = "" }) => {
++  const user = await User.create({
++    name: name || studentId, // the student can add their real name on first login
++    email,
++    password: await hashPassword(studentId, TEMP_PASSWORD_ROUNDS),
++    role: "STUDENT",
++    isActive: true,
++    submittedStudentId: studentId,
++    batch: studentId.slice(0, 3),
++    mustChangePassword: true,
++  });
++
++  try {
++    await Student.create({
++      user: user._id,
++      studentId,
++      department,
++      batch: studentId.slice(0, 3),
++    });
++  } catch (err) {
++    await User.deleteOne({ _id: user._id });
++    throw err;
++  }
++  return user;
++};
++
++// Creates accounts for every free ID in the range, skipping IDs that already exist.
++const bulkCreateStudents = async ({ startId, endId, department = "", emailDomain }) => {
++  const domain = normalizeDomain(emailDomain) || getDefaultDomain();
++  if (!domain) {
++    return { status: 400, body: { message: "Email domain is required (for example @diu.edu.bd)" } };
++  }
++
++  const range = expandIdRange(startId, endId);
++  if (range.error) return { status: 400, body: { message: range.error } };
++
++  const taken = await findTakenIds(range.ids, domain);
++  const freeIds = range.ids.filter((id) => !taken.has(id));
++
++  const created = [];
++  const failed = [];
++  const cleanDepartment = String(department || "").trim().slice(0, 100);
++
++  for (let i = 0; i < freeIds.length; i += CHUNK_SIZE) {
++    const chunk = freeIds.slice(i, i + CHUNK_SIZE);
++    const results = await Promise.allSettled(
++      chunk.map((studentId) =>
++        createTemporaryStudent({
++          studentId,
++          email: buildEmail(studentId, domain),
++          department: cleanDepartment,
++        })
++      )
++    );
++    results.forEach((result, index) => {
++      const studentId = chunk[index];
++      if (result.status === "fulfilled") {
++        created.push({ studentId, email: buildEmail(studentId, domain) });
++      } else {
++        failed.push({ studentId, reason: "Could not be created" });
++      }
++    });
++  }
++
++  const skipped = range.ids
++    .filter((id) => taken.has(id))
++    .map((studentId) => ({ studentId, reason: "Already registered" }));
++
++  return {
++    status: 201,
++    body: {
++      summary: {
++        requested: range.ids.length,
++        created: created.length,
++        skipped: skipped.length,
++        failed: failed.length,
++      },
++      created,
++      skipped,
++      failed,
++      note: "Login email is the student ID + domain and the temporary password is the student ID. Students must change it on first login.",
++    },
++  };
++};
++
++module.exports = {
++  MAX_BULK,
++  isValidStudentId,
++  normalizeDomain,
++  getDefaultDomain,
++  buildEmail,
++  expandIdRange,
++  findTakenIds,
++  createTemporaryStudent,
++  bulkCreateStudents,
++};
+diff --git a/backend/src/utils/hashPassword.js b/backend/src/utils/hashPassword.js
+index fb209bc..3bbe8cd 100644
+--- a/backend/src/utils/hashPassword.js
++++ b/backend/src/utils/hashPassword.js
+@@ -1,7 +1,7 @@
+ const bcrypt = require("bcryptjs");
+ 
+-const hashPassword = async (plainPassword) => {
+-  const salt = await bcrypt.genSalt(12);
++const hashPassword = async (plainPassword, rounds = 12) => {
++  const salt = await bcrypt.genSalt(rounds);
+   return bcrypt.hash(plainPassword, salt);
+ };
+ 

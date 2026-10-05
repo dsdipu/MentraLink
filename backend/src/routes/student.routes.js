@@ -15,11 +15,15 @@ const {
   updateMyProfile,
   uploadMyPhoto,
   removeMyPhoto,
+  bulkCreateStudents,
+  getBulkConfig,
 } = require("../controllers/student.controller");
 
 router.use(protect);
 
 router.post("/", authorize("ADMIN"), createStudent);
+router.post("/bulk", authorize("ADMIN"), bulkCreateStudents); // must stay above "/:id"
+router.get("/bulk/config", authorize("ADMIN"), getBulkConfig);
 router.get("/", authorize("ADMIN", "MENTOR"), getStudents);
 
 router.get("/me", authorize("STUDENT"), getMyProfile);

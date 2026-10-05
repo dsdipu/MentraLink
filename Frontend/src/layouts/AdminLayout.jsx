@@ -16,6 +16,7 @@ import {
   Star,
   ShieldCheck,
   UserSquare2,
+  UserPlus,
   Layers,
   X,
   Menu,
@@ -32,6 +33,7 @@ const navItems = [
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
   { to: "/admin/students", label: "Students", icon: UserSquare2 },
+  { to: "/admin/mentor-accounts", label: "Mentor Accounts", icon: UserPlus },
   { to: "/admin/groups", label: "Groups", icon: Layers },
 ];
 

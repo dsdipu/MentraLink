@@ -2,6 +2,11 @@ const Mentor = require("../models/Mentor");
 const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
+const {
+  isValidStudentId,
+  getDefaultDomain,
+  buildEmail,
+} = require("../services/accountCreation.service");
 const MentorshipGroup = require("../models/MentorshipGroup");
 const Attendance = require("../models/Attendance");
 const Blog = require("../models/Blog");
@@ -9,14 +14,83 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
 const Student = require("../models/Student");
 const { calculateMentorRating } = require("../services/rating.service");
 
+// Admin: create ONE mentor.
+// - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
+// - with a password: that password, which has to satisfy the strong password policy
 const createMentor = async (req, res) => {
   try {
-    const { name, email, password, mentorStudentId, department } = req.body;
-    if (rejectWeakPassword(res, password, { email, name })) return;
-    const hashedPassword = await hashPassword(password);
-    const user = await User.create({ name, email, password: hashedPassword, role: "MENTOR" });
-    const mentor = await Mentor.create({ user: user._id, mentorStudentId, department });
-    res.status(201).json({ mentor });
+    const { name, password, mentorStudentId, department, expertise } = req.body;
+    let { email } = req.body;
+
+    if (!name || !String(name).trim()) return res.status(400).json({ message: "Name is required" });
+    if (!department || !String(department).trim()) {
+      return res.status(400).json({ message: "Department is required" });
+    }
+
+    const cleanId = String(mentorStudentId ?? "").trim();
+    if (!password && !isValidStudentId(cleanId)) {
+      return res.status(400).json({ message: "A 9-digit student ID is required to create temporary credentials" });
+    }
+    if (cleanId && !isValidStudentId(cleanId)) {
+      return res.status(400).json({ message: "Student ID must be 9 digits" });
+    }
+
+    if (!email) {
+      const domain = getDefaultDomain();
+      if (!domain || !cleanId) return res.status(400).json({ message: "Email is required" });
+      email = buildEmail(cleanId, domain);
+    }
+    email = String(email).toLowerCase().trim();
+
+    const [emailUsed, idUsed] = await Promise.all([
+      User.exists({ email }),
+      cleanId
+        ? Promise.all([
+            User.exists({ submittedStudentId: cleanId }),
+            Mentor.exists({ mentorStudentId: cleanId }),
+            Student.exists({ studentId: cleanId }),
+          ]).then((found) => found.some(Boolean))
+        : false,
+    ]);
+    if (emailUsed || idUsed) {
+      return res.status(409).json({ message: "This student ID or email is already registered" });
+    }
+
+    const temporary = !password;
+    if (!temporary && rejectWeakPassword(res, password, { email, name })) return;
+
+    const hashedPassword = temporary
+      ? await hashPassword(cleanId, 10)
+      : await hashPassword(password);
+
+    const user = await User.create({
+      name: String(name).trim(),
+      email,
+      password: hashedPassword,
+      role: "MENTOR",
+      submittedStudentId: cleanId || undefined,
+      batch: cleanId ? cleanId.slice(0, 3) : undefined,
+      mustChangePassword: temporary,
+    });
+
+    let mentor;
+    try {
+      mentor = await Mentor.create({
+        user: user._id,
+        mentorStudentId: cleanId || undefined,
+        batch: cleanId ? cleanId.slice(0, 3) : "",
+        department: String(department).trim(),
+        expertise: expertise ? String(expertise).trim() : undefined,
+      });
+    } catch (err) {
+      await User.deleteOne({ _id: user._id });
+      throw err;
+    }
+
+    res.status(201).json({
+      mentor,
+      ...(temporary ? { temporaryCredentials: { email, password: cleanId } } : {}),
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }

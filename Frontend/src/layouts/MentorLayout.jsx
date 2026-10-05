@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   LogOut,
+  KeyRound,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { to: "/mentor/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/mentor/evaluation", label: "Evaluation", icon: Star },
   { to: "/mentor/blogs", label: "Blogs", icon: Newspaper },
+  { to: "/mentor/change-password", label: "Change Password", icon: KeyRound },
 ];
 
 const MentorLayout = () => {
