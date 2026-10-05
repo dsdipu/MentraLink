@@ -13,6 +13,11 @@ export const unassignStudent = (id, studentId) =>
   api
     .patch(`/groups/${id}/unassign-student`, { studentId })
     .then((r) => r.data.group);
+// Student-ID ranges of a section, e.g. [{ start: "262034001", end: "262034017" }]
+export const setGroupRanges = (id, ranges, moveExisting = false) =>
+  api.put(`/groups/${id}/ranges`, { ranges, moveExisting }).then((r) => r.data);
+export const applyGroupRanges = (id, moveExisting = false) =>
+  api.post(`/groups/${id}/apply-ranges`, { moveExisting }).then((r) => r.data);
 export const deleteGroup = (id) =>
   api.delete(`/groups/${id}`).then((r) => r.data);
 

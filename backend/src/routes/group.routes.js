@@ -11,6 +11,8 @@ const {
   unassignStudent,
   assignStudents,
   deleteGroup,
+  setGroupRanges,
+  applyRanges,
 } = require("../controllers/group.controller");
 const { getMyGroup } = require("../controllers/group.controller"); // already imported above, just add to destructure
 
@@ -28,6 +30,8 @@ router.patch(
   authorize("ADMIN"),
   unassignStudent
 );
+router.put("/:id/ranges", authorize("ADMIN"), setGroupRanges);
+router.post("/:id/apply-ranges", authorize("ADMIN"), applyRanges);
 router.delete("/:id", authorize("ADMIN"), deleteGroup);
 
 module.exports = router;

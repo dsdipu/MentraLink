@@ -7,6 +7,7 @@ const User = require("../models/User");
 const Student = require("../models/Student");
 const Mentor = require("../models/Mentor");
 const { hashPassword } = require("../utils/hashPassword");
+const { autoAssignStudent } = require("./groupRanges.service");
 
 const ID_PATTERN = /^\d{9}$/;
 const MAX_BULK = 200; // one request creates at most this many accounts
@@ -82,8 +83,9 @@ const createTemporaryStudent = async ({ studentId, name, email, department = "" 
     mustChangePassword: true,
   });
 
+  let student;
   try {
-    await Student.create({
+    student = await Student.create({
       user: user._id,
       studentId,
       department,
@@ -93,7 +95,10 @@ const createTemporaryStudent = async ({ studentId, name, email, department = "" 
     await User.deleteOne({ _id: user._id });
     throw err;
   }
-  return user;
+
+  // if the ID falls inside a section's range, the student joins that section right away
+  const section = await autoAssignStudent(student);
+  return { user, student, section };
 };
 
 // Creates accounts for every free ID in the range, skipping IDs that already exist.
@@ -127,7 +132,11 @@ const bulkCreateStudents = async ({ startId, endId, department = "", emailDomain
     results.forEach((result, index) => {
       const studentId = chunk[index];
       if (result.status === "fulfilled") {
-        created.push({ studentId, email: buildEmail(studentId, domain) });
+        created.push({
+          studentId,
+          email: buildEmail(studentId, domain),
+          section: result.value.section || null,
+        });
       } else {
         failed.push({ studentId, reason: "Could not be created" });
       }
@@ -144,6 +153,7 @@ const bulkCreateStudents = async ({ startId, endId, department = "", emailDomain
       summary: {
         requested: range.ids.length,
         created: created.length,
+        autoAssigned: created.filter((c) => c.section).length,
         skipped: skipped.length,
         failed: failed.length,
       },

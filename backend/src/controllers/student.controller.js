@@ -14,6 +14,7 @@ const {
   createTemporaryStudent,
   bulkCreateStudents: runBulkCreate,
 } = require("../services/accountCreation.service");
+const { autoAssignStudent } = require("../services/groupRanges.service");
 
 // Admin: create ONE student.
 // - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
@@ -43,7 +44,7 @@ const createStudent = async (req, res) => {
     }
 
     if (!password) {
-      const user = await createTemporaryStudent({
+      const { user, section } = await createTemporaryStudent({
         studentId: cleanId,
         name: String(name).trim(),
         email,
@@ -52,6 +53,7 @@ const createStudent = async (req, res) => {
       const student = await Student.findOne({ user: user._id }).populate("user", "name email isActive");
       return res.status(201).json({
         student,
+        assignedSection: section,
         temporaryCredentials: { email, password: cleanId },
       });
     }
@@ -81,7 +83,8 @@ const createStudent = async (req, res) => {
       throw err;
     }
 
-    res.status(201).json({ student });
+    const section = await autoAssignStudent(student);
+    res.status(201).json({ student, assignedSection: section });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
   }
@@ -110,7 +113,10 @@ const getStudents = async (req, res) => {
     if (req.query.batch) filter.batch = req.query.batch;
     if (req.query.studentId) filter.studentId = { $regex: req.query.studentId, $options: "i" };
 
-    const students = await Student.find(filter).populate("user", "name email isActive");
+    // always in student-ID order so the list reads serially
+    const students = await Student.find(filter)
+      .populate("user", "name email isActive")
+      .sort({ studentId: 1 });
     res.json({ students });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });

@@ -11,6 +11,8 @@ import {
 import { getAllMentors } from "../services/mentorService";
 import { getAllStudents } from "../services/studentService";
 import { getSemesters } from "../services/semesterService";
+import SectionRanges from "../components/SectionRanges";
+import AddMentorPanel from "../components/AddMentorPanel";
 
 const MentorAssignment = () => {
   const [groups, setGroups] = useState([]);
@@ -22,6 +24,7 @@ const MentorAssignment = () => {
   const [error, setError] = useState("");
 
   const [showForm, setShowForm] = useState(false);
+  const [showMentorForm, setShowMentorForm] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -107,13 +110,17 @@ const MentorAssignment = () => {
       return [];
     }
 
-    return students.filter(
-      (student) =>
-        student.batch === sectionBatch &&
-        !assignedStudentIds.has(
-          student._id.toString()
-        )
-    );
+    return students
+      .filter(
+        (student) =>
+          student.batch === sectionBatch &&
+          !assignedStudentIds.has(
+            student._id.toString()
+          )
+      )
+      .sort((a, b) =>
+        String(a.studentId).localeCompare(String(b.studentId))
+      );
   };
 
   const setActionLoadingState = (key, value) => {
@@ -366,17 +373,34 @@ const MentorAssignment = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm((prev) => !prev);
-            setError("");
-          }}
-          className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 sm:w-auto"
-        >
-          {showForm ? "Cancel" : "+ New Section"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => {
+              setShowMentorForm((prev) => !prev);
+              setError("");
+            }}
+            className="w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50 sm:w-auto"
+          >
+            {showMentorForm ? "Close" : "+ New Mentor"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm((prev) => !prev);
+              setError("");
+            }}
+            className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 sm:w-auto"
+          >
+            {showForm ? "Cancel" : "+ New Section"}
+          </button>
+        </div>
       </div>
+
+      {showMentorForm && (
+        <AddMentorPanel onClose={() => setShowMentorForm(false)} onDone={loadAll} />
+      )}
 
       {error && (
         <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -732,6 +756,8 @@ const MentorAssignment = () => {
                   </div>
                 </div>
 
+                <SectionRanges section={section} onChanged={loadAll} />
+
                 {!section.semester && (
                   <div className="mt-5 rounded-md border border-red-200 bg-red-50 p-3">
                     <p className="text-sm font-medium text-red-700">
@@ -799,7 +825,13 @@ const MentorAssignment = () => {
 
                   {section.students?.length > 0 ? (
                     <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {section.students.map(
+                      {[...section.students]
+                        .sort((a, b) =>
+                          String(a.studentId).localeCompare(
+                            String(b.studentId)
+                          )
+                        )
+                        .map(
                         (student) => {
                           const unassignLoading =
                             actionLoading[

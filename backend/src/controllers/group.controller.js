@@ -1,4 +1,9 @@
 const MentorshipGroup = require("../models/MentorshipGroup");
+const {
+  normalizeRanges,
+  findOverlapWithOtherGroups,
+  applyGroupRanges,
+} = require("../services/groupRanges.service");
 
 const getSemesterModel = () => require("../models/Semester");
 const getMentorModel = () => require("../models/Mentor");
@@ -755,7 +760,68 @@ const deleteGroup = async (req, res) => {
   }
 };
 
+const populateGroup = (id) =>
+  MentorshipGroup.findById(id)
+    .populate("semester", "name academicYear status batch")
+    .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
+    .populate({ path: "students", populate: { path: "user", select: "name email" } });
+
+// Admin: save the student-ID ranges of a section and assign everyone inside them right away.
+// Body: { ranges: [{ start, end }], moveExisting?: boolean }
+const setGroupRanges = async (req, res) => {
+  try {
+    const group = await MentorshipGroup.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: "Section not found" });
+
+    if (group.status !== "ACTIVE") {
+      return res.status(400).json({ message: "Ranges can only be set on an active section" });
+    }
+
+    const normalized = normalizeRanges(req.body.ranges);
+    if (normalized.error) return res.status(400).json({ message: normalized.error });
+
+    const overlap = await findOverlapWithOtherGroups(group, normalized.ranges);
+    if (overlap) return res.status(400).json({ message: overlap });
+
+    group.studentIdRanges = normalized.ranges;
+    await group.save();
+
+    const result = await applyGroupRanges(group, { moveExisting: !!req.body.moveExisting });
+    res.json({ group: await populateGroup(group._id), result });
+  } catch (err) {
+    res.status(500).json({
+      message: "Server error",
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+    });
+  }
+};
+
+// Admin: one click, assign everyone inside the already-saved ranges (e.g. after new students joined)
+const applyRanges = async (req, res) => {
+  try {
+    const group = await MentorshipGroup.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: "Section not found" });
+
+    if (group.status !== "ACTIVE") {
+      return res.status(400).json({ message: "Ranges can only be applied to an active section" });
+    }
+    if (!group.studentIdRanges || group.studentIdRanges.length === 0) {
+      return res.status(400).json({ message: "This section has no student ID ranges yet" });
+    }
+
+    const result = await applyGroupRanges(group, { moveExisting: !!req.body?.moveExisting });
+    res.json({ group: await populateGroup(group._id), result });
+  } catch (err) {
+    res.status(500).json({
+      message: "Server error",
+      error: process.env.NODE_ENV === "production" ? undefined : err.message,
+    });
+  }
+};
+
 module.exports = {
+  setGroupRanges,
+  applyRanges,
   createGroup,
   getGroups,
   getGroupById,

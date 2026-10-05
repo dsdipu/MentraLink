@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAllStudents, updateStudent } from "../services/studentService";
 import Badge from "../components/ui/Badge";
 import { Search, Pencil, Check, X, UserPlus, Users } from "lucide-react";
 import { AddStudentPanel, BulkStudentsPanel } from "../components/StudentCreation";
 
 const AdminStudents = () => {
-  const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [batchFilter, setBatchFilter] = useState("");
   const [idSearch, setIdSearch] = useState("");
@@ -19,21 +19,19 @@ const AdminStudents = () => {
   const [error, setError] = useState("");
   const [panel, setPanel] = useState(null); // null | "add" | "bulk"
 
+  // everything is loaded once (always in student-ID order); filtering happens locally,
+  // so the totals below stay correct whichever batch is selected
   const load = () => {
     setLoading(true);
 
-    const params = {};
-
-    if (batchFilter) {
-      params.batch = batchFilter;
-    }
-
-    if (idSearch) {
-      params.studentId = idSearch;
-    }
-
-    getAllStudents(params)
-      .then(setStudents)
+    getAllStudents()
+      .then((list) =>
+        setAllStudents(
+          [...list].sort((a, b) =>
+            String(a.studentId).localeCompare(String(b.studentId))
+          )
+        )
+      )
       .catch((err) => {
         setError(
           err.response?.data?.message ||
@@ -45,11 +43,32 @@ const AdminStudents = () => {
 
   useEffect(() => {
     load();
-  }, [batchFilter]);
+  }, []);
+
+  const students = useMemo(() => {
+    const term = idSearch.trim().toLowerCase();
+
+    return allStudents.filter((student) => {
+      if (batchFilter && student.batch !== batchFilter) return false;
+      if (!term) return true;
+
+      return (
+        String(student.studentId || "").toLowerCase().includes(term) ||
+        String(student.user?.name || "").toLowerCase().includes(term)
+      );
+    });
+  }, [allStudents, batchFilter, idSearch]);
+
+  const batchTotal = useMemo(
+    () =>
+      batchFilter
+        ? allStudents.filter((student) => student.batch === batchFilter).length
+        : 0,
+    [allStudents, batchFilter]
+  );
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    load();
+    e.preventDefault(); // results update as you type
   };
 
   const startEdit = (student) => {
@@ -88,7 +107,7 @@ const AdminStudents = () => {
 
   const batches = [
     ...new Set(
-      students
+      allStudents
         .map((student) => student.batch)
         .filter(Boolean)
     ),
@@ -142,17 +161,11 @@ const AdminStudents = () => {
               onChange={(e) =>
                 setIdSearch(e.target.value)
               }
-              placeholder="Search by student ID"
+              placeholder="Search by ID or name"
               className="w-full rounded-md border px-3 py-2 pl-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-56"
             />
           </div>
 
-          <button
-            type="submit"
-            className="shrink-0 rounded-md bg-gray-800 px-3 py-2 text-sm text-white hover:bg-gray-900"
-          >
-            Search
-          </button>
         </form>
 
         <select
@@ -176,6 +189,26 @@ const AdminStudents = () => {
         <p className="mb-3 text-sm text-red-500">
           {error}
         </p>
+      )}
+
+      {!loading && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-gray-800 px-3 py-1 font-medium text-white">
+            All students: {allStudents.length}
+          </span>
+
+          {batchFilter && (
+            <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700">
+              Batch {batchFilter}: {batchTotal}
+            </span>
+          )}
+
+          {idSearch.trim() && (
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
+              {students.length} match{students.length === 1 ? "" : "es"}
+            </span>
+          )}
+        </div>
       )}
 
       {loading ? (

@@ -6,6 +6,7 @@ const { comparePassword, hashPassword } = require("../utils/hashPassword");
 const generateToken = require("../utils/generateToken");
 const { uploadIdCard, getIdCardUrl, deleteIdCard } = require("../utils/idCard");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
+const { autoAssignStudent } = require("../services/groupRanges.service");
 
 // A "pending registration" is an inactive STUDENT/MENTOR account that has not been
 // approved yet (so it has no Student/Mentor profile). Deactivated, already-approved
@@ -134,12 +135,14 @@ const approveUser = async (req, res) => {
           const count = await Student.countDocuments();
           studentId = `SWE${String(count + 1).padStart(3, "0")}`;
         }
-        await Student.create({
+        const createdStudent = await Student.create({
           user: user._id,
           studentId,
           department: "Software Engineering",
           batch: user.batch || "",
         });
+        // joins the section whose student-ID range contains this ID (if any)
+        await autoAssignStudent(createdStudent);
       }
     } else if (user.role === "MENTOR") {
       const existing = await Mentor.findOne({ user: user._id });
