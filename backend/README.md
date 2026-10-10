@@ -536,3 +536,13 @@ MentraLink was developed collaboratively as a Software Engineering project.
 <p align="center">
   MentraLink Backend · Node.js + Express + MongoDB
 </p>
+
+## Maintenance scripts
+
+Run these from the `backend` folder. They are not part of the running server.
+
+| Command | What it does |
+|---|---|
+| `node scripts/seed-admin.js` | Creates the first admin from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` (the password must be strong) |
+| `node scripts/cleanup-orphans.js` | Removes student and mentor profiles whose user account no longer exists |
+| `node scripts/cleanup-demo-data.js --confirm` | **Deletes all data except admins and semesters.** Needs `--confirm`, and refuses to run in production |

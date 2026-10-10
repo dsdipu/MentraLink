@@ -1,17 +1,38 @@
-require("dotenv").config();
+// DANGER: deletes EVERYTHING except admin accounts and semesters
+// (students, mentors, sessions, sections, attendance, feedback, evaluations, blogs, comments, codes).
+// It does nothing unless you explicitly confirm:
+//
+//   node scripts/cleanup-demo-data.js --confirm
+//
+// and it refuses to run when NODE_ENV=production (unless --allow-production is added as well).
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env"),
+});
+
+const args = process.argv.slice(2);
+if (!args.includes("--confirm")) {
+  console.error("This script deletes all demo data (everything except admins and semesters).");
+  console.error("Run it again with --confirm if that is really what you want.");
+  process.exit(1);
+}
+if (process.env.NODE_ENV === "production" && !args.includes("--allow-production")) {
+  console.error("Refusing to run with NODE_ENV=production. Add --allow-production only if you are absolutely sure.");
+  process.exit(1);
+}
+
 const mongoose = require("mongoose");
 
-const User = require("../models/User");
-const Student = require("../models/Student");
-const Mentor = require("../models/Mentor");
-const Blog = require("../models/Blog");
-const Comment = require("../models/Comment");
-const Attendance = require("../models/Attendance");
-const Feedback = require("../models/Feedback");
-const MentorEvaluation = require("../models/MentorEvaluation");
-const Session = require("../models/Session");
-const MentorshipGroup = require("../models/MentorshipGroup");
-const Otp = require("../models/Otp");
+const User = require("../src/models/User");
+const Student = require("../src/models/Student");
+const Mentor = require("../src/models/Mentor");
+const Blog = require("../src/models/Blog");
+const Comment = require("../src/models/Comment");
+const Attendance = require("../src/models/Attendance");
+const Feedback = require("../src/models/Feedback");
+const MentorEvaluation = require("../src/models/MentorEvaluation");
+const Session = require("../src/models/Session");
+const MentorshipGroup = require("../src/models/MentorshipGroup");
+const Otp = require("../src/models/Otp");
 
 const run = async () => {
   try {
