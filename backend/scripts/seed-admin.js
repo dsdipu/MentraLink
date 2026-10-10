@@ -1,12 +1,13 @@
-require("dotenv").config();
+// Creates the first admin account from ADMIN_EMAIL / ADMIN_PASSWORD in backend/.env
+// Run from the backend folder:  node scripts/seed-admin.js
 require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env"),
+  path: require("path").resolve(__dirname, "../.env"),
 });
 
 const mongoose = require("mongoose");
-const User = require("../models/User");
-const { hashPassword } = require("./hashPassword");
-const { getPasswordIssues } = require("./passwordPolicy");
+const User = require("../src/models/User");
+const { hashPassword } = require("../src/utils/hashPassword");
+const { getPasswordIssues } = require("../src/utils/passwordPolicy");
 
 const seedAdmin = async () => {
   try {

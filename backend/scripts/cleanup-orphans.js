@@ -1,9 +1,14 @@
-require("dotenv").config();
+// Removes student / mentor profiles whose user account no longer exists,
+// and cleans them out of mentorship sections.
+// Run from the backend folder:  node scripts/cleanup-orphans.js
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env"),
+});
 const mongoose = require("mongoose");
-const User = require("../models/User");
-const Student = require("../models/Student");
-const Mentor = require("../models/Mentor");
-const MentorshipGroup = require("../models/MentorshipGroup");
+const User = require("../src/models/User");
+const Student = require("../src/models/Student");
+const Mentor = require("../src/models/Mentor");
+const MentorshipGroup = require("../src/models/MentorshipGroup");
 
 const run = async () => {
   await mongoose.connect(process.env.MONGO_URI);

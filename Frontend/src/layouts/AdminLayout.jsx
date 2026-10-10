@@ -47,7 +47,9 @@ const AdminLayout = () => {
       try {
         const count = await getPendingCount();
         setPendingCount(count);
-      } catch {}
+      } catch {
+        // the badge is optional: ignore a failed request
+      }
     };
 
     loadPendingCount();
