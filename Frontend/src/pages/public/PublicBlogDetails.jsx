@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getBlogById } from "../../services/blogService";
 import BlogContent from "../../components/BlogContent";
+import { safeUrl } from "../../utils/safeUrl";
 
 const PublicBlogDetails = () => {
   const { id } = useParams();
@@ -17,8 +18,8 @@ const PublicBlogDetails = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
-      {blog.coverImage && (
-        <img src={blog.coverImage} alt={blog.title} className="w-full rounded-xl mb-6" />
+      {safeUrl(blog.coverImage) && (
+        <img src={safeUrl(blog.coverImage)} alt={blog.title} className="w-full rounded-xl mb-6" />
       )}
 
       <p className="text-xs text-brand-blue mb-2">{blog.category}</p>
@@ -31,8 +32,8 @@ const PublicBlogDetails = () => {
         <div className="mt-8">
           <p className="text-sm font-medium text-gray-600 mb-2">Gallery</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {blog.images.map((img, i) => (
-              <img key={i} src={img} alt="" className="w-full h-28 object-cover rounded-md" />
+            {blog.images.filter((img) => safeUrl(img)).map((img, i) => (
+              <img key={i} src={safeUrl(img)} alt="" className="w-full h-28 object-cover rounded-md" />
             ))}
           </div>
         </div>
@@ -42,9 +43,9 @@ const PublicBlogDetails = () => {
         <div className="mt-8">
           <p className="text-sm font-medium text-gray-600 mb-2">Links</p>
           <ul className="space-y-1">
-            {blog.links.map((l, i) => (
+            {blog.links.filter((l) => safeUrl(l.url)).map((l, i) => (
               <li key={i}>
-                <a href={l.url} target="_blank" rel="noreferrer" className="text-brand-blue text-sm hover:underline">
+                <a href={safeUrl(l.url)} target="_blank" rel="noopener noreferrer" className="text-brand-blue text-sm hover:underline">
                   {l.label || l.url}
                 </a>
               </li>

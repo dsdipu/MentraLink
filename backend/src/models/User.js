@@ -11,6 +11,11 @@ const userSchema = new mongoose.Schema(
     // true for accounts an admin created with a temporary password (= student ID):
     // the user must choose their own password before using anything else
     mustChangePassword: { type: Boolean, default: false },
+    // brute-force protection
+    failedLoginAttempts: { type: Number, default: 0 },
+    lastFailedLoginAt: { type: Date },
+    lockUntil: { type: Date },
+    lockCount: { type: Number, default: 0 },
 
     submittedStudentId: { type: String }, // derived from email, e.g. "242034037"
     batch: { type: String }, // first 3 digits, e.g. "242"

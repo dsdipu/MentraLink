@@ -8,6 +8,10 @@ const securityHeaders = (req, res, next) => {
   res.setHeader("X-DNS-Prefetch-Control", "off");
   res.setHeader("Cross-Origin-Resource-Policy", "same-site");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // the API only returns JSON, so it needs no scripts, frames or resources at all
+  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  // responses can contain personal data: keep them out of shared/browser caches
+  res.setHeader("Cache-Control", "no-store");
   if (process.env.NODE_ENV === "production") {
     res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
   }

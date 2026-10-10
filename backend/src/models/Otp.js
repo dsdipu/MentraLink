@@ -5,6 +5,7 @@ const otpSchema = new mongoose.Schema(
     email: { type: String, required: true, lowercase: true, index: true },
     code: { type: String, required: true },
     verified: { type: Boolean, default: false },
+    attempts: { type: Number, default: 0 }, // wrong guesses against this code
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true }

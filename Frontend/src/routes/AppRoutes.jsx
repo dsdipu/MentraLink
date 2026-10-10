@@ -40,6 +40,7 @@ import AdminManageAdmins from "../pages/AdminManageAdmins";
 import AdminProfile from "../pages/AdminProfile";
 import AdminGroups from "../pages/AdminGroups";
 import ChangePassword from "../pages/ChangePassword";
+import AdminAuditLog from "../pages/AdminAuditLog";
 
 // Public
 import PublicLayout from "../layouts/PublicLayout";
@@ -92,6 +93,7 @@ const AppRoutes = () => {
           <Route path="/admin/semesters" element={<Semesters />} />
           <Route path="/admin/mentors" element={<Mentors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/audit-log" element={<AdminAuditLog />} />
           <Route path="/admin/sessions" element={<AdminSessions />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />

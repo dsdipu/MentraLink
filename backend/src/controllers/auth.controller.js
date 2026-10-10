@@ -7,6 +7,9 @@ const generateToken = require("../utils/generateToken");
 const { uploadIdCard, getIdCardUrl, deleteIdCard } = require("../utils/idCard");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
 const { autoAssignStudent } = require("../services/groupRanges.service");
+const { authenticate, clearLoginLock } = require("../services/loginSecurity.service");
+const { generateOtpCode, checkOtp, requestedRecently } = require("../utils/otpGuard");
+const audit = require("../utils/audit");
 
 // A "pending registration" is an inactive STUDENT/MENTOR account that has not been
 // approved yet (so it has no Student/Mentor profile). Deactivated, already-approved
@@ -169,8 +172,12 @@ const approveUser = async (req, res) => {
       }
     }
 
+    await audit(req, "USER_APPROVED", { target: `${user.email} (${user.role})` });
+
     const safeUser = user.toObject();
     delete safeUser.password;
+    delete safeUser.failedLoginAttempts;
+    delete safeUser.lockUntil;
     res.json({ message: "User approved", user: safeUser });
   } catch (err) {
     if (err.code === 11000) {
@@ -223,6 +230,8 @@ const rejectUser = async (req, res) => {
       console.error(`ID card ${user.idCardPublicId} of rejected user ${user._id} was not deleted from Cloudinary`);
     }
 
+    await audit(req, "USER_REJECTED", { target: `${user.email} (${user.role})` });
+
     res.json({ message: "Registration rejected and removed" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
@@ -269,15 +278,48 @@ const login = async (req, res) => {
       });
     }
     
+    if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
-    if (!user || !user.isActive) {
+
+    const outcome = await authenticate(user, password);
+
+    if (outcome.status === "LOCKED") {
+      if (outcome.locked) {
+        await audit(req, "ACCOUNT_LOCKED", {
+          actor: user._id,
+          actorEmail: normalizedEmail,
+          actorRole: user.role,
+          target: normalizedEmail,
+          details: { minutes: outcome.minutes },
+        });
+      }
+      return res.status(429).json({
+        message: `Too many failed attempts. Please try again in ${outcome.minutes} minute${
+          outcome.minutes === 1 ? "" : "s"
+        }, or reset your password.`,
+      });
+    }
+
+    if (outcome.status !== "OK") {
+      await audit(req, "LOGIN_FAILED", {
+        actorEmail: normalizedEmail,
+        target: normalizedEmail,
+        details: { reason: outcome.reason },
+      });
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    const isMatch = await comparePassword(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+
+    await audit(req, "LOGIN_SUCCESS", {
+      actor: user._id,
+      actorEmail: user.email,
+      actorRole: user.role,
+      target: user.email,
+    });
+
     const token = generateToken(user._id, user.role);
     res.json({
       token,
@@ -301,8 +343,8 @@ const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     // don't reveal whether the email exists — respond the same either way
-    if (user && user.isActive) {
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+    if (user && user.isActive && !(await requestedRecently(normalizedEmail))) {
+      const code = generateOtpCode();
       await Otp.create({
         email: normalizedEmail,
         code,
@@ -336,18 +378,15 @@ const resetPassword = async (req, res) => {
 
     if (rejectWeakPassword(res, newPassword, { email: normalizedEmail })) return;
 
-    const otp = await Otp.findOne({
-      email: normalizedEmail,
-      code,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    const otp = await checkOtp(normalizedEmail, code);
 
     if (!otp) {
       return res.status(400).json({ message: "Invalid or expired code" });
     }
 
     const user = await User.findOne({ email: normalizedEmail });
-    if (!user) return res.status(404).json({ message: "Account not found" });
+    // same answer as a wrong code, so this cannot be used to find out which e-mails exist
+    if (!user) return res.status(400).json({ message: "Invalid or expired code" });
 
     if (await comparePassword(newPassword, user.password)) {
       return res.status(400).json({ message: "New password must be different from your current password" });
@@ -357,6 +396,13 @@ const resetPassword = async (req, res) => {
     user.passwordChangedAt = new Date();
     user.mustChangePassword = false;
     await user.save();
+    await clearLoginLock(user._id);
+    await audit(req, "PASSWORD_RESET", {
+      actor: user._id,
+      actorEmail: user.email,
+      actorRole: user.role,
+      target: user.email,
+    });
 
     await Otp.deleteMany({ email: normalizedEmail });
 
@@ -414,6 +460,7 @@ const changePassword = async (req, res) => {
     user.passwordChangedAt = new Date();
     user.mustChangePassword = false; // the temporary password is gone for good
     await user.save();
+    await audit(req, "PASSWORD_CHANGED", { target: user.email });
 
     // other devices are logged out; hand back a fresh token so this session continues
     const token = generateToken(user._id, user.role);

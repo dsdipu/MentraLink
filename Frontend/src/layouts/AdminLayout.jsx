@@ -16,6 +16,7 @@ import {
   Star,
   ShieldCheck,
   UserSquare2,
+  ScrollText,
   Layers,
   X,
   Menu,
@@ -31,6 +32,7 @@ const navItems = [
   { to: "/admin/sessions", label: "Session Management", icon: CalendarClock },
   { to: "/admin/ratings", label: "Mentor Ratings", icon: Star },
   { to: "/admin/manage-admins", label: "Admins", icon: ShieldCheck },
+  { to: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
   { to: "/admin/students", label: "Students", icon: UserSquare2 },
   { to: "/admin/groups", label: "Groups", icon: Layers },
 ];

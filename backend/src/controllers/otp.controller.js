@@ -1,8 +1,7 @@
 const Otp = require("../models/Otp");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
-
-const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const { generateOtpCode: generateCode, checkOtp } = require("../utils/otpGuard");
 
 const requestOtp = async (req, res) => {
   try {
@@ -49,13 +48,12 @@ const requestOtp = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { email, code } = req.body;
+    if (typeof email !== "string" || typeof code !== "string") {
+      return res.status(400).json({ message: "Email and code are required" });
+    }
     const normalizedEmail = email.toLowerCase().trim();
 
-    const otp = await Otp.findOne({
-      email: normalizedEmail,
-      code,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    const otp = await checkOtp(normalizedEmail, code);
 
     if (!otp) {
       return res.status(400).json({ message: "Invalid or expired code" });

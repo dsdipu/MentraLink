@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import EmptyState from "../../components/ui/EmptyState";
 import { Newspaper, Heart } from "lucide-react";
+import { safeUrl } from "../../utils/safeUrl";
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -33,7 +34,7 @@ const Blogs = () => {
             <Link key={b._id} to={`/student/blogs/${b._id}`}>
               <Card padded={false} className="overflow-hidden h-full hover:shadow-md transition">
                 {b.coverImage && (
-                  <img src={b.coverImage} alt="" className="w-full h-32 object-cover" />
+                  <img src={safeUrl(b.coverImage)} alt="" className="w-full h-32 object-cover" />
                 )}
                 <div className="p-4">
                   <Badge tone="brand" className="mb-2">{b.category}</Badge>

@@ -25,6 +25,34 @@ export default {
         display: ["Fraunces", "serif"],
         sans: ["Inter", "sans-serif"],
       },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
+        "pulse-ring": {
+          "0%": { transform: "scale(0.8)", opacity: "0.6" },
+          "100%": { transform: "scale(2.2)", opacity: "0" },
+        },
+        "gradient-pan": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+      },
+      animation: {
+        float: "float 6s ease-in-out infinite",
+        "float-slow": "float 8s ease-in-out infinite",
+        shimmer: "shimmer 1.6s infinite",
+        "pulse-ring": "pulse-ring 2s ease-out infinite",
+        "gradient-pan": "gradient-pan 12s ease infinite",
+      },
       backgroundImage: {
         "brand-gradient": "linear-gradient(90deg, #2F6FED 0%, #9333EA 100%)",
         "brand-gradient-vertical": "linear-gradient(180deg, #0F1B3D 0%, #2F6FED 55%, #9333EA 100%)",

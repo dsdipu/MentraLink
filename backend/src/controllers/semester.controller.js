@@ -35,7 +35,17 @@ const getSemesterById = async (req, res) => {
 // Admin: update semester
 const updateSemester = async (req, res) => {
   try {
-    const semester = await Semester.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // only these fields can be changed (never _id, timestamps or anything else sent in the body)
+    const allowed = ["name", "academicYear", "batch", "startDate", "endDate", "status"];
+    const update = {};
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) update[field] = req.body[field];
+    });
+
+    const semester = await Semester.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
     if (!semester) return res.status(404).json({ message: "Semester not found" });
     res.json({ semester });
   } catch (err) {

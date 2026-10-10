@@ -79,6 +79,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/otp", otpRoutes);
+app.use("/api/audit-logs", require("./routes/audit.routes"));
 
 app.use("/api", (req, res) => {
   res.status(404).json({ message: "Route not found" });

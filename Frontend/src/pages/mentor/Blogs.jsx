@@ -12,6 +12,7 @@ import useAuth from "../../hooks/useAuth";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import EmptyState from "../../components/ui/EmptyState";
+import { safeUrl } from "../../utils/safeUrl";
 import {
   Newspaper,
   Heart,
@@ -725,7 +726,7 @@ const Blogs = () => {
                 >
                   {blog.coverImage && (
                     <img
-                      src={blog.coverImage}
+                      src={safeUrl(blog.coverImage)}
                       alt=""
                       className="w-full h-32 object-cover"
                     />

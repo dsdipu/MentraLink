@@ -1,4 +1,5 @@
 const Session = require("../models/Session");
+const audit = require("../utils/audit");
 const Student = require("../models/Student");
 const Mentor = require("../models/Mentor");
 const MentorshipGroup = require("../models/MentorshipGroup");
@@ -243,8 +244,13 @@ const updateSessionStatus = async (req, res) => {
       });
     }
 
+    const previousStatus = session.status;
     session.status = status;
     await session.save();
+    await audit(req, "SESSION_STATUS_CHANGED", {
+      target: `Session ${session.sessionNumber} (${session._id})`,
+      details: { from: previousStatus, to: status },
+    });
 
     const populatedSession = await Session.findById(session._id)
       .populate("semester", "name")

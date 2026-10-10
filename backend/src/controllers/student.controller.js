@@ -15,6 +15,7 @@ const {
   bulkCreateStudents: runBulkCreate,
 } = require("../services/accountCreation.service");
 const { autoAssignStudent } = require("../services/groupRanges.service");
+const audit = require("../utils/audit");
 
 // Admin: create ONE student.
 // - without a password: temporary credentials (email = ID + domain, password = ID, must change on first login)
@@ -51,6 +52,7 @@ const createStudent = async (req, res) => {
         department: department || "",
       });
       const student = await Student.findOne({ user: user._id }).populate("user", "name email isActive");
+      await audit(req, "STUDENT_CREATED", { target: `${cleanId} (${email})`, details: { temporary: true } });
       return res.status(201).json({
         student,
         assignedSection: section,
@@ -84,6 +86,7 @@ const createStudent = async (req, res) => {
     }
 
     const section = await autoAssignStudent(student);
+    await audit(req, "STUDENT_CREATED", { target: `${cleanId} (${email})`, details: { temporary: false } });
     res.status(201).json({ student, assignedSection: section });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });
@@ -96,6 +99,12 @@ const bulkCreateStudents = async (req, res) => {
   try {
     const { startId, endId, department, emailDomain } = req.body;
     const result = await runBulkCreate({ startId, endId, department, emailDomain });
+    if (result.status === 201) {
+      await audit(req, "STUDENTS_BULK_CREATED", {
+        target: `${startId} - ${endId}`,
+        details: result.body.summary,
+      });
+    }
     res.status(result.status).json(result.body);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: process.env.NODE_ENV === "production" ? undefined : err.message });

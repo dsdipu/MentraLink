@@ -1,4 +1,5 @@
 const Blog = require("../models/Blog");
+const { sanitizeBlogContent, safeHttpUrl, cleanUrlList, cleanLinks } = require("../utils/htmlSanitizer");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
 // Mentor/Admin: upload a single image, get back its URL to use inline or in the gallery
 const uploadBlogImage = async (req, res) => {
@@ -28,14 +29,18 @@ const uploadBlogImage = async (req, res) => {
 const createBlog = async (req, res) => {
   try {
     const { title, content, category, session, coverImage, images, links } = req.body;
+    if (!title || !String(title).trim() || !content || !String(content).trim()) {
+      return res.status(400).json({ message: "Title and content are required" });
+    }
+
     const blog = await Blog.create({
-      title,
-      content,
+      title: String(title).trim().slice(0, 200),
+      content: sanitizeBlogContent(content),
       category,
       session: session || undefined,
-      coverImage,
-      images: Array.isArray(images) ? images : [],
-      links: Array.isArray(links) ? links : [],
+      coverImage: safeHttpUrl(coverImage) || undefined,
+      images: cleanUrlList(images),
+      links: cleanLinks(links),
       author: req.user.id,
     });
     res.status(201).json({ blog });
@@ -83,13 +88,13 @@ const updateBlog = async (req, res) => {
     }
 
     const { title, content, category, session, coverImage, images, links } = req.body;
-    if (title !== undefined) blog.title = title;
-    if (content !== undefined) blog.content = content;
+    if (title !== undefined) blog.title = String(title).trim().slice(0, 200);
+    if (content !== undefined) blog.content = sanitizeBlogContent(content);
     if (category !== undefined) blog.category = category;
     if (session !== undefined) blog.session = session || undefined;
-    if (coverImage !== undefined) blog.coverImage = coverImage;
-    if (images !== undefined) blog.images = images;
-    if (links !== undefined) blog.links = links;
+    if (coverImage !== undefined) blog.coverImage = safeHttpUrl(coverImage) || undefined;
+    if (images !== undefined) blog.images = cleanUrlList(images);
+    if (links !== undefined) blog.links = cleanLinks(links);
 
     await blog.save();
     res.json({ blog });

@@ -2,6 +2,7 @@ const Mentor = require("../models/Mentor");
 const User = require("../models/User");
 const { hashPassword } = require("../utils/hashPassword");
 const { rejectWeakPassword } = require("../utils/passwordPolicy");
+const audit = require("../utils/audit");
 const {
   isValidStudentId,
   getDefaultDomain,
@@ -86,6 +87,8 @@ const createMentor = async (req, res) => {
       await User.deleteOne({ _id: user._id });
       throw err;
     }
+
+    await audit(req, "MENTOR_CREATED", { target: `${cleanId || "-"} (${email})`, details: { temporary } });
 
     res.status(201).json({
       mentor,

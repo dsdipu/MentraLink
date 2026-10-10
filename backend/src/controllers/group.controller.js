@@ -1,4 +1,5 @@
 const MentorshipGroup = require("../models/MentorshipGroup");
+const audit = require("../utils/audit");
 const {
   normalizeRanges,
   findOverlapWithOtherGroups,
@@ -787,6 +788,15 @@ const setGroupRanges = async (req, res) => {
     await group.save();
 
     const result = await applyGroupRanges(group, { moveExisting: !!req.body.moveExisting });
+    await audit(req, "RANGES_SET", {
+      target: group.name,
+      details: {
+        ranges: normalized.ranges,
+        assigned: result.assigned.length,
+        moved: result.moved.length,
+        conflicts: result.conflicts.length,
+      },
+    });
     res.json({ group: await populateGroup(group._id), result });
   } catch (err) {
     res.status(500).json({

@@ -4,6 +4,7 @@ import { getBlogById, toggleLike, getComments, addComment, deleteComment, delete
 import BlogContent from "../../components/BlogContent";
 import useAuth from "../../hooks/useAuth";
 import { ArrowLeft, Heart, Trash2, Share2, Check } from "lucide-react";
+import { safeUrl } from "../../utils/safeUrl";
 
 const BlogDetails = () => {
   const { id } = useParams();
@@ -95,8 +96,8 @@ const BlogDetails = () => {
       </Link>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        {blog.coverImage && (
-          <img src={blog.coverImage} alt={blog.title} className="w-full rounded-lg mb-4" />
+        {safeUrl(blog.coverImage) && (
+          <img src={safeUrl(blog.coverImage)} alt={blog.title} className="w-full rounded-lg mb-4" />
         )}
 
         <div className="flex items-start justify-between gap-3 mb-2">
@@ -129,8 +130,8 @@ const BlogDetails = () => {
           <div className="mt-6">
             <p className="text-sm font-medium text-gray-600 mb-2">Gallery</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {blog.images.map((img, i) => (
-                <img key={i} src={img} alt="" className="w-full h-28 object-cover rounded-md" />
+              {blog.images.filter((img) => safeUrl(img)).map((img, i) => (
+                <img key={i} src={safeUrl(img)} alt="" className="w-full h-28 object-cover rounded-md" />
               ))}
             </div>
           </div>
@@ -140,9 +141,9 @@ const BlogDetails = () => {
           <div className="mt-6">
             <p className="text-sm font-medium text-gray-600 mb-2">Links</p>
             <ul className="space-y-1">
-              {blog.links.map((l, i) => (
+              {blog.links.filter((l) => safeUrl(l.url)).map((l, i) => (
                 <li key={i}>
-                  <a href={l.url} target="_blank" rel="noreferrer" className="text-blue-600 text-sm hover:underline">
+                  <a href={safeUrl(l.url)} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">
                     {l.label || l.url}
                   </a>
                 </li>
