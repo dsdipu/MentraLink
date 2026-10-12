@@ -9,9 +9,17 @@ const calculateMentorRating = async (mentorId, semesterId = null) => {
 
   const sessions = await Session.find(sessionFilter).select("_id");
   const sessionIds = sessions.map((session) => session._id);
-  const evaluations = sessionIds.length
-    ? await MentorEvaluation.find({ session: { $in: sessionIds } })
-    : [];
+  const evaluationFilters = [];
+
+  if (sessionIds.length) {
+    evaluationFilters.push({ session: { $in: sessionIds } });
+  }
+
+  const mentorEvaluationFilter = { mentor: mentorId };
+  if (semesterId) mentorEvaluationFilter.semester = semesterId;
+  evaluationFilters.push(mentorEvaluationFilter);
+
+  const evaluations = await MentorEvaluation.find({ $or: evaluationFilters });
 
   if (evaluations.length === 0) {
     return {

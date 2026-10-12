@@ -38,7 +38,16 @@ const getMyMentorEvaluations = async (req, res) => {
 
     const mentorSessions = await Session.find({ mentor: mentor._id }).select("_id");
     const sessionIds = mentorSessions.map((session) => session._id);
-    const evaluations = await MentorEvaluation.find({ session: { $in: sessionIds } })
+
+    // Include evaluations linked to this mentor directly as well as evaluations
+    // linked to sessions currently assigned to them. The direct mentor reference
+    // preserves older evaluations if a session's mentor assignment later changes.
+    const evaluations = await MentorEvaluation.find({
+      $or: [
+        { session: { $in: sessionIds } },
+        { mentor: mentor._id },
+      ],
+    })
       .populate({ path: "student", populate: { path: "user", select: "name" } })
       .populate("session", "title date sessionNumber")
       .sort({ createdAt: -1 });
