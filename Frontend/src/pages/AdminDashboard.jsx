@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { Users, GraduationCap, UsersRound, CalendarDays } from "lucide-react";
+import { Users, GraduationCap, UsersRound, CalendarDays, MessageSquare } from "lucide-react";
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -71,6 +71,14 @@ function AdminDashboard() {
       iconColor: "text-[#9333EA]",
       to: "/admin/sessions",
     },
+    {
+      label: "Session Feedback",
+      value: "View",
+      icon: MessageSquare,
+      iconBg: "bg-[#E0F2FE]",
+      iconColor: "text-[#0369A1]",
+      to: "/admin/session-feedback",
+    },
   ];
 
   return (
@@ -87,13 +95,13 @@ function AdminDashboard() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-[104px] animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {cards.map((c) => {
             const Icon = c.icon;
             return (

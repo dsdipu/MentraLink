@@ -1,11 +1,17 @@
 const MentorEvaluation = require("../models/MentorEvaluation");
+const Session = require("../models/Session");
 
-// Calculate aggregated rating for a mentor (optionally scoped to a semester)
+// Session ownership is the source of truth. This also includes older evaluation
+// records whose stored mentor reference does not match the session's assigned mentor.
 const calculateMentorRating = async (mentorId, semesterId = null) => {
-  const filter = { mentor: mentorId };
-  if (semesterId) filter.semester = semesterId;
+  const sessionFilter = { mentor: mentorId };
+  if (semesterId) sessionFilter.semester = semesterId;
 
-  const evaluations = await MentorEvaluation.find(filter);
+  const sessions = await Session.find(sessionFilter).select("_id");
+  const sessionIds = sessions.map((session) => session._id);
+  const evaluations = sessionIds.length
+    ? await MentorEvaluation.find({ session: { $in: sessionIds } })
+    : [];
 
   if (evaluations.length === 0) {
     return {
@@ -21,46 +27,30 @@ const calculateMentorRating = async (mentorId, semesterId = null) => {
     };
   }
 
-  const totals = {
-    communication: 0,
-    guidance: 0,
-    availability: 0,
-    knowledgeSharing: 0,
-    overallExperience: 0,
-  };
+  const categories = [
+    "communication",
+    "guidance",
+    "availability",
+    "knowledgeSharing",
+    "overallExperience",
+  ];
+  const totals = Object.fromEntries(categories.map((category) => [category, 0]));
 
-  evaluations.forEach((evalItem) => {
-    totals.communication += evalItem.ratings.communication;
-    totals.guidance += evalItem.ratings.guidance;
-    totals.availability += evalItem.ratings.availability;
-    totals.knowledgeSharing += evalItem.ratings.knowledgeSharing;
-    totals.overallExperience += evalItem.ratings.overallExperience;
+  evaluations.forEach((evaluation) => {
+    categories.forEach((category) => {
+      totals[category] += evaluation.ratings[category];
+    });
   });
 
   const count = evaluations.length;
-
-  const categoryAverages = {
-    communication: +(totals.communication / count).toFixed(2),
-    guidance: +(totals.guidance / count).toFixed(2),
-    availability: +(totals.availability / count).toFixed(2),
-    knowledgeSharing: +(totals.knowledgeSharing / count).toFixed(2),
-    overallExperience: +(totals.overallExperience / count).toFixed(2),
-  };
-
+  const categoryAverages = Object.fromEntries(
+    categories.map((category) => [category, +(totals[category] / count).toFixed(2)])
+  );
   const overallRating = +(
-    (categoryAverages.communication +
-      categoryAverages.guidance +
-      categoryAverages.availability +
-      categoryAverages.knowledgeSharing +
-      categoryAverages.overallExperience) /
-    5
+    categories.reduce((sum, category) => sum + categoryAverages[category], 0) / categories.length
   ).toFixed(2);
 
-  return {
-    overallRating,
-    totalEvaluations: count,
-    categoryAverages,
-  };
+  return { overallRating, totalEvaluations: count, categoryAverages };
 };
 
 module.exports = { calculateMentorRating };

@@ -36,7 +36,9 @@ const getMyMentorEvaluations = async (req, res) => {
     const mentor = await Mentor.findOne({ user: req.user.id });
     if (!mentor) return res.status(404).json({ message: "Mentor profile not found" });
 
-    const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+    const mentorSessions = await Session.find({ mentor: mentor._id }).select("_id");
+    const sessionIds = mentorSessions.map((session) => session._id);
+    const evaluations = await MentorEvaluation.find({ session: { $in: sessionIds } })
       .populate({ path: "student", populate: { path: "user", select: "name" } })
       .populate("session", "title date sessionNumber")
       .sort({ createdAt: -1 });
@@ -68,7 +70,9 @@ const getAllMentorRatings = async (req, res) => {
     const results = [];
     for (const mentor of mentors) {
       const rating = await calculateMentorRating(mentor._id);
-      const evaluations = await MentorEvaluation.find({ mentor: mentor._id })
+      const mentorSessions = await Session.find({ mentor: mentor._id }).select("_id");
+      const sessionIds = mentorSessions.map((session) => session._id);
+      const evaluations = await MentorEvaluation.find({ session: { $in: sessionIds } })
         .populate({ path: "student", populate: { path: "user", select: "name" } })
         .populate("session", "title date sessionNumber")
         .sort({ createdAt: -1 });

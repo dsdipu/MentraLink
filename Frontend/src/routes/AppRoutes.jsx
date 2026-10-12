@@ -36,6 +36,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import Semesters from "../pages/Semesters";
 import AdminMentorRatings from "../pages/AdminMentorRatings";
 import AdminSessions from "../pages/AdminSessions";
+import AdminSessionFeedback from "../pages/AdminSessionFeedback";
 import AdminManageAdmins from "../pages/AdminManageAdmins";
 import AdminProfile from "../pages/AdminProfile";
 import AdminGroups from "../pages/AdminGroups";
@@ -95,6 +96,7 @@ const AppRoutes = () => {
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/audit-log" element={<AdminAuditLog />} />
           <Route path="/admin/sessions" element={<AdminSessions />} />
+          <Route path="/admin/session-feedback" element={<AdminSessionFeedback />} />
           <Route path="/admin/ratings" element={<AdminMentorRatings />} />
           <Route path="/admin/manage-admins" element={<AdminManageAdmins />} />
           <Route path="/admin/profile" element={<AdminProfile />} />

@@ -114,6 +114,7 @@ const getSessions = async (req, res) => {
 
     const sessions = await Session.find(filter)
       .populate("semester", "name")
+      .populate("group", "name")
       .populate({ path: "mentor", populate: { path: "user", select: "name email" } })
       .sort({ date: 1 });
 

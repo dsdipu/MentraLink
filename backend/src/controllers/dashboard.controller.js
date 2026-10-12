@@ -111,17 +111,8 @@ const getMentorDashboard = async (req, res) => {
       date: { $gte: startOfToday() },
     });
 
-    const evaluations = await MentorEvaluation.find({ mentor: mentor._id });
-    let averageRating = 5.0;
-    if (evaluations.length > 0) {
-      const totalOverall = evaluations.reduce((sum, ev) => {
-        const avg =
-          (ev.ratings.communication + ev.ratings.guidance + ev.ratings.availability +
-            ev.ratings.knowledgeSharing + ev.ratings.overallExperience) / 5;
-        return sum + avg;
-      }, 0);
-      averageRating = +(totalOverall / evaluations.length).toFixed(2);
-    }
+    const mentorRating = await calculateMentorRating(mentor._id);
+    const averageRating = mentorRating.overallRating;
 
     const blogCount = await Blog.countDocuments({ author: req.user.id });
 
